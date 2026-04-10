@@ -1,0 +1,105 @@
+import type { RouteRecordRaw } from 'vue-router'
+
+export const asyncRoutes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        meta: { title: '仪表盘', icon: 'DashboardOutlined', sort: 1 },
+        redirect: '/dashboard/overview',
+        children: [
+          { path: 'overview', name: 'DashboardOverview', meta: { title: '系统总览' }, component: () => import('@/views/dashboard/Overview.vue') },
+          { path: 'model', name: 'ModelDashboard', meta: { title: '模型看板' }, component: () => import('@/views/dashboard/ModelDashboard.vue') },
+          { path: 'data', name: 'DataDashboard', meta: { title: '数据看板' }, component: () => import('@/views/dashboard/DataDashboard.vue') },
+        ],
+      },
+      {
+        path: 'model',
+        name: 'Model',
+        meta: { title: '模型管理', icon: 'ExperimentOutlined', sort: 2, permission: 'model' },
+        redirect: '/model/list',
+        children: [
+          { path: 'list', name: 'ModelList', meta: { title: '模型列表', permission: 'model' }, component: () => import('@/views/model/ModelList.vue') },
+          { path: ':id', name: 'ModelDetail', meta: { title: '模型详情', hidden: true }, component: () => import('@/views/model/ModelDetail.vue') },
+          { path: 'evaluations', name: 'EvalList', meta: { title: '评估管理' }, component: () => import('@/views/model/EvalList.vue') },
+          { path: 'evaluations/:id', name: 'EvalDetail', meta: { title: '评估详情', hidden: true }, component: () => import('@/views/model/EvalDetail.vue') },
+          { path: 'approvals', name: 'ApprovalList', meta: { title: '审批管理' }, component: () => import('@/views/model/ApprovalList.vue') },
+          { path: 'deployments', name: 'DeploymentList', meta: { title: '部署管理' }, component: () => import('@/views/model/DeploymentList.vue') },
+          { path: 'deployments/:id', name: 'DeploymentDetail', meta: { title: '部署详情', hidden: true }, component: () => import('@/views/model/DeploymentDetail.vue') },
+          { path: 'routes', name: 'RouteConfig', meta: { title: '流量路由' }, component: () => import('@/views/model/RouteConfig.vue') },
+        ],
+      },
+      {
+        path: 'data',
+        name: 'Data',
+        meta: { title: '数据管理', icon: 'DatabaseOutlined', sort: 3, permission: 'data' },
+        redirect: '/data/cdr/patients',
+        children: [
+          { path: 'cdr/patients', name: 'PatientList', meta: { title: '患者管理' }, component: () => import('@/views/data-cdr/PatientList.vue') },
+          { path: 'cdr/patients/:id', name: 'PatientDetail', meta: { title: '患者详情', hidden: true }, component: () => import('@/views/data-cdr/PatientDetail.vue') },
+          { path: 'rdr/projects', name: 'ProjectList', meta: { title: '研究项目' }, component: () => import('@/views/data-rdr/ProjectList.vue') },
+          { path: 'rdr/datasets', name: 'DatasetList', meta: { title: '数据集' }, component: () => import('@/views/data-rdr/DatasetList.vue') },
+          { path: 'rdr/etl', name: 'EtlTaskList', meta: { title: 'ETL任务' }, component: () => import('@/views/data-rdr/EtlTaskList.vue') },
+        ],
+      },
+      {
+        path: 'label',
+        name: 'Label',
+        meta: { title: '标注管理', icon: 'EditOutlined', sort: 4, permission: 'label' },
+        redirect: '/label/tasks',
+        children: [
+          { path: 'tasks', name: 'LabelTaskList', meta: { title: '标注任务' }, component: () => import('@/views/label/LabelTaskList.vue') },
+          { path: 'workspace/:id', name: 'LabelWorkspace', meta: { title: '标注工作台', hidden: true }, component: () => import('@/views/label/LabelWorkspace.vue') },
+        ],
+      },
+      {
+        path: 'schedule',
+        name: 'Schedule',
+        meta: { title: '任务调度', icon: 'ScheduleOutlined', sort: 5 },
+        children: [
+          { path: 'tasks', name: 'ScheduleTaskList', meta: { title: '定时任务' }, component: () => import('@/views/schedule/TaskList.vue') },
+        ],
+      },
+      {
+        path: 'alert',
+        name: 'Alert',
+        meta: { title: '告警中心', icon: 'AlertOutlined', sort: 6 },
+        children: [
+          { path: 'active', name: 'AlertList', meta: { title: '活跃告警' }, component: () => import('@/views/alert/AlertList.vue') },
+          { path: 'rules', name: 'AlertRuleList', meta: { title: '告警规则' }, component: () => import('@/views/alert/AlertRuleList.vue') },
+        ],
+      },
+      {
+        path: 'audit',
+        name: 'Audit',
+        meta: { title: '审计日志', icon: 'FileSearchOutlined', sort: 7, permission: 'audit' },
+        children: [
+          { path: 'operations', name: 'OperationLog', meta: { title: '操作审计' }, component: () => import('@/views/audit/OperationLog.vue') },
+          { path: 'data-access', name: 'DataAccessLog', meta: { title: '数据访问' }, component: () => import('@/views/audit/DataAccessLog.vue') },
+        ],
+      },
+      {
+        path: 'message',
+        name: 'Message',
+        meta: { title: '消息中心', icon: 'BellOutlined', sort: 8 },
+        children: [
+          { path: 'list', name: 'MessageList', meta: { title: '我的消息' }, component: () => import('@/views/message/MessageList.vue') },
+          { path: 'settings', name: 'NotificationSettings', meta: { title: '通知设置' }, component: () => import('@/views/message/NotificationSettings.vue') },
+        ],
+      },
+      {
+        path: 'system',
+        name: 'System',
+        meta: { title: '系统设置', icon: 'SettingOutlined', sort: 9, permission: 'system' },
+        redirect: '/system/users',
+        children: [
+          { path: 'users', name: 'UserList', meta: { title: '用户管理' }, component: () => import('@/views/system/UserList.vue') },
+          { path: 'roles', name: 'RoleList', meta: { title: '角色管理' }, component: () => import('@/views/system/RoleList.vue') },
+          { path: 'config', name: 'SystemConfig', meta: { title: '系统参数' }, component: () => import('@/views/system/SystemConfig.vue') },
+        ],
+      },
+    ],
+  },
+]

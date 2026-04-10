@@ -1,0 +1,90 @@
+# MAIDC Gateway 配置
+# Nacos Data ID: maidc-gateway-dev.yaml  Group: DEFAULT_GROUP
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: maidc-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:maidc-nacos:8848}
+        namespace: ${NACOS_NAMESPACE:}
+      config:
+        server-addr: ${NACOS_ADDR:maidc-nacos:8848}
+        file-extension: yaml
+        shared-configs:
+          - data-id: maidc-shared.yaml
+            refresh: true
+    gateway:
+      routes:
+        - id: maidc-auth
+          uri: lb://maidc-auth
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-model
+          uri: lb://maidc-model
+          predicates:
+            - Path=/api/v1/models/**,/api/v1/evaluations/**,/api/v1/approvals/**,/api/v1/deployments/**,/api/v1/routes/**,/api/v1/inference/**,/api/v1/workers/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-data
+          uri: lb://maidc-data
+          predicates:
+            - Path=/api/v1/cdr/**,/api/v1/rdr/**,/api/v1/etl/**,/api/v1/quality/**,/api/v1/dict/**,/api/v1/desensitize/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-task
+          uri: lb://maidc-task
+          predicates:
+            - Path=/api/v1/tasks/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-label
+          uri: lb://maidc-label
+          predicates:
+            - Path=/api/v1/label-tasks/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-audit
+          uri: lb://maidc-audit
+          predicates:
+            - Path=/api/v1/audit/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-msg
+          uri: lb://maidc-msg
+          predicates:
+            - Path=/api/v1/messages/**,/api/v1/notifications/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-aiworker
+          uri: lb://maidc-aiworker
+          predicates:
+            - Path=/api/v1/ai/**
+          filters:
+            - StripPrefix=0
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

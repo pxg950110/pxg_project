@@ -1,0 +1,26 @@
+# MAIDC AI Worker 配置
+# Nacos Data ID: maidc-aiworker-dev.yaml  Group: DEFAULT_GROUP
+
+server:
+  port: 8090
+
+spring:
+  application:
+    name: maidc-aiworker
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:maidc-nacos:8848}
+      config:
+        server-addr: ${NACOS_ADDR:maidc-nacos:8848}
+        file-extension: yaml
+        shared-configs:
+          - data-id: maidc-shared.yaml
+            refresh: true
+
+maidc:
+  aiworker:
+    model-cache-dir: /data/models
+    max-batch-size: 32
+    gpu-enabled: ${GPU_ENABLED:false}
+    inference-timeout-ms: 60000

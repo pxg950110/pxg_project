@@ -1,0 +1,203 @@
+version: '3.8'
+
+# Full MAIDC Stack - All Services
+services:
+  # ==================== Infrastructure ====================
+  postgres:
+    image: postgres:15-alpine
+    container_name: maidc-postgres
+    environment:
+      POSTGRES_DB: maidc
+      POSTGRES_USER: maidc
+      POSTGRES_PASSWORD: maidc123
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maidc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: maidc-redis
+    ports: ["6379:6379"]
+    command: redis-server --requirepass maidc123
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "maidc123", "ping"]
+      interval: 10s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    container_name: maidc-minio
+    environment:
+      MINIO_ROOT_USER: maidc
+      MINIO_ROOT_PASSWORD: maidc123456
+    ports: ["9000:9000", "9001:9001"]
+    command: server /data --console-address ":9001"
+    volumes: [minio-data:/data]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: maidc-rabbitmq
+    ports: ["5672:5672", "15672:15672"]
+    environment:
+      RABBITMQ_DEFAULT_USER: maidc
+      RABBITMQ_DEFAULT_PASS: maidc123
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      retries: 5
+
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: maidc-nacos
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: embedded
+    ports: ["8848:8848", "9848:9848"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+      interval: 15s
+      retries: 5
+
+  # ==================== Backend Services ====================
+  gateway:
+    build: ../maidc-parent/maidc-gateway
+    container_name: maidc-gateway
+    ports: ["8080:8080"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_PROFILES_ACTIVE: dev
+    depends_on:
+      nacos: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  auth:
+    build: ../maidc-parent/maidc-auth
+    container_name: maidc-auth
+    ports: ["8081:8081"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=system
+      SPRING_DATASOURCE_USERNAME: maidc
+      SPRING_DATASOURCE_PASSWORD: maidc123
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  data:
+    build: ../maidc-parent/maidc-data
+    container_name: maidc-data
+    ports: ["8082:8082"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  model:
+    build: ../maidc-parent/maidc-model
+    container_name: maidc-model
+    ports: ["8083:8083"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=model
+      SPRING_REDIS_HOST: redis
+      MINIO_ENDPOINT: http://minio:9000
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  task:
+    build: ../maidc-parent/maidc-task
+    container_name: maidc-task
+    ports: ["8084:8084"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=system
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  label:
+    build: ../maidc-parent/maidc-label
+    container_name: maidc-label
+    ports: ["8085:8085"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=rdr
+      SPRING_REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  audit:
+    build: ../maidc-parent/maidc-audit
+    container_name: maidc-audit
+    ports: ["8086:8086"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=audit
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  msg:
+    build: ../maidc-parent/maidc-msg
+    container_name: maidc-msg
+    ports: ["8087:8087"]
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=model
+      SPRING_REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  # ==================== AI Worker ====================
+  aiworker:
+    build: ../maidc-parent/maidc-aiworker
+    container_name: maidc-aiworker
+    ports: ["8090:8090"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      MINIO_ENDPOINT: http://minio:9000
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      minio: { condition: service_healthy }
+
+  # ==================== Frontend ====================
+  portal:
+    build: ../maidc-portal
+    container_name: maidc-portal
+    ports: ["3000:80"]
+    depends_on:
+      - gateway
+
+volumes:
+  pgdata:
+  minio-data:
+  rabbitmq-data:

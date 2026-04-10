@@ -1,0 +1,49 @@
+{
+  "dashboard": {
+    "title": "MAIDC Model Inference",
+    "tags": ["maidc", "model", "inference"],
+    "panels": [
+      {
+        "title": "Inference QPS",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [{"expr": "sum(rate(maidc_inference_total[5m])) by (model_name)"}]
+      },
+      {
+        "title": "Inference Latency P50/P95/P99",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {"expr": "histogram_quantile(0.50, sum(rate(maidc_inference_duration_bucket[5m])) by (le)) * 1000", "legendFormat": "P50"},
+          {"expr": "histogram_quantile(0.95, sum(rate(maidc_inference_duration_bucket[5m])) by (le)) * 1000", "legendFormat": "P95"},
+          {"expr": "histogram_quantile(0.99, sum(rate(maidc_inference_duration_bucket[5m])) by (le)) * 1000", "legendFormat": "P99"}
+        ]
+      },
+      {
+        "title": "Inference Success Rate",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 8, "x": 0, "y": 8},
+        "targets": [{"expr": "sum(rate(maidc_inference_total{status=\"SUCCESS\"}[5m])) / sum(rate(maidc_inference_total[5m])) * 100"}]
+      },
+      {
+        "title": "GPU Utilization",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 8, "x": 8, "y": 8},
+        "targets": [{"expr": "avg(nvidia_gpu_utilization)"}]
+      },
+      {
+        "title": "GPU Memory Usage",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 8, "x": 16, "y": 8},
+        "targets": [{"expr": "sum(nvidia_gpu_memory_used_bytes) / sum(nvidia_gpu_memory_total_bytes) * 100"}]
+      },
+      {
+        "title": "Active Deployments",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 12},
+        "targets": [{"expr": "count(maidc_deployment_status{status=\"RUNNING\"})"}]
+      }
+    ],
+    "refresh": "15s"
+  }
+}

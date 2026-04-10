@@ -1,0 +1,35 @@
+# MAIDC Model 服务配置
+# Nacos Data ID: maidc-model-dev.yaml  Group: DEFAULT_GROUP
+
+server:
+  port: 8083
+
+spring:
+  application:
+    name: maidc-model
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:maidc-nacos:8848}
+      config:
+        server-addr: ${NACOS_ADDR:maidc-nacos:8848}
+        file-extension: yaml
+        shared-configs:
+          - data-id: maidc-shared.yaml
+            refresh: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: model
+  datasource:
+    url: jdbc:postgresql://${PG_HOST:maidc-postgres}:${PG_PORT:5432}/maidc?currentSchema=model&stringtype=unspecified
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+maidc:
+  model:
+    upload:
+      allowed-extensions: pt,pth,onnx,pkl,h5,joblib
+      max-size: 524288000
