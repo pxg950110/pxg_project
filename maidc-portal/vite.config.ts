@@ -17,15 +17,28 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      target: 'es2020',
+      cssTarget: 'chrome80',
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: mode === 'production',
+          drop_debugger: true,
+        },
+      },
       rollupOptions: {
         output: {
           manualChunks: {
             'vendor-vue': ['vue', 'vue-router', 'pinia'],
             'vendor-antd': ['ant-design-vue', '@ant-design/icons-vue'],
             'vendor-echarts': ['echarts'],
+            'vendor-utils': ['axios', 'dayjs'],
           },
         },
       },
+      chunkSizeWarningLimit: 1000,
+      reportCompressedSize: true,
+      sourcemap: mode !== 'production',
     },
   }
 })
