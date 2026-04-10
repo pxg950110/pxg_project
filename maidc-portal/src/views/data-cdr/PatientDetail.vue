@@ -61,7 +61,7 @@ async function loadPatient() {
 }
 
 function viewEncounter(record: any) {
-  // Navigate to encounter detail
+  router.push(`/data/cdr/patients/${route.params.id}/encounters/${record.id}`)
 }
 
 onMounted(loadPatient)

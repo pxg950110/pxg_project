@@ -39,9 +39,17 @@ export const asyncRoutes: RouteRecordRaw[] = [
         children: [
           { path: 'cdr/patients', name: 'PatientList', meta: { title: '患者管理' }, component: () => import('@/views/data-cdr/PatientList.vue') },
           { path: 'cdr/patients/:id', name: 'PatientDetail', meta: { title: '患者详情', hidden: true }, component: () => import('@/views/data-cdr/PatientDetail.vue') },
+          { path: 'cdr/patients/:id/encounters/:encounterId', name: 'EncounterDetail', meta: { title: '就诊详情', hidden: true }, component: () => import('@/views/data-cdr/EncounterDetail.vue') },
+          { path: 'cdr/datasources', name: 'DataSourceList', meta: { title: '数据源管理' }, component: () => import('@/views/data-cdr/DataSourceList.vue') },
+          { path: 'cdr/datasources/:id', name: 'DataSourceDetail', meta: { title: '数据源详情', hidden: true }, component: () => import('@/views/data-cdr/DataSourceDetail.vue') },
+          { path: 'cdr/sync', name: 'SyncTaskList', meta: { title: '数据同步' }, component: () => import('@/views/data-cdr/SyncTaskList.vue') },
+          { path: 'cdr/quality-rules', name: 'QualityRuleList', meta: { title: '质量规则' }, component: () => import('@/views/data-cdr/QualityRuleList.vue') },
+          { path: 'cdr/quality-results', name: 'QualityResultList', meta: { title: '质量检测' }, component: () => import('@/views/data-cdr/QualityResultList.vue') },
+          { path: 'cdr/desensitize', name: 'DesensitizeRule', meta: { title: '脱敏规则' }, component: () => import('@/views/data-cdr/DesensitizeRule.vue') },
           { path: 'rdr/projects', name: 'ProjectList', meta: { title: '研究项目' }, component: () => import('@/views/data-rdr/ProjectList.vue') },
           { path: 'rdr/datasets', name: 'DatasetList', meta: { title: '数据集' }, component: () => import('@/views/data-rdr/DatasetList.vue') },
           { path: 'rdr/etl', name: 'EtlTaskList', meta: { title: 'ETL任务' }, component: () => import('@/views/data-rdr/EtlTaskList.vue') },
+          { path: 'rdr/dict', name: 'DictManage', meta: { title: '数据字典' }, component: () => import('@/views/data-cdr/DictManage.vue') },
         ],
       },
       {

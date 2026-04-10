@@ -56,7 +56,47 @@ export const AlertSeverityMap: Record<string, StatusMeta> = {
   CRITICAL: { text: '严重', color: 'red' },
 }
 
-export type StatusType = 'model' | 'version' | 'deploy' | 'eval' | 'approval' | 'alert'
+// Medication status
+export const MedicationStatusMap: Record<string, StatusMeta> = {
+  ACTIVE: { text: '使用中', color: 'green' },
+  COMPLETED: { text: '已完成', color: 'blue' },
+  DISCONTINUED: { text: '已停用', color: 'red' },
+  ON_HOLD: { text: '暂停', color: 'orange' },
+}
+
+// Encounter status
+export const EncounterStatusMap: Record<string, StatusMeta> = {
+  IN_PROGRESS: { text: '进行中', color: 'green' },
+  FINISHED: { text: '已完成', color: 'blue' },
+  CANCELLED: { text: '已取消', color: 'red' },
+  PLANNED: { text: '计划中', color: 'orange' },
+}
+
+// Connection status
+export const ConnectionStatusMap: Record<string, StatusMeta> = {
+  CONNECTED: { text: '已连接', color: 'green' },
+  DISCONNECTED: { text: '已断开', color: 'red' },
+  CONNECTING: { text: '连接中', color: 'orange' },
+  ERROR: { text: '连接异常', color: 'red' },
+}
+
+// Sync task status
+export const SyncTaskStatusMap: Record<string, StatusMeta> = {
+  RUNNING: { text: '运行中', color: 'orange' },
+  COMPLETED: { text: '已完成', color: 'green' },
+  FAILED: { text: '失败', color: 'red' },
+  PENDING: { text: '等待中', color: 'blue' },
+  CANCELLED: { text: '已取消', color: 'default' },
+}
+
+// Quality check status
+export const QualityStatusMap: Record<string, StatusMeta> = {
+  PASS: { text: '通过', color: 'green' },
+  WARNING: { text: '警告', color: 'orange' },
+  FAIL: { text: '不通过', color: 'red' },
+}
+
+export type StatusType = 'model' | 'version' | 'deploy' | 'eval' | 'approval' | 'alert' | 'medication' | 'encounter' | 'connection' | 'sync' | 'quality'
 
 const statusMapRegistry: Record<StatusType, Record<string, StatusMeta>> = {
   model: ModelStatusMap,
@@ -65,6 +105,11 @@ const statusMapRegistry: Record<StatusType, Record<string, StatusMeta>> = {
   eval: EvalStatusMap,
   approval: ApprovalStatusMap,
   alert: AlertSeverityMap,
+  medication: MedicationStatusMap,
+  encounter: EncounterStatusMap,
+  connection: ConnectionStatusMap,
+  sync: SyncTaskStatusMap,
+  quality: QualityStatusMap,
 }
 
 export function getStatusMeta(status: string, type: StatusType): StatusMeta {

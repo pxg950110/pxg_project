@@ -1,4 +1,5 @@
 {
+
   "dashboard": {
     "title": "MAIDC Model Inference",
     "tags": ["maidc", "model", "inference"],
