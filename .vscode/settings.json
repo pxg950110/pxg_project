@@ -1,0 +1,9 @@
+{
+    // PlantUML 插件 (jebbs.plantuml)
+    "plantuml.jar": "E:\\pxg_project\\docs\\dev\\plantuml.jar",
+    "plantuml.render": "Local",
+    "plantuml.java": "java",
+
+    // Markdown Preview Enhanced 插件
+    "markdown-preview-enhanced.plantumlJarPath": "E:\\pxg_project\\docs\\dev\\plantuml.jar"
+}
