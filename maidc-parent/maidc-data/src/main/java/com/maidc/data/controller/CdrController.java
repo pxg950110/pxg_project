@@ -5,10 +5,7 @@ import com.maidc.common.core.result.R;
 import com.maidc.common.log.annotation.OperLog;
 import com.maidc.data.dto.PatientCreateDTO;
 import com.maidc.data.dto.PatientQueryDTO;
-import com.maidc.data.entity.LabPanelEntity;
-import com.maidc.data.entity.LabTestEntity;
-import com.maidc.data.entity.MedicationEntity;
-import com.maidc.data.entity.VitalSignEntity;
+import com.maidc.data.entity.*;
 import com.maidc.data.service.*;
 import com.maidc.data.vo.EncounterVO;
 import com.maidc.data.vo.PatientDetailVO;
@@ -33,6 +30,11 @@ public class CdrController {
     private final LabPanelService labPanelService;
     private final MedicationService medicationService;
     private final VitalSignService vitalSignService;
+    private final ImagingExamService imagingExamService;
+    private final ImagingFindingService imagingFindingService;
+    private final PathologyService pathologyService;
+    private final OperationService operationService;
+    private final AllergyService allergyService;
 
     // ==================== Patient ====================
 
@@ -208,6 +210,161 @@ public class CdrController {
     @DeleteMapping("/vital-signs/{id}")
     public R<Void> deleteVitalSign(@PathVariable Long id) {
         vitalSignService.deleteVitalSign(id);
+        return R.ok();
+    }
+
+    // ==================== ImagingExam ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/imaging-exams")
+    public R<Page<ImagingExamEntity>> listImagingExams(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(imagingExamService.listImagingExams(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/imaging-exams/{id}")
+    public R<ImagingExamEntity> getImagingExam(@PathVariable Long id) {
+        return R.ok(imagingExamService.getImagingExam(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createImagingExam")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/imaging-exams")
+    public R<ImagingExamEntity> createImagingExam(@RequestBody ImagingExamEntity entity) {
+        return R.ok(imagingExamService.createImagingExam(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteImagingExam")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/imaging-exams/{id}")
+    public R<Void> deleteImagingExam(@PathVariable Long id) {
+        imagingExamService.deleteImagingExam(id);
+        return R.ok();
+    }
+
+    // ==================== ImagingFinding ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/imaging-findings")
+    public R<Page<ImagingFindingEntity>> listImagingFindings(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(imagingFindingService.listImagingFindings(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/imaging-findings/{id}")
+    public R<ImagingFindingEntity> getImagingFinding(@PathVariable Long id) {
+        return R.ok(imagingFindingService.getImagingFinding(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createImagingFinding")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/imaging-findings")
+    public R<ImagingFindingEntity> createImagingFinding(@RequestBody ImagingFindingEntity entity) {
+        return R.ok(imagingFindingService.createImagingFinding(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteImagingFinding")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/imaging-findings/{id}")
+    public R<Void> deleteImagingFinding(@PathVariable Long id) {
+        imagingFindingService.deleteImagingFinding(id);
+        return R.ok();
+    }
+
+    // ==================== Pathology ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/pathologies")
+    public R<Page<PathologyEntity>> listPathologies(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(pathologyService.listPathologies(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/pathologies/{id}")
+    public R<PathologyEntity> getPathology(@PathVariable Long id) {
+        return R.ok(pathologyService.getPathology(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createPathology")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/pathologies")
+    public R<PathologyEntity> createPathology(@RequestBody PathologyEntity entity) {
+        return R.ok(pathologyService.createPathology(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deletePathology")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/pathologies/{id}")
+    public R<Void> deletePathology(@PathVariable Long id) {
+        pathologyService.deletePathology(id);
+        return R.ok();
+    }
+
+    // ==================== Operation ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/operations")
+    public R<Page<OperationEntity>> listOperations(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(operationService.listOperations(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/operations/{id}")
+    public R<OperationEntity> getOperation(@PathVariable Long id) {
+        return R.ok(operationService.getOperation(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createOperation")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/operations")
+    public R<OperationEntity> createOperation(@RequestBody OperationEntity entity) {
+        return R.ok(operationService.createOperation(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteOperation")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/operations/{id}")
+    public R<Void> deleteOperation(@PathVariable Long id) {
+        operationService.deleteOperation(id);
+        return R.ok();
+    }
+
+    // ==================== Allergy ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/allergies")
+    public R<Page<AllergyEntity>> listAllergies(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(allergyService.listAllergies(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/allergies/{id}")
+    public R<AllergyEntity> getAllergy(@PathVariable Long id) {
+        return R.ok(allergyService.getAllergy(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createAllergy")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/allergies")
+    public R<AllergyEntity> createAllergy(@RequestBody AllergyEntity entity) {
+        return R.ok(allergyService.createAllergy(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteAllergy")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/allergies/{id}")
+    public R<Void> deleteAllergy(@PathVariable Long id) {
+        allergyService.deleteAllergy(id);
         return R.ok();
     }
 }
