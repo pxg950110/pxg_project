@@ -95,7 +95,7 @@
           <template #extra>
             <a class="view-all-link" @click="$router.push('/model/list')">查看全部</a>
           </template>
-          <MetricChart :option="modelStatusOption" :height="300" />
+          <MetricChart :option="modelStatusOption" height="300px" />
         </a-card>
       </a-col>
       <a-col :span="12">
