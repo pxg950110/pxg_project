@@ -13,8 +13,13 @@ import com.maidc.model.vo.VersionCompareVO;
 import com.maidc.model.vo.VersionVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -140,6 +145,23 @@ public class VersionService {
                 .v2(modelMapper.toVersionVO(v2))
                 .diff(diff)
                 .build();
+    }
+
+    public ResponseEntity<Resource> downloadVersion(Long modelId, Long versionId) {
+        ModelVersionEntity version = versionRepository.findByIdAndIsDeletedFalse(versionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VERSION_NOT_FOUND));
+        if (!version.getModelId().equals(modelId)) {
+            throw new BusinessException(ErrorCode.VERSION_NOT_FOUND);
+        }
+
+        InputStream inputStream = minioService.downloadFile(MODELS_BUCKET, version.getModelFilePath());
+        String filename = version.getModelFilePath().substring(version.getModelFilePath().lastIndexOf('/') + 1);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentLength(version.getModelFileSize())
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(new InputStreamResource(inputStream));
     }
 
     private String calculateChecksum(InputStream inputStream) throws Exception {

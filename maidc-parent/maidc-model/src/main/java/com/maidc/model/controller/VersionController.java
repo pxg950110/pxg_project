@@ -7,6 +7,7 @@ import com.maidc.model.service.VersionService;
 import com.maidc.model.vo.VersionCompareVO;
 import com.maidc.model.vo.VersionVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,6 +47,13 @@ public class VersionController {
     @GetMapping("/{versionId}")
     public R<VersionVO> getVersion(@PathVariable Long modelId, @PathVariable Long versionId) {
         return R.ok(versionService.getVersionDetail(modelId, versionId));
+    }
+
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping("/{versionId}/download")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadVersion(
+            @PathVariable Long modelId, @PathVariable Long versionId) {
+        return versionService.downloadVersion(modelId, versionId);
     }
 
     @PreAuthorize("hasPermission('model:read')")
