@@ -7,14 +7,19 @@ import com.maidc.data.dto.DatasetCreateDTO;
 import com.maidc.data.dto.DatasetQueryDTO;
 import com.maidc.data.dto.ProjectCreateDTO;
 import com.maidc.data.dto.ProjectQueryDTO;
+import com.maidc.data.entity.ResearchCohortEntity;
+import com.maidc.data.entity.StudySubjectEntity;
 import com.maidc.data.service.DatasetService;
 import com.maidc.data.service.ProjectService;
+import com.maidc.data.service.ResearchCohortService;
+import com.maidc.data.service.StudySubjectService;
 import com.maidc.data.vo.DatasetDetailVO;
 import com.maidc.data.vo.DatasetVO;
 import com.maidc.data.vo.ProjectDetailVO;
 import com.maidc.data.vo.ProjectVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +30,8 @@ public class RdrController {
 
     private final ProjectService projectService;
     private final DatasetService datasetService;
+    private final ResearchCohortService researchCohortService;
+    private final StudySubjectService studySubjectService;
 
     // ==================== Project ====================
 
@@ -99,6 +106,68 @@ public class RdrController {
     @DeleteMapping("/datasets/{id}")
     public R<Void> deleteDataset(@PathVariable Long id) {
         datasetService.deleteDataset(id);
+        return R.ok();
+    }
+
+    // ==================== Research Cohort ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/research-cohorts")
+    public R<Page<ResearchCohortEntity>> listCohorts(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(researchCohortService.listCohorts(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/research-cohorts/{id}")
+    public R<ResearchCohortEntity> getCohort(@PathVariable Long id) {
+        return R.ok(researchCohortService.getCohort(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createCohort")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/research-cohorts")
+    public R<ResearchCohortEntity> createCohort(@RequestBody ResearchCohortEntity entity) {
+        return R.ok(researchCohortService.createCohort(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteCohort")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/research-cohorts/{id}")
+    public R<Void> deleteCohort(@PathVariable Long id) {
+        researchCohortService.deleteCohort(id);
+        return R.ok();
+    }
+
+    // ==================== Study Subject ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/study-subjects")
+    public R<Page<StudySubjectEntity>> listSubjects(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(studySubjectService.listSubjects(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/study-subjects/{id}")
+    public R<StudySubjectEntity> getSubject(@PathVariable Long id) {
+        return R.ok(studySubjectService.getSubject(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createSubject")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/study-subjects")
+    public R<StudySubjectEntity> createSubject(@RequestBody StudySubjectEntity entity) {
+        return R.ok(studySubjectService.createSubject(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteSubject")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/study-subjects/{id}")
+    public R<Void> deleteSubject(@PathVariable Long id) {
+        studySubjectService.deleteSubject(id);
         return R.ok();
     }
 }
