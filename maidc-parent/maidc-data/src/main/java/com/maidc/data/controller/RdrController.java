@@ -8,23 +8,35 @@ import com.maidc.data.dto.DatasetQueryDTO;
 import com.maidc.data.dto.ProjectCreateDTO;
 import com.maidc.data.dto.ProjectQueryDTO;
 import com.maidc.data.entity.ClinicalFeatureEntity;
+import com.maidc.data.entity.DataQualityResultEntity;
+import com.maidc.data.entity.DataQualityRuleEntity;
 import com.maidc.data.entity.DatasetAccessLogEntity;
+import com.maidc.data.entity.EtlTaskLogEntity;
 import com.maidc.data.entity.FeatureDictionaryEntity;
 import com.maidc.data.entity.GenomicDatasetEntity;
+import com.maidc.data.entity.GenomicVariantEntity;
 import com.maidc.data.entity.ImagingAnnotationEntity;
 import com.maidc.data.entity.ImagingDatasetEntity;
 import com.maidc.data.entity.ResearchCohortEntity;
 import com.maidc.data.entity.StudySubjectEntity;
+import com.maidc.data.entity.TextAnnotationEntity;
+import com.maidc.data.entity.TextDatasetEntity;
 import com.maidc.data.service.ClinicalFeatureService;
+import com.maidc.data.service.DataQualityResultService;
+import com.maidc.data.service.DataQualityRuleService;
 import com.maidc.data.service.DatasetAccessLogService;
 import com.maidc.data.service.DatasetService;
+import com.maidc.data.service.EtlTaskLogService;
 import com.maidc.data.service.FeatureDictionaryService;
 import com.maidc.data.service.GenomicDatasetService;
+import com.maidc.data.service.GenomicVariantService;
 import com.maidc.data.service.ImagingAnnotationService;
 import com.maidc.data.service.ImagingDatasetService;
 import com.maidc.data.service.ProjectService;
 import com.maidc.data.service.ResearchCohortService;
 import com.maidc.data.service.StudySubjectService;
+import com.maidc.data.service.TextAnnotationService;
+import com.maidc.data.service.TextDatasetService;
 import com.maidc.data.vo.DatasetDetailVO;
 import com.maidc.data.vo.DatasetVO;
 import com.maidc.data.vo.ProjectDetailVO;
@@ -50,6 +62,12 @@ public class RdrController {
     private final ImagingDatasetService imagingDatasetService;
     private final ImagingAnnotationService imagingAnnotationService;
     private final GenomicDatasetService genomicDatasetService;
+    private final GenomicVariantService genomicVariantService;
+    private final TextDatasetService textDatasetService;
+    private final TextAnnotationService textAnnotationService;
+    private final EtlTaskLogService etlTaskLogService;
+    private final DataQualityRuleService dataQualityRuleService;
+    private final DataQualityResultService dataQualityResultService;
 
     // ==================== Project ====================
 
@@ -372,6 +390,192 @@ public class RdrController {
     @DeleteMapping("/genomic-datasets/{id}")
     public R<Void> deleteGenomicDataset(@PathVariable Long id) {
         genomicDatasetService.deleteGenomicDataset(id);
+        return R.ok();
+    }
+
+    // ==================== Genomic Variant ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/genomic-variants")
+    public R<Page<GenomicVariantEntity>> listGenomicVariants(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(genomicVariantService.listGenomicVariants(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/genomic-variants/{id}")
+    public R<GenomicVariantEntity> getGenomicVariant(@PathVariable Long id) {
+        return R.ok(genomicVariantService.getGenomicVariant(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createGenomicVariant")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/genomic-variants")
+    public R<GenomicVariantEntity> createGenomicVariant(@RequestBody GenomicVariantEntity entity) {
+        return R.ok(genomicVariantService.createGenomicVariant(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteGenomicVariant")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/genomic-variants/{id}")
+    public R<Void> deleteGenomicVariant(@PathVariable Long id) {
+        genomicVariantService.deleteGenomicVariant(id);
+        return R.ok();
+    }
+
+    // ==================== Text Dataset ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/text-datasets")
+    public R<Page<TextDatasetEntity>> listTextDatasets(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(textDatasetService.listTextDatasets(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/text-datasets/{id}")
+    public R<TextDatasetEntity> getTextDataset(@PathVariable Long id) {
+        return R.ok(textDatasetService.getTextDataset(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createTextDataset")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/text-datasets")
+    public R<TextDatasetEntity> createTextDataset(@RequestBody TextDatasetEntity entity) {
+        return R.ok(textDatasetService.createTextDataset(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteTextDataset")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/text-datasets/{id}")
+    public R<Void> deleteTextDataset(@PathVariable Long id) {
+        textDatasetService.deleteTextDataset(id);
+        return R.ok();
+    }
+
+    // ==================== Text Annotation ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/text-annotations")
+    public R<Page<TextAnnotationEntity>> listTextAnnotations(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(textAnnotationService.listTextAnnotations(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/text-annotations/{id}")
+    public R<TextAnnotationEntity> getTextAnnotation(@PathVariable Long id) {
+        return R.ok(textAnnotationService.getTextAnnotation(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createTextAnnotation")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/text-annotations")
+    public R<TextAnnotationEntity> createTextAnnotation(@RequestBody TextAnnotationEntity entity) {
+        return R.ok(textAnnotationService.createTextAnnotation(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteTextAnnotation")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/text-annotations/{id}")
+    public R<Void> deleteTextAnnotation(@PathVariable Long id) {
+        textAnnotationService.deleteTextAnnotation(id);
+        return R.ok();
+    }
+
+    // ==================== ETL Task Log ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/etl-task-logs")
+    public R<Page<EtlTaskLogEntity>> listEtlTaskLogs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(etlTaskLogService.listEtlTaskLogs(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/etl-task-logs/{id}")
+    public R<EtlTaskLogEntity> getEtlTaskLog(@PathVariable Long id) {
+        return R.ok(etlTaskLogService.getEtlTaskLog(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createEtlTaskLog")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/etl-task-logs")
+    public R<EtlTaskLogEntity> createEtlTaskLog(@RequestBody EtlTaskLogEntity entity) {
+        return R.ok(etlTaskLogService.createEtlTaskLog(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteEtlTaskLog")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/etl-task-logs/{id}")
+    public R<Void> deleteEtlTaskLog(@PathVariable Long id) {
+        etlTaskLogService.deleteEtlTaskLog(id);
+        return R.ok();
+    }
+
+    // ==================== Data Quality Rule ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/quality-rules")
+    public R<Page<DataQualityRuleEntity>> listQualityRules(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(dataQualityRuleService.listDataQualityRules(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/quality-rules/{id}")
+    public R<DataQualityRuleEntity> getQualityRule(@PathVariable Long id) {
+        return R.ok(dataQualityRuleService.getDataQualityRule(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createQualityRule")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/quality-rules")
+    public R<DataQualityRuleEntity> createQualityRule(@RequestBody DataQualityRuleEntity entity) {
+        return R.ok(dataQualityRuleService.createDataQualityRule(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteQualityRule")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/quality-rules/{id}")
+    public R<Void> deleteQualityRule(@PathVariable Long id) {
+        dataQualityRuleService.deleteDataQualityRule(id);
+        return R.ok();
+    }
+
+    // ==================== Data Quality Result ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/quality-results")
+    public R<Page<DataQualityResultEntity>> listQualityResults(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(dataQualityResultService.listDataQualityResults(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/quality-results/{id}")
+    public R<DataQualityResultEntity> getQualityResult(@PathVariable Long id) {
+        return R.ok(dataQualityResultService.getDataQualityResult(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createQualityResult")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/quality-results")
+    public R<DataQualityResultEntity> createQualityResult(@RequestBody DataQualityResultEntity entity) {
+        return R.ok(dataQualityResultService.createDataQualityResult(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteQualityResult")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/quality-results/{id}")
+    public R<Void> deleteQualityResult(@PathVariable Long id) {
+        dataQualityResultService.deleteDataQualityResult(id);
         return R.ok();
     }
 }
