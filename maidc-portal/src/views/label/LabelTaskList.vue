@@ -1,10 +1,5 @@
 <template>
   <PageContainer title="标注任务">
-    <template #extra>
-      <a-button type="primary" @click="taskModal.open()">
-        <PlusOutlined /> 新建任务
-      </a-button>
-    </template>
 
     <!-- Filter Bar -->
     <div class="filter-bar">

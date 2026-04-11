@@ -81,9 +81,9 @@ import {
   ClockCircleOutlined,
   DashboardOutlined,
 } from '@ant-design/icons-vue'
-import PageContainer from '@/components/PageContainer'
-import MetricCard from '@/components/MetricCard'
-import MetricChart from '@/components/MetricChart'
+import PageContainer from '@/components/PageContainer/index.vue'
+import MetricCard from '@/components/MetricCard/index.vue'
+import MetricChart from '@/components/MetricChart/index.vue'
 
 const loading = ref(false)
 

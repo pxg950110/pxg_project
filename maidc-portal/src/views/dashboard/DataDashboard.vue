@@ -95,10 +95,10 @@ import {
   DatabaseOutlined,
   SyncOutlined,
 } from '@ant-design/icons-vue'
-import PageContainer from '@/components/PageContainer'
-import MetricCard from '@/components/MetricCard'
-import MetricChart from '@/components/MetricChart'
-import StatusBadge from '@/components/StatusBadge'
+import PageContainer from '@/components/PageContainer/index.vue'
+import MetricCard from '@/components/MetricCard/index.vue'
+import MetricChart from '@/components/MetricChart/index.vue'
+import StatusBadge from '@/components/StatusBadge/index.vue'
 
 const loading = ref(false)
 

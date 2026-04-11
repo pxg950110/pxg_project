@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import { login as loginApi, logout as logoutApi, getUserInfo as getUserInfoApi } from '@/api/auth'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import type { UserInfo } from '@/api/auth'
@@ -10,16 +11,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function loginAction(username: string, password: string) {
     const res = await loginApi({ username, password })
     const data = res.data.data
-    token.value = data.access_token
-    setToken(data.access_token, data.refresh_token, data.expires_in)
-    userInfo.value = {
-      id: data.user.id,
-      username: data.user.username,
-      real_name: data.user.real_name,
-      roles: data.user.roles,
-      org_id: data.user.org_id,
-      permissions: [],
-    }
+    token.value = data.accessToken
+    setToken(data.accessToken, data.refreshToken, data.expiresIn)
   }
 
   async function getUserInfoAction() {

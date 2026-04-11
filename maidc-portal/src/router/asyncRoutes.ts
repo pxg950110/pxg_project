@@ -97,7 +97,9 @@ export const asyncRoutes: RouteRecordRaw[] = [
         meta: { title: '消息中心', icon: 'BellOutlined', sort: 8 },
         children: [
           { path: 'list', name: 'MessageList', meta: { title: '我的消息' }, component: () => import('@/views/message/MessageList.vue') },
+          { path: 'detail/:id', name: 'MessageDetail', meta: { title: '消息详情', hidden: true }, component: () => import('@/views/message/MessageDetail.vue') },
           { path: 'settings', name: 'NotificationSettings', meta: { title: '通知设置' }, component: () => import('@/views/message/NotificationSettings.vue') },
+          { path: 'templates', name: 'TemplateManagement', meta: { title: '模板管理' }, component: () => import('@/views/message/TemplateManagement.vue') },
         ],
       },
       {
@@ -107,8 +109,13 @@ export const asyncRoutes: RouteRecordRaw[] = [
         redirect: '/system/users',
         children: [
           { path: 'users', name: 'UserList', meta: { title: '用户管理' }, component: () => import('@/views/system/UserList.vue') },
+          { path: 'users/:id', name: 'UserDetail', meta: { title: '用户详情', hidden: true }, component: () => import('@/views/system/UserDetail.vue') },
           { path: 'roles', name: 'RoleList', meta: { title: '角色管理' }, component: () => import('@/views/system/RoleList.vue') },
+          { path: 'roles/:id', name: 'RoleDetail', meta: { title: '角色详情', hidden: true }, component: () => import('@/views/system/RoleDetail.vue') },
           { path: 'config', name: 'SystemConfig', meta: { title: '系统参数' }, component: () => import('@/views/system/SystemConfig.vue') },
+          { path: 'organizations', name: 'OrganizationList', meta: { title: '组织管理' }, component: () => import('@/views/system/OrganizationList.vue') },
+          { path: 'organizations/:id', name: 'OrganizationDetail', meta: { title: '组织详情', hidden: true }, component: () => import('@/views/system/OrganizationDetail.vue') },
+          { path: 'permissions', name: 'PermissionManagement', meta: { title: '权限管理' }, component: () => import('@/views/system/PermissionManagement.vue') },
         ],
       },
     ],

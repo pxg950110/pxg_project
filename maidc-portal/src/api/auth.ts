@@ -7,25 +7,25 @@ export interface LoginParams {
 }
 
 export interface LoginResult {
-  access_token: string
-  refresh_token: string
-  token_type: string
-  expires_in: number
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresIn: number
   user: {
     id: number
     username: string
-    real_name: string
+    realName: string
     roles: string[]
-    org_id: number
+    orgId: number
   }
 }
 
 export interface UserInfo {
   id: number
   username: string
-  real_name: string
+  realName: string
   roles: string[]
-  org_id: number
+  orgId: number
   permissions: string[]
 }
 
