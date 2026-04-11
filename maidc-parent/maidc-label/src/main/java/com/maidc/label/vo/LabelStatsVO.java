@@ -7,7 +7,7 @@ import java.util.Map;
 @Data
 public class LabelStatsVO {
 
-    private String taskId;
+    private Long taskId;
     private Integer totalCount;
     private Integer labeledCount;
     private Integer verifiedCount;

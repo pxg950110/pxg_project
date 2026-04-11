@@ -13,7 +13,6 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface TaskMapper {
 
-    @Mapping(source = "name", target = "taskName")
     TaskVO toVO(TaskEntity entity);
 
     @Mapping(source = "name", target = "taskName")

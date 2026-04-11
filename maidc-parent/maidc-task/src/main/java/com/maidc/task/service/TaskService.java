@@ -100,7 +100,7 @@ public class TaskService {
     public TaskVO pauseTask(String id) {
         TaskEntity entity = getTaskOrThrow(id);
         if (!"RUNNING".equals(entity.getStatus())) {
-            throw new BusinessException("Task is not running");
+            throw new BusinessException(400, "Task is not running");
         }
         entity.setStatus("PAUSED");
         taskRepository.save(entity);
@@ -111,7 +111,7 @@ public class TaskService {
     public TaskVO resumeTask(String id) {
         TaskEntity entity = getTaskOrThrow(id);
         if (!"PAUSED".equals(entity.getStatus())) {
-            throw new BusinessException("Task is not paused");
+            throw new BusinessException(400, "Task is not paused");
         }
         entity.setStatus("RUNNING");
         taskRepository.save(entity);
@@ -126,6 +126,6 @@ public class TaskService {
 
     private TaskEntity getTaskOrThrow(String id) {
         return taskRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Task not found: " + id));
+                .orElseThrow(() -> new BusinessException(404, "Task not found: " + id));
     }
 }

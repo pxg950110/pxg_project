@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 public class LabelTaskVO {
 
-    private String id;
+    private Long id;
     private String name;
     private String taskType;
     private String datasetId;

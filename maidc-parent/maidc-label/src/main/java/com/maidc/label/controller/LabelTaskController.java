@@ -47,7 +47,7 @@ public class LabelTaskController {
      */
     @PreAuthorize("hasPermission('label:read')")
     @GetMapping("/{id}")
-    public R<LabelTaskDetailVO> getTask(@PathVariable String id) {
+    public R<LabelTaskDetailVO> getTask(@PathVariable Long id) {
         return R.ok(labelTaskService.getTask(id));
     }
 
@@ -56,7 +56,7 @@ public class LabelTaskController {
      */
     @PreAuthorize("hasPermission('label:write')")
     @PutMapping("/{id}")
-    public R<LabelTaskVO> updateTask(@PathVariable String id,
+    public R<LabelTaskVO> updateTask(@PathVariable Long id,
                                      @RequestBody LabelTaskUpdateDTO dto) {
         return R.ok(labelTaskService.updateTask(id, dto));
     }
@@ -66,7 +66,7 @@ public class LabelTaskController {
      */
     @PreAuthorize("hasPermission('label:write')")
     @DeleteMapping("/{id}")
-    public R<Void> deleteTask(@PathVariable String id) {
+    public R<Void> deleteTask(@PathVariable Long id) {
         labelTaskService.deleteTask(id);
         return R.ok();
     }
@@ -76,7 +76,7 @@ public class LabelTaskController {
      */
     @PreAuthorize("hasPermission('label:read')")
     @GetMapping("/{id}/stats")
-    public R<LabelStatsVO> getTaskStats(@PathVariable String id) {
+    public R<LabelStatsVO> getTaskStats(@PathVariable Long id) {
         return R.ok(labelTaskService.getTaskStats(id));
     }
 
@@ -85,7 +85,7 @@ public class LabelTaskController {
      */
     @PreAuthorize("hasPermission('label:write')")
     @PostMapping("/{id}/ai-preannotate")
-    public R<Void> triggerAiPreAnnotate(@PathVariable String id) {
+    public R<Void> triggerAiPreAnnotate(@PathVariable Long id) {
         labelTaskService.triggerAiPreAnnotate(id);
         return R.ok();
     }

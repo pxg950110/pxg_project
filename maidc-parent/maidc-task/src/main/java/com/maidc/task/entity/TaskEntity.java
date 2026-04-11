@@ -1,19 +1,19 @@
 package com.maidc.task.entity;
 
-import com.maidc.common.jpa.domain.BaseEntity;
+import com.maidc.common.jpa.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
 @Entity
 @Table(name = "t_scheduled_task", schema = "system")
 @Where(clause = "is_deleted = false")

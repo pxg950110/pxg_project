@@ -17,10 +17,6 @@ import java.util.List;
 @Table(name = "r_label_task", schema = "rdr")
 public class LabelTaskEntity extends BaseEntity {
 
-    @Id
-    @Column(name = "id", length = 36)
-    private String id;
-
     @Column(name = "name", nullable = false, length = 200)
     private String name;
 

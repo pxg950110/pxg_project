@@ -46,7 +46,6 @@ public class LabelTaskService extends BaseMessageProducer {
     @Transactional
     public LabelTaskVO createTask(LabelTaskCreateDTO dto) {
         LabelTaskEntity entity = new LabelTaskEntity();
-        entity.setId(UUID.randomUUID().toString());
         entity.setName(dto.getName());
         entity.setTaskType(dto.getTaskType());
         entity.setDatasetId(dto.getDatasetId());
@@ -76,7 +75,7 @@ public class LabelTaskService extends BaseMessageProducer {
      * Update an existing label task
      */
     @Transactional
-    public LabelTaskVO updateTask(String id, LabelTaskUpdateDTO dto) {
+    public LabelTaskVO updateTask(Long id, LabelTaskUpdateDTO dto) {
         LabelTaskEntity entity = labelTaskRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
@@ -109,7 +108,7 @@ public class LabelTaskService extends BaseMessageProducer {
     /**
      * Get task detail by id
      */
-    public LabelTaskDetailVO getTask(String id) {
+    public LabelTaskDetailVO getTask(Long id) {
         LabelTaskEntity entity = labelTaskRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
         return labelMapper.toTaskDetailVO(entity);
@@ -146,7 +145,7 @@ public class LabelTaskService extends BaseMessageProducer {
      * Soft delete a task
      */
     @Transactional
-    public void deleteTask(String id) {
+    public void deleteTask(Long id) {
         LabelTaskEntity entity = labelTaskRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
         entity.setIsDeleted(true);
@@ -157,7 +156,7 @@ public class LabelTaskService extends BaseMessageProducer {
     /**
      * Get task statistics
      */
-    public LabelStatsVO getTaskStats(String id) {
+    public LabelStatsVO getTaskStats(Long id) {
         LabelTaskEntity entity = labelTaskRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
@@ -168,7 +167,7 @@ public class LabelTaskService extends BaseMessageProducer {
         stats.setVerifiedCount(entity.getVerifiedCount() != null ? entity.getVerifiedCount() : 0);
 
         // Build label distribution from records
-        List<LabelRecordEntity> records = labelRecordRepository.findByTaskIdAndIsDeletedFalse(id);
+        List<LabelRecordEntity> records = labelRecordRepository.findByTaskIdAndIsDeletedFalse(id.toString());
         Map<String, Integer> byLabel = new LinkedHashMap<>();
         for (LabelRecordEntity record : records) {
             String label = record.getLabel();
@@ -184,7 +183,7 @@ public class LabelTaskService extends BaseMessageProducer {
     /**
      * Trigger AI pre-annotation by sending an MQ message
      */
-    public void triggerAiPreAnnotate(String id) {
+    public void triggerAiPreAnnotate(Long id) {
         LabelTaskEntity entity = labelTaskRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 

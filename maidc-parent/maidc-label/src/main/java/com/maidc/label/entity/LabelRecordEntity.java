@@ -17,10 +17,6 @@ import java.time.LocalDateTime;
 @Table(name = "r_label_record", schema = "rdr")
 public class LabelRecordEntity extends BaseEntity {
 
-    @Id
-    @Column(name = "id", length = 36)
-    private String id;
-
     @Column(name = "task_id", nullable = false, length = 36)
     private String taskId;
 

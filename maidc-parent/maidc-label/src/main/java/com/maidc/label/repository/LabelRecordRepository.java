@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface LabelRecordRepository extends JpaRepository<LabelRecordEntity, String>,
+public interface LabelRecordRepository extends JpaRepository<LabelRecordEntity, Long>,
         JpaSpecificationExecutor<LabelRecordEntity> {
 
     List<LabelRecordEntity> findByTaskIdAndIsDeletedFalse(String taskId);
