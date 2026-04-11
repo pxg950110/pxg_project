@@ -4,8 +4,10 @@ import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import com.maidc.common.core.result.PageResult;
 import com.maidc.msg.entity.MessageEntity;
+import com.maidc.msg.entity.MessageTemplateEntity;
 import com.maidc.msg.mapper.MsgMapper;
 import com.maidc.msg.repository.MessageRepository;
+import com.maidc.msg.repository.MessageTemplateRepository;
 import com.maidc.msg.vo.MessageVO;
 import com.maidc.msg.vo.UnreadCountVO;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import java.util.Map;
 public class MessageService {
 
     private final MessageRepository messageRepository;
+    private final MessageTemplateRepository templateRepository;
     private final MsgMapper msgMapper;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -101,11 +104,22 @@ public class MessageService {
     public MessageVO sendTemplatedMessage(Long userId, String templateCode,
                                            Map<String, String> variables,
                                            Long bizId, String bizType) {
-        // 模板查询和变量替换由 NotificationService 协同处理
-        // 此处直接构建消息
+        MessageTemplateEntity template = templateRepository.findByCodeAndIsDeletedFalse(templateCode)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        String title = renderTemplate(template.getTitleTemplate(), variables);
+        String content = renderTemplate(template.getContentTemplate(), variables);
+
         log.info("基于模板发送消息: userId={}, templateCode={}", userId, templateCode);
-        // 实际模板渲染在 NotificationService 中完成
-        return null;
+        return sendMessage(userId, title, content, template.getEventType(), bizId, bizType);
+    }
+
+    private String renderTemplate(String template, Map<String, String> variables) {
+        String result = template;
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            result = result.replace("${" + entry.getKey() + "}", entry.getValue());
+        }
+        return result;
     }
 
     /**
