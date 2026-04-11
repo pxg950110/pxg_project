@@ -30,7 +30,7 @@ spring:
         - id: maidc-model
           uri: lb://maidc-model
           predicates:
-            - Path=/api/v1/models/**,/api/v1/evaluations/**,/api/v1/approvals/**,/api/v1/deployments/**,/api/v1/routes/**,/api/v1/inference/**,/api/v1/workers/**
+            - Path=/api/v1/models/**,/api/v1/evaluations/**,/api/v1/approvals/**,/api/v1/deployments/**,/api/v1/routes/**,/api/v1/inference/**,/api/v1/workers/**,/api/v1/alert-rules/**,/api/v1/alerts/**,/api/v1/monitoring/**
           filters:
             - StripPrefix=0
 
