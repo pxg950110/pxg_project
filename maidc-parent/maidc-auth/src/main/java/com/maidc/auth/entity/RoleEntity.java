@@ -28,6 +28,9 @@ public class RoleEntity extends BaseEntity {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "org_id")
+    private Long orgId;
+
     @Column(name = "is_system", nullable = false)
     private Boolean isSystem = false;
 }

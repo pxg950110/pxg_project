@@ -2,7 +2,6 @@ package com.maidc.common.mq.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -33,11 +32,11 @@ public class RabbitMqConfigBase {
             }
         });
 
-        template.setReturnsCallback((Message returned) -> {
+        template.setReturnsCallback(returned -> {
             log.error("消息被退回: exchange={}, routingKey={}, replyText={}",
-                    returned.getMessageProperties().getReceivedExchange(),
-                    returned.getMessageProperties().getReceivedRoutingKey(),
-                    returned.getMessageProperties().getReceivedDelay());
+                    returned.getExchange(),
+                    returned.getRoutingKey(),
+                    returned.getReplyText());
         });
 
         return template;

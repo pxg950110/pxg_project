@@ -53,4 +53,7 @@ public class UserEntity extends BaseEntity {
 
     @Column(name = "must_change_pwd", nullable = false)
     private Boolean mustChangePwd = false;
+
+    @Column(name = "org_id")
+    private Long orgId;
 }

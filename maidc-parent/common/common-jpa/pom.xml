@@ -22,6 +22,12 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
+        <!-- Spring Security (for auditor awareness) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
         <!-- common-core (统一响应体/异常/枚举) -->
         <dependency>
             <groupId>com.maidc</groupId>
