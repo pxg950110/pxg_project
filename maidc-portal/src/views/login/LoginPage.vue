@@ -1,101 +1,125 @@
 <template>
   <div class="login-page">
-    <div class="login-container">
-      <div class="login-left">
-        <div class="brand-section">
-          <div class="brand-logo">
-            <img src="@/assets/logo.svg" alt="MAIDC" />
+    <!-- Left Panel: Brand & Features -->
+    <div class="login-left">
+      <div class="left-content">
+        <div class="logo-area">
+          <div class="logo-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.5 2a3.5 3.5 0 0 0-3.2 4.9A3 3 0 0 0 4 9.5a3 3 0 0 0 1.8 2.75A2.5 2.5 0 0 0 5 14.5a2.5 2.5 0 0 0 2.1 2.47A3 3 0 0 0 9.5 19a3 3 0 0 0 2.5-1.35A3 3 0 0 0 14.5 19a3 3 0 0 0 2.4-2.03A2.5 2.5 0 0 0 19 14.5a2.5 2.5 0 0 0-.8-2.25A3 3 0 0 0 20 9.5a3 3 0 0 0-2.3-2.6A3.5 3.5 0 0 0 14.5 2a3.5 3.5 0 0 0-2.5 1.05A3.5 3.5 0 0 0 9.5 2Z"/>
+              <path d="M9.5 2v5.5"/><path d="M14.5 2v5.5"/>
+              <path d="M12 7.5V22"/>
+            </svg>
           </div>
-          <h1 class="brand-title">MAIDC</h1>
-          <p class="brand-subtitle">医疗 AI 数据中心</p>
-          <div class="feature-list">
-            <div class="feature-item">
-              <SafetyCertificateOutlined />
-              <span>模型全生命周期管理</span>
+          <span class="logo-text">MAIDC</span>
+        </div>
+        <h1 class="welcome-title">MAIDC 医疗AI数据中心</h1>
+        <p class="welcome-sub">临床+科研一体化多中心医疗AI平台</p>
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon">
+              <span class="check-mark">✓</span>
             </div>
-            <div class="feature-item">
-              <DatabaseOutlined />
-              <span>临床数据治理与脱敏</span>
+            <span>统一临床数据仓库（CDR）</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <span class="check-mark">✓</span>
             </div>
-            <div class="feature-item">
-              <ExperimentOutlined />
-              <span>AI 模型训练与评估</span>
+            <span>全生命周期AI模型管理</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <span class="check-mark">✓</span>
             </div>
-            <div class="feature-item">
-              <MonitorOutlined />
-              <span>实时监控与告警</span>
-            </div>
+            <span>安全合规的多中心协作</span>
           </div>
         </div>
-      </div>
-      <div class="login-right">
-        <div class="login-form-wrapper">
-          <h2 class="form-title">欢迎登录</h2>
-          <p class="form-subtitle">请输入您的账号和密码</p>
-          <a-form
-            :model="formState"
-            :rules="rules"
-            ref="formRef"
-            @finish="handleLogin"
-            layout="vertical"
-            size="large"
-          >
-            <a-form-item name="username" label="用户名">
-              <a-input
-                v-model:value="formState.username"
-                placeholder="请输入用户名"
-                :prefix="h(UserOutlined)"
-                autocomplete="username"
-              />
-            </a-form-item>
-            <a-form-item name="password" label="密码">
-              <a-input-password
-                v-model:value="formState.password"
-                placeholder="请输入密码"
-                :prefix="h(LockOutlined)"
-                autocomplete="current-password"
-                @pressEnter="handleLogin"
-              />
-            </a-form-item>
-            <a-form-item>
-              <div class="form-extra">
-                <a-checkbox v-model:checked="formState.remember">记住我</a-checkbox>
-              </div>
-            </a-form-item>
-            <a-form-item>
-              <a-button
-                type="primary"
-                html-type="submit"
-                :loading="loading"
-                block
-                class="login-btn"
-              >
-                登录
-              </a-button>
-            </a-form-item>
-          </a-form>
-        </div>
+        <div class="version-tag">v1.0.0</div>
       </div>
     </div>
-    <div class="login-footer">
-      <span>&copy; 2026 MAIDC - 医疗 AI 数据中心平台</span>
+
+    <!-- Right Panel: Login Form -->
+    <div class="login-right">
+      <div class="login-form">
+        <div class="form-header">
+          <h2 class="form-title">欢迎回来</h2>
+          <p class="form-subtitle">请登录您的账户</p>
+        </div>
+
+        <div class="form-fields">
+          <div class="field-group">
+            <label class="field-label">用户名</label>
+            <input
+              v-model="formState.username"
+              type="text"
+              class="field-input"
+              placeholder="请输入用户名"
+              autocomplete="username"
+              @keydown.enter="$refs.passwordInput.focus()"
+            />
+          </div>
+          <div class="field-group">
+            <label class="field-label">密码</label>
+            <input
+              ref="passwordInput"
+              v-model="formState.password"
+              type="password"
+              class="field-input"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+              @keydown.enter="handleLogin"
+            />
+          </div>
+        </div>
+
+        <div class="form-extra">
+          <label class="remember-me">
+            <input type="checkbox" v-model="formState.remember" />
+            <span>记住我</span>
+          </label>
+          <a class="forgot-link">忘记密码?</a>
+        </div>
+
+        <button class="login-btn" :disabled="loading" @click="handleLogin">
+          {{ loading ? '登录中...' : '登 录' }}
+        </button>
+
+        <div class="divider">
+          <div class="divider-line"></div>
+          <span class="divider-text">其他登录方式</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <button class="sso-btn">医院统一认证登录</button>
+
+        <div class="security-hints">
+          <p>⚠ 您的登录行为将被审计记录</p>
+          <p>⚠ 连续5次登录失败将锁定账户30分钟</p>
+        </div>
+
+        <div class="footer-links">
+          <span>© 2026 MAIDC</span>
+          <span>·</span>
+          <a>隐私政策</a>
+          <span>·</span>
+          <a>使用条款</a>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, h } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { UserOutlined, LockOutlined, SafetyCertificateOutlined, DatabaseOutlined, ExperimentOutlined, MonitorOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { message } from 'ant-design-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const formRef = ref<FormInstance>()
 const loading = ref(false)
 
 const formState = reactive({
@@ -104,12 +128,11 @@ const formState = reactive({
   remember: true,
 })
 
-const rules: Record<string, Rule[]> = {
-  username: [{ required: true, message: '请输入用户名' }],
-  password: [{ required: true, message: '请输入密码' }, { min: 6, message: '密码至少6位' }],
-}
-
 async function handleLogin() {
+  if (!formState.username || !formState.password) {
+    message.warning('请输入用户名和密码')
+    return
+  }
   try {
     loading.value = true
     await authStore.loginAction(formState.username, formState.password)
@@ -125,93 +148,306 @@ async function handleLogin() {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
 .login-page {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
-  background: #f0f2f5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
-.login-container {
-  flex: 1;
+
+/* Left Panel */
+.login-left {
+  width: 50%;
+  min-width: 50%;
+  background: linear-gradient(180deg, #1E293B 0%, #334155 100%);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px;
 }
-.login-left {
-  width: 480px;
-  padding: 60px 48px;
-  background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
-  color: #fff;
-  border-radius: 16px 0 0 16px;
+
+.left-content {
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+.logo-area {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
-.brand-logo img {
+
+.logo-icon {
   width: 48px;
   height: 48px;
-  margin-bottom: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.125);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
-.brand-title {
+
+.logo-text {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.welcome-title {
   font-size: 32px;
   font-weight: 700;
-  margin: 0 0 8px;
+  color: #fff;
+  margin: 0;
 }
-.brand-subtitle {
-  font-size: 16px;
-  opacity: 0.85;
-  margin: 0 0 40px;
+
+.welcome-sub {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
 }
+
 .feature-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
 .feature-item {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 14px;
-  opacity: 0.9;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
 }
-.feature-item :deep(.anticon) {
-  font-size: 18px;
+
+.feature-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.125);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
+
+.check-mark {
+  font-size: 12px;
+  color: #10B981;
+}
+
+.version-tag {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Right Panel */
 .login-right {
-  width: 420px;
-  background: #fff;
-  border-radius: 0 16px 16px 0;
-  padding: 60px 48px;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+  flex: 1;
+  background: var(--color-bg, #f8fafc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.login-form-wrapper {
-  width: 100%;
+
+.login-form {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
+
+.form-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .form-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
-  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
 }
+
 .form-subtitle {
-  color: rgba(0, 0, 0, 0.45);
-  margin: 0 0 32px;
   font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-secondary, #64748b);
+  margin: 0;
 }
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text, #334155);
+}
+
+.field-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--color-text, #0f172a);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.field-input::placeholder {
+  color: #94a3b8;
+}
+
+.field-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
 .form-extra {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text-secondary, #64748b);
+  cursor: pointer;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.forgot-link {
+  font-size: 13px;
+  color: #3b82f6;
+  cursor: pointer;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
 .login-btn {
+  width: 100%;
   height: 44px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
   font-size: 16px;
-  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
 }
-.login-footer {
-  text-align: center;
-  padding: 16px;
-  color: rgba(0, 0, 0, 0.45);
+
+.login-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.divider-text {
   font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.sso-btn {
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.sso-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.security-hints {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.security-hints p {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding-top: 16px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.footer-links a {
+  color: #3b82f6;
+  cursor: pointer;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+.footer-links span {
+  color: #94a3b8;
 }
 </style>
