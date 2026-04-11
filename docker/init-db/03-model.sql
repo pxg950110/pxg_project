@@ -14,7 +14,7 @@ CREATE TABLE model.m_model (
     tags              VARCHAR(256),
     license           VARCHAR(32),
     owner_id          BIGINT         NOT NULL DEFAULT 0,
-    project_id        BIGINT         REFERENCES rdr.r_study_project(id),
+    project_id        BIGINT,
     status            VARCHAR(16)    NOT NULL DEFAULT 'DRAFT',
     created_by        VARCHAR(64)    NOT NULL DEFAULT 'system',
     created_at        TIMESTAMP      NOT NULL DEFAULT NOW(),
@@ -32,7 +32,7 @@ COMMENT ON TABLE model.m_model IS '模型注册主表';
 -- 2. m_model_version — 模型版本表
 CREATE TABLE model.m_model_version (
     id                  BIGSERIAL      PRIMARY KEY,
-    model_id            BIGINT         NOT NULL REFERENCES model.m_model(id),
+    model_id            BIGINT         NOT NULL,
     version_no          VARCHAR(16)    NOT NULL,
     description         TEXT,
     changelog           TEXT,
@@ -42,7 +42,7 @@ CREATE TABLE model.m_model_version (
     model_file_checksum VARCHAR(64),
     config_path         VARCHAR(256),
     hyper_params        JSONB,
-    training_dataset_id BIGINT         REFERENCES rdr.r_dataset(id),
+    training_dataset_id BIGINT,
     training_metrics    JSONB,
     status              VARCHAR(16)    NOT NULL DEFAULT 'CREATED',
     created_by          VARCHAR(64)    NOT NULL DEFAULT 'system',
@@ -60,8 +60,8 @@ COMMENT ON TABLE model.m_model_version IS '模型版本表';
 -- 3. m_evaluation — 模型评估表
 CREATE TABLE model.m_evaluation (
     id               BIGSERIAL      PRIMARY KEY,
-    model_id         BIGINT         NOT NULL REFERENCES model.m_model(id),
-    version_id       BIGINT         NOT NULL REFERENCES model.m_model_version(id),
+    model_id         BIGINT         NOT NULL,
+    version_id       BIGINT         NOT NULL,
     eval_name        VARCHAR(128)   NOT NULL,
     eval_type        VARCHAR(32)    NOT NULL,
     dataset_id       BIGINT,
@@ -87,9 +87,9 @@ COMMENT ON TABLE model.m_evaluation IS '模型评估表';
 -- 4. m_approval — 模型审批表
 CREATE TABLE model.m_approval (
     id               BIGSERIAL      PRIMARY KEY,
-    model_id         BIGINT         NOT NULL REFERENCES model.m_model(id),
-    version_id       BIGINT         NOT NULL REFERENCES model.m_model_version(id),
-    eval_id          BIGINT         REFERENCES model.m_evaluation(id),
+    model_id         BIGINT         NOT NULL,
+    version_id       BIGINT         NOT NULL,
+    eval_id          BIGINT,
     approval_type    VARCHAR(32)    NOT NULL,
     current_level    INT            NOT NULL DEFAULT 1,
     evidence_docs    JSONB,
@@ -115,8 +115,8 @@ COMMENT ON TABLE model.m_approval IS '模型审批表';
 -- 5. m_deployment — 模型部署表
 CREATE TABLE model.m_deployment (
     id                 BIGSERIAL      PRIMARY KEY,
-    model_id           BIGINT         NOT NULL REFERENCES model.m_model(id),
-    version_id         BIGINT         NOT NULL REFERENCES model.m_model_version(id),
+    model_id           BIGINT         NOT NULL,
+    version_id         BIGINT         NOT NULL,
     deployment_name    VARCHAR(128)   NOT NULL,
     environment        VARCHAR(32)    NOT NULL,
     resource_config    JSONB,
@@ -144,8 +144,8 @@ CREATE TABLE model.m_deploy_route (
     route_name            VARCHAR(128)   NOT NULL,
     route_type            VARCHAR(32)    NOT NULL,
     config                JSONB,
-    active_deployment_id  BIGINT         REFERENCES model.m_deployment(id),
-    canary_deployment_id  BIGINT         REFERENCES model.m_deployment(id),
+    active_deployment_id  BIGINT,
+    canary_deployment_id  BIGINT,
     canary_weight         INT            NOT NULL DEFAULT 0,
     status                VARCHAR(16)    NOT NULL DEFAULT 'ACTIVE',
     created_by            VARCHAR(64)    NOT NULL DEFAULT 'system',
@@ -238,7 +238,7 @@ COMMENT ON TABLE model.m_alert_rule IS '告警规则表';
 -- 10. m_alert_record — 告警记录表
 CREATE TABLE model.m_alert_record (
     id               BIGSERIAL      PRIMARY KEY,
-    rule_id          BIGINT         NOT NULL REFERENCES model.m_alert_rule(id),
+    rule_id          BIGINT         NOT NULL,
     alert_title      VARCHAR(256)   NOT NULL,
     alert_detail     TEXT,
     severity         VARCHAR(16)    NOT NULL,
@@ -257,7 +257,7 @@ COMMENT ON TABLE model.m_alert_record IS '告警记录表';
 -- 11. m_model_tag — 模型标签多对多关联表
 CREATE TABLE model.m_model_tag (
     id       BIGSERIAL    PRIMARY KEY,
-    model_id BIGINT       NOT NULL REFERENCES model.m_model(id),
+    model_id BIGINT       NOT NULL,
     tag      VARCHAR(64)  NOT NULL,
     org_id   BIGINT       NOT NULL DEFAULT 0
 );

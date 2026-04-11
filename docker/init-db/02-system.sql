@@ -49,7 +49,7 @@ CREATE TABLE system.s_permission (
     resource_type   VARCHAR(32)  NOT NULL,
     resource_key    VARCHAR(128) NOT NULL,
     action          VARCHAR(32)  NOT NULL,
-    parent_id       BIGINT       REFERENCES system.s_permission(id),
+    parent_id       BIGINT,
     sort_order      INT          NOT NULL DEFAULT 0,
     created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
     created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -64,8 +64,8 @@ COMMENT ON TABLE system.s_permission IS '权限表';
 -- s_user_role
 CREATE TABLE system.s_user_role (
     id          BIGSERIAL PRIMARY KEY,
-    user_id     BIGINT    NOT NULL REFERENCES system.s_user(id),
-    role_id     BIGINT    NOT NULL REFERENCES system.s_role(id),
+    user_id     BIGINT    NOT NULL,
+    role_id     BIGINT    NOT NULL,
     granted_by  BIGINT    NOT NULL DEFAULT 0,
     granted_at  TIMESTAMP NOT NULL DEFAULT NOW(),
     expires_at  TIMESTAMP,
@@ -77,8 +77,8 @@ COMMENT ON TABLE system.s_user_role IS '用户角色关联表';
 -- s_role_permission
 CREATE TABLE system.s_role_permission (
     id            BIGSERIAL PRIMARY KEY,
-    role_id       BIGINT    NOT NULL REFERENCES system.s_role(id),
-    permission_id BIGINT    NOT NULL REFERENCES system.s_permission(id),
+    role_id       BIGINT    NOT NULL,
+    permission_id BIGINT    NOT NULL,
     org_id        BIGINT    NOT NULL DEFAULT 0,
     CONSTRAINT uk_role_perm UNIQUE (role_id, permission_id)
 );

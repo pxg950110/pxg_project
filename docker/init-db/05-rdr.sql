@@ -38,7 +38,7 @@ COMMENT ON TABLE rdr.r_study_project IS '研究项目';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_study_member (
     id                  BIGSERIAL       PRIMARY KEY,
-    project_id          BIGINT          NOT NULL REFERENCES rdr.r_study_project(id),
+    project_id          BIGINT          NOT NULL,
     user_id             BIGINT          NOT NULL,
     role                VARCHAR(32)     NOT NULL
                                             CHECK (role IN ('PI','CO_PI','RESEARCHER','DATA_MANAGER')),
@@ -60,7 +60,7 @@ COMMENT ON TABLE rdr.r_study_member IS '项目成员';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_research_cohort (
     id                  BIGSERIAL       PRIMARY KEY,
-    project_id          BIGINT          NOT NULL REFERENCES rdr.r_study_project(id),
+    project_id          BIGINT          NOT NULL,
     cohort_name         VARCHAR(128)    NOT NULL,
     description         TEXT,
     inclusion_criteria  JSONB,
@@ -83,8 +83,8 @@ COMMENT ON TABLE rdr.r_research_cohort IS '研究队列';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_study_subject (
     id                  BIGSERIAL       PRIMARY KEY,
-    project_id          BIGINT          NOT NULL REFERENCES rdr.r_study_project(id),
-    cohort_id           BIGINT          NOT NULL REFERENCES rdr.r_research_cohort(id),
+    project_id          BIGINT          NOT NULL,
+    cohort_id           BIGINT          NOT NULL,
     patient_id          BIGINT          NOT NULL,
     subject_no          VARCHAR(32),
     enrollment_date     DATE,
@@ -108,7 +108,7 @@ COMMENT ON TABLE rdr.r_study_subject IS '研究受试者';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_dataset (
     id                  BIGSERIAL       PRIMARY KEY,
-    project_id          BIGINT          NOT NULL REFERENCES rdr.r_study_project(id),
+    project_id          BIGINT          NOT NULL,
     dataset_code        VARCHAR(32)     NOT NULL,
     dataset_name        VARCHAR(128)    NOT NULL,
     description         TEXT,
@@ -140,7 +140,7 @@ COMMENT ON TABLE rdr.r_dataset IS '数据集';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_dataset_version (
     id                  BIGSERIAL       PRIMARY KEY,
-    dataset_id          BIGINT          NOT NULL REFERENCES rdr.r_dataset(id),
+    dataset_id          BIGINT          NOT NULL,
     version_no          VARCHAR(16)     NOT NULL,
     changelog           TEXT,
     file_path           VARCHAR(256),
@@ -164,7 +164,7 @@ COMMENT ON TABLE rdr.r_dataset_version IS '数据集版本';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_dataset_access_log (
     id                  BIGSERIAL       PRIMARY KEY,
-    dataset_id          BIGINT          NOT NULL REFERENCES rdr.r_dataset(id),
+    dataset_id          BIGINT          NOT NULL,
     user_id             BIGINT          NOT NULL,
     access_type         VARCHAR(32)     NOT NULL
                                             CHECK (access_type IN ('QUERY','EXPORT','DOWNLOAD')),
@@ -183,7 +183,7 @@ COMMENT ON TABLE rdr.r_dataset_access_log IS '数据集访问日志';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_clinical_feature (
     id                  BIGSERIAL       PRIMARY KEY,
-    project_id          BIGINT          NOT NULL REFERENCES rdr.r_study_project(id),
+    project_id          BIGINT          NOT NULL,
     feature_code        VARCHAR(64)     NOT NULL,
     feature_name        VARCHAR(128)    NOT NULL,
     data_type           VARCHAR(32)     NOT NULL
@@ -233,7 +233,7 @@ COMMENT ON TABLE rdr.r_feature_dictionary IS '特征字典';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_imaging_dataset (
     id                  BIGSERIAL       PRIMARY KEY,
-    dataset_id          BIGINT          NOT NULL REFERENCES rdr.r_dataset(id),
+    dataset_id          BIGINT          NOT NULL,
     exam_id             BIGINT,
     image_format        VARCHAR(16)     NOT NULL
                                             CHECK (image_format IN ('DICOM','PNG','JPEG','NIFTI')),
@@ -255,7 +255,7 @@ COMMENT ON TABLE rdr.r_imaging_dataset IS '影像数据集';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_imaging_annotation (
     id                  BIGSERIAL       PRIMARY KEY,
-    imaging_dataset_id  BIGINT          NOT NULL REFERENCES rdr.r_imaging_dataset(id),
+    imaging_dataset_id  BIGINT          NOT NULL,
     annotator_id        BIGINT          NOT NULL,
     annotation_type     VARCHAR(32)     NOT NULL
                                             CHECK (annotation_type IN ('BOUNDING_BOX','SEGMENTATION','LANDMARK','POLYGON')),
@@ -277,7 +277,7 @@ COMMENT ON TABLE rdr.r_imaging_annotation IS '影像标注';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_genomic_dataset (
     id                  BIGSERIAL       PRIMARY KEY,
-    dataset_id          BIGINT          NOT NULL REFERENCES rdr.r_dataset(id),
+    dataset_id          BIGINT          NOT NULL,
     sample_id           VARCHAR(64)     NOT NULL,
     genome_build        VARCHAR(16)     NOT NULL
                                             CHECK (genome_build IN ('GRCh37','GRCh38')),
@@ -299,7 +299,7 @@ COMMENT ON TABLE rdr.r_genomic_dataset IS '基因组数据集';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_genomic_variant (
     id                  BIGSERIAL       PRIMARY KEY,
-    genomic_dataset_id  BIGINT          NOT NULL REFERENCES rdr.r_genomic_dataset(id),
+    genomic_dataset_id  BIGINT          NOT NULL,
     chromosome          VARCHAR(16)     NOT NULL,
     position            INT             NOT NULL,
     ref_allele          VARCHAR(64),
@@ -326,7 +326,7 @@ COMMENT ON TABLE rdr.r_genomic_variant IS '基因组变异';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_text_dataset (
     id                  BIGSERIAL       PRIMARY KEY,
-    dataset_id          BIGINT          NOT NULL REFERENCES rdr.r_dataset(id),
+    dataset_id          BIGINT          NOT NULL,
     source_type         VARCHAR(32)     NOT NULL
                                             CHECK (source_type IN ('CLINICAL_NOTE','LITERATURE','OTHER')),
     text_content        TEXT,
@@ -346,7 +346,7 @@ COMMENT ON TABLE rdr.r_text_dataset IS '文本数据集';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_text_annotation (
     id                  BIGSERIAL       PRIMARY KEY,
-    text_dataset_id     BIGINT          NOT NULL REFERENCES rdr.r_text_dataset(id),
+    text_dataset_id     BIGINT          NOT NULL,
     annotator_id        BIGINT          NOT NULL,
     annotation_type     VARCHAR(32)     NOT NULL
                                             CHECK (annotation_type IN ('NER','RELATION','CLASSIFICATION')),
@@ -367,7 +367,7 @@ COMMENT ON TABLE rdr.r_text_annotation IS '文本标注';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_etl_task (
     id                  BIGSERIAL       PRIMARY KEY,
-    project_id          BIGINT          NOT NULL REFERENCES rdr.r_study_project(id),
+    project_id          BIGINT          NOT NULL,
     task_name           VARCHAR(128)    NOT NULL,
     source_config       JSONB,
     target_config       JSONB,
@@ -392,7 +392,7 @@ COMMENT ON TABLE rdr.r_etl_task IS 'ETL任务';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_etl_task_log (
     id                  BIGSERIAL       PRIMARY KEY,
-    task_id             BIGINT          NOT NULL REFERENCES rdr.r_etl_task(id),
+    task_id             BIGINT          NOT NULL,
     run_no              INT             NOT NULL,
     start_time          TIMESTAMP,
     end_time            TIMESTAMP,
@@ -413,7 +413,7 @@ COMMENT ON TABLE rdr.r_etl_task_log IS 'ETL任务日志';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_data_quality_rule (
     id                  BIGSERIAL       PRIMARY KEY,
-    project_id          BIGINT          NOT NULL REFERENCES rdr.r_study_project(id),
+    project_id          BIGINT          NOT NULL,
     rule_name           VARCHAR(128)    NOT NULL,
     rule_type           VARCHAR(32)     NOT NULL
                                             CHECK (rule_type IN ('COMPLETENESS','ACCURACY','CONSISTENCY','TIMELINESS','UNIQUENESS')),
@@ -439,7 +439,7 @@ COMMENT ON TABLE rdr.r_data_quality_rule IS '数据质量规则';
 -- ---------------------------------------------------------------------------
 CREATE TABLE rdr.r_data_quality_result (
     id                  BIGSERIAL       PRIMARY KEY,
-    rule_id             BIGINT          NOT NULL REFERENCES rdr.r_data_quality_rule(id),
+    rule_id             BIGINT          NOT NULL,
     dataset_id          BIGINT          NOT NULL,
     total_records       BIGINT,
     passed_records      BIGINT,

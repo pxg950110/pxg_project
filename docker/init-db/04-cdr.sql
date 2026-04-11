@@ -35,7 +35,7 @@ COMMENT ON TABLE cdr.c_patient IS 'Patient demographics and identity information
 -- 2. Clinical Encounters
 CREATE TABLE IF NOT EXISTS cdr.c_encounter (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    patient_id          BIGINT          NOT NULL,
     encounter_no        VARCHAR(32)     NOT NULL,
     encounter_type      VARCHAR(16)     NOT NULL CHECK (encounter_type IN ('OUTPATIENT', 'INPATIENT', 'EMERGENCY')),
     dept_code           VARCHAR(32),
@@ -67,8 +67,8 @@ COMMENT ON TABLE cdr.c_encounter IS 'Clinical encounters including outpatient, i
 -- 3. Diagnoses
 CREATE TABLE IF NOT EXISTS cdr.c_diagnosis (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     diagnosis_type      VARCHAR(16)     NOT NULL CHECK (diagnosis_type IN ('MAIN', 'SECONDARY', 'ADMISSION', 'DISCHARGE')),
     icd_code            VARCHAR(32),
     icd_name            VARCHAR(128),
@@ -91,8 +91,8 @@ COMMENT ON TABLE cdr.c_diagnosis IS 'Patient diagnoses linked to encounters with
 -- 4. Lab Test Orders
 CREATE TABLE IF NOT EXISTS cdr.c_lab_test (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     test_code           VARCHAR(32),
     test_name           VARCHAR(128),
     specimen_type       VARCHAR(32),
@@ -114,7 +114,7 @@ COMMENT ON TABLE cdr.c_lab_test IS 'Laboratory test orders linked to clinical en
 -- 5. Lab Results
 CREATE TABLE IF NOT EXISTS cdr.c_lab_panel (
     id                  BIGSERIAL       PRIMARY KEY,
-    test_id             BIGINT          NOT NULL REFERENCES cdr.c_lab_test(id),
+    test_id             BIGINT          NOT NULL,
     item_code           VARCHAR(32),
     item_name           VARCHAR(64),
     result_value        TEXT,
@@ -134,8 +134,8 @@ COMMENT ON TABLE cdr.c_lab_panel IS 'Individual lab result items within a test o
 -- 6. Medication Orders
 CREATE TABLE IF NOT EXISTS cdr.c_medication (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     med_code            VARCHAR(32),
     med_name            VARCHAR(128),
     dosage              VARCHAR(64),
@@ -158,8 +158,8 @@ COMMENT ON TABLE cdr.c_medication IS 'Medication orders and prescriptions for pa
 -- 7. Vital Signs
 CREATE TABLE IF NOT EXISTS cdr.c_vital_sign (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     sign_type           VARCHAR(32)     NOT NULL CHECK (sign_type IN ('TEMPERATURE', 'PULSE', 'BP_SYSTOLIC', 'BP_DIASTOLIC', 'RESPIRATION', 'SPO2', 'HEIGHT', 'WEIGHT')),
     sign_value          DECIMAL(8,2),
     unit                VARCHAR(16),
@@ -178,8 +178,8 @@ COMMENT ON TABLE cdr.c_vital_sign IS 'Patient vital sign measurements';
 -- 8. Imaging Exams
 CREATE TABLE IF NOT EXISTS cdr.c_imaging_exam (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     accession_no        VARCHAR(32),
     exam_type           VARCHAR(32)     NOT NULL CHECK (exam_type IN ('CT', 'MRI', 'XRAY', 'ULTRASOUND', 'PET')),
     body_part           VARCHAR(64),
@@ -201,7 +201,7 @@ COMMENT ON TABLE cdr.c_imaging_exam IS 'Imaging examination orders and reports';
 -- 9. Imaging Findings
 CREATE TABLE IF NOT EXISTS cdr.c_imaging_finding (
     id                  BIGSERIAL       PRIMARY KEY,
-    exam_id             BIGINT          NOT NULL REFERENCES cdr.c_imaging_exam(id),
+    exam_id             BIGINT          NOT NULL,
     finding_type        VARCHAR(32),
     finding_desc        TEXT,
     laterality          VARCHAR(16),
@@ -221,8 +221,8 @@ COMMENT ON TABLE cdr.c_imaging_finding IS 'Detailed findings from imaging examin
 -- 10. Pathology
 CREATE TABLE IF NOT EXISTS cdr.c_pathology (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     specimen_no         VARCHAR(32),
     specimen_type       VARCHAR(32),
     diagnosis_desc      TEXT,
@@ -242,8 +242,8 @@ COMMENT ON TABLE cdr.c_pathology IS 'Pathology specimen reports and diagnoses';
 -- 11. Operations
 CREATE TABLE IF NOT EXISTS cdr.c_operation (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     operation_code      VARCHAR(32),
     operation_name      VARCHAR(128),
     operated_at         TIMESTAMP,
@@ -264,7 +264,7 @@ COMMENT ON TABLE cdr.c_operation IS 'Surgical operation records';
 -- 12. Allergies
 CREATE TABLE IF NOT EXISTS cdr.c_allergy (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    patient_id          BIGINT          NOT NULL,
     allergen            VARCHAR(128),
     allergen_type       VARCHAR(32)     CHECK (allergen_type IN ('DRUG', 'FOOD', 'ENVIRONMENT')),
     reaction            VARCHAR(128),
@@ -283,7 +283,7 @@ COMMENT ON TABLE cdr.c_allergy IS 'Patient allergy records with allergen type an
 -- 13. Family History
 CREATE TABLE IF NOT EXISTS cdr.c_family_history (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    patient_id          BIGINT          NOT NULL,
     relationship        VARCHAR(32),
     disease_name        VARCHAR(128),
     icd_code            VARCHAR(32),
@@ -301,8 +301,8 @@ COMMENT ON TABLE cdr.c_family_history IS 'Patient family disease history';
 -- 14. Clinical Notes
 CREATE TABLE IF NOT EXISTS cdr.c_clinical_note (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     note_type           VARCHAR(32)     NOT NULL CHECK (note_type IN ('ADMISSION', 'PROGRESS', 'DISCHARGE', 'CONSULTATION')),
     title               VARCHAR(128),
     content             TEXT,
@@ -324,7 +324,7 @@ CREATE TABLE IF NOT EXISTS cdr.c_org (
     org_code            VARCHAR(32)     NOT NULL,
     org_name            VARCHAR(128),
     org_type            VARCHAR(16)     CHECK (org_type IN ('HOSPITAL', 'CLINIC', 'RESEARCH')),
-    parent_id           BIGINT          REFERENCES cdr.c_org(id),
+    parent_id           BIGINT,
     address             TEXT,
     contact_phone       VARCHAR(32),
     status              VARCHAR(16)     NOT NULL DEFAULT 'ACTIVE',
@@ -342,7 +342,7 @@ COMMENT ON TABLE cdr.c_org IS 'Healthcare organizations with hierarchical struct
 -- 16. Health Checkups
 CREATE TABLE IF NOT EXISTS cdr.c_health_checkup (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    patient_id          BIGINT          NOT NULL,
     checkup_no          VARCHAR(32),
     checkup_date        DATE,
     org_name            VARCHAR(128),
@@ -361,7 +361,7 @@ COMMENT ON TABLE cdr.c_health_checkup IS 'Health checkup examination records';
 -- 17. Checkup Packages
 CREATE TABLE IF NOT EXISTS cdr.c_checkup_package (
     id                  BIGSERIAL       PRIMARY KEY,
-    checkup_id          BIGINT          NOT NULL REFERENCES cdr.c_health_checkup(id),
+    checkup_id          BIGINT          NOT NULL,
     package_name        VARCHAR(128),
     category            VARCHAR(32),
     created_by          VARCHAR(64)     NOT NULL,
@@ -377,7 +377,7 @@ COMMENT ON TABLE cdr.c_checkup_package IS 'Checkup examination packages within a
 -- 18. Checkup Item Results
 CREATE TABLE IF NOT EXISTS cdr.c_checkup_item_result (
     id                  BIGSERIAL       PRIMARY KEY,
-    package_id          BIGINT          NOT NULL REFERENCES cdr.c_checkup_package(id),
+    package_id          BIGINT          NOT NULL,
     item_code           VARCHAR(32),
     item_name           VARCHAR(64),
     result_value        TEXT,
@@ -397,7 +397,7 @@ COMMENT ON TABLE cdr.c_checkup_item_result IS 'Individual item results within a 
 -- 19. Checkup Summaries
 CREATE TABLE IF NOT EXISTS cdr.c_checkup_summary (
     id                  BIGSERIAL       PRIMARY KEY,
-    checkup_id          BIGINT          NOT NULL REFERENCES cdr.c_health_checkup(id),
+    checkup_id          BIGINT          NOT NULL,
     summary_type        VARCHAR(32),
     summary_content     TEXT,
     created_by          VARCHAR(64)     NOT NULL,
@@ -413,9 +413,9 @@ COMMENT ON TABLE cdr.c_checkup_summary IS 'Summary conclusions for health checku
 -- 20. Checkup Comparisons
 CREATE TABLE IF NOT EXISTS cdr.c_checkup_comparison (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
-    current_checkup_id  BIGINT          NOT NULL REFERENCES cdr.c_health_checkup(id),
-    previous_checkup_id BIGINT          NOT NULL REFERENCES cdr.c_health_checkup(id),
+    patient_id          BIGINT          NOT NULL,
+    current_checkup_id  BIGINT          NOT NULL,
+    previous_checkup_id BIGINT          NOT NULL,
     comparison_result   JSONB,
     created_by          VARCHAR(64)     NOT NULL,
     created_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
@@ -430,8 +430,8 @@ COMMENT ON TABLE cdr.c_checkup_comparison IS 'Comparison results between health 
 -- 21. Nursing Records
 CREATE TABLE IF NOT EXISTS cdr.c_nursing_record (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     record_type         VARCHAR(32),
     content             TEXT,
     nurse_code          VARCHAR(32),
@@ -449,8 +449,8 @@ COMMENT ON TABLE cdr.c_nursing_record IS 'Nursing care records linked to encount
 -- 22. Blood Transfusions
 CREATE TABLE IF NOT EXISTS cdr.c_blood_transfusion (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     blood_type          VARCHAR(16),
     volume_ml           INT,
     transfused_at       TIMESTAMP,
@@ -469,8 +469,8 @@ COMMENT ON TABLE cdr.c_blood_transfusion IS 'Blood transfusion records with reac
 -- 23. Department Transfers
 CREATE TABLE IF NOT EXISTS cdr.c_transfer (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     from_dept           VARCHAR(64),
     to_dept             VARCHAR(64),
     transfer_type       VARCHAR(32)     CHECK (transfer_type IN ('DEPT', 'WARD', 'ICU')),
@@ -489,8 +489,8 @@ COMMENT ON TABLE cdr.c_transfer IS 'Patient department/ward transfer records';
 -- 24. Fee Records
 CREATE TABLE IF NOT EXISTS cdr.c_fee_record (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     fee_type            VARCHAR(32),
     fee_name            VARCHAR(128),
     amount              DECIMAL(12,2),
@@ -509,8 +509,8 @@ COMMENT ON TABLE cdr.c_fee_record IS 'Patient fee and billing records';
 -- 25. Discharge Summaries
 CREATE TABLE IF NOT EXISTS cdr.c_discharge_summary (
     id                  BIGSERIAL       PRIMARY KEY,
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    encounter_id        BIGINT          NOT NULL,
+    patient_id          BIGINT          NOT NULL,
     admission_diagnosis TEXT,
     discharge_diagnosis TEXT,
     treatment_summary   TEXT,
@@ -531,7 +531,7 @@ COMMENT ON TABLE cdr.c_discharge_summary IS 'Discharge summaries with diagnosis,
 -- 26. Patient Contacts
 CREATE TABLE IF NOT EXISTS cdr.c_patient_contact (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    patient_id          BIGINT          NOT NULL,
     contact_name        VARCHAR(64),
     relationship        VARCHAR(32),
     phone               VARCHAR(32),
@@ -550,7 +550,7 @@ COMMENT ON TABLE cdr.c_patient_contact IS 'Patient emergency and general contact
 -- 27. Patient Insurance
 CREATE TABLE IF NOT EXISTS cdr.c_patient_insurance (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
+    patient_id          BIGINT          NOT NULL,
     insurance_type      VARCHAR(32),
     insurance_no        VARCHAR(64),
     holder_name         VARCHAR(64),
@@ -569,8 +569,8 @@ COMMENT ON TABLE cdr.c_patient_insurance IS 'Patient medical insurance coverage 
 -- 28. Patient Bed Assignments
 CREATE TABLE IF NOT EXISTS cdr.c_patient_bed (
     id                  BIGSERIAL       PRIMARY KEY,
-    patient_id          BIGINT          NOT NULL REFERENCES cdr.c_patient(id),
-    encounter_id        BIGINT          NOT NULL REFERENCES cdr.c_encounter(id),
+    patient_id          BIGINT          NOT NULL,
+    encounter_id        BIGINT          NOT NULL,
     bed_no              VARCHAR(16),
     ward_code           VARCHAR(32),
     building            VARCHAR(32),
