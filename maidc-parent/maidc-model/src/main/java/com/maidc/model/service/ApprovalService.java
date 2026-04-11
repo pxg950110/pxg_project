@@ -1,5 +1,6 @@
 package com.maidc.model.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import com.maidc.model.dto.ApprovalCreateDTO;
@@ -29,10 +30,11 @@ public class ApprovalService {
         approval.setVersionId(dto.getModelVersionId());
         approval.setApprovalType(dto.getApprovalType());
         approval.setEvidenceDocs(dto.getEvidenceDocs());
-        approval.setRiskAssessment(dto.getRiskAssessment() != null
-                ? new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode()
-                        .put("assessment", dto.getRiskAssessment())
-                : null);
+        if (dto.getRiskAssessment() != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            approval.setRiskAssessment(objectMapper.createObjectNode()
+                    .put("assessment", dto.getRiskAssessment()));
+        }
         approval.setStatus("PENDING");
         approval.setCurrentLevel(1);
         approval.setSubmittedAt(LocalDateTime.now());
