@@ -10,6 +10,9 @@
 
     <a-table :columns="columns" :data-source="tableData" :loading="loading" :pagination="pagination" @change="handleTableChange" row-key="id">
       <template #bodyCell="{ column, record }">
+        <template v-if="column.key === 'version_count'">
+          <a-tag color="blue">{{ record.version_count ?? 0 }}</a-tag>
+        </template>
         <template v-if="column.key === 'action'">
           <a @click="viewDetail(record)">详情</a>
         </template>

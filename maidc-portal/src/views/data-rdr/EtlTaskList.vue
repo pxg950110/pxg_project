@@ -8,6 +8,10 @@
 
     <a-table :columns="columns" :data-source="tableData" :loading="loading" :pagination="pagination" @change="handleTableChange" row-key="id">
       <template #bodyCell="{ column, record }">
+        <template v-if="column.key === 'cron_expression'">
+          <a-tag v-if="record.cron_expression" color="default" style="font-family: monospace; font-size: 12px;">{{ record.cron_expression }}</a-tag>
+          <span v-else style="color: #999;">手动执行</span>
+        </template>
         <template v-if="column.key === 'status'">
           <a-badge :status="statusMap[record.status] || 'default'" :text="record.status" />
         </template>
@@ -58,6 +62,7 @@ const columns = [
   { title: '任务名称', dataIndex: 'name', key: 'name' },
   { title: '源', dataIndex: 'source_type', key: 'source_type', width: 100 },
   { title: '目标', dataIndex: 'target_type', key: 'target_type', width: 80 },
+  { title: '调度周期', dataIndex: 'cron_expression', key: 'cron_expression', width: 140 },
   { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
   { title: '处理记录数', dataIndex: 'records_processed', key: 'records_processed', width: 100 },
   { title: '最后执行', dataIndex: 'last_execution_time', key: 'last_execution_time', width: 170 },

@@ -21,7 +21,7 @@
           <a-tag :color="dataTypeColorMap[record.data_type] || 'default'">{{ record.data_type }}</a-tag>
         </template>
         <template v-if="column.key === 'category'">
-          <a-tag color="blue">{{ record.category }}</a-tag>
+          <a-tag :color="categoryColorMap[record.category] || 'default'">{{ categoryLabelMap[record.category] || record.category }}</a-tag>
         </template>
         <template v-if="column.key === 'action'">
           <a-space>
@@ -120,6 +120,26 @@ const dataTypeColorMap: Record<string, string> = {
   BOOLEAN: 'purple',
   TEXT: 'default',
   JSON: 'magenta',
+}
+
+const categoryColorMap: Record<string, string> = {
+  DEMOGRAPHIC: 'blue',
+  CLINICAL: 'green',
+  LABORATORY: 'orange',
+  IMAGING: 'purple',
+  DIAGNOSIS: 'cyan',
+  MEDICATION: 'geekblue',
+  GENOMIC: 'magenta',
+}
+
+const categoryLabelMap: Record<string, string> = {
+  DEMOGRAPHIC: '人口统计学',
+  CLINICAL: '生命体征',
+  LABORATORY: '实验室检查',
+  IMAGING: '影像特征',
+  DIAGNOSIS: '诊断',
+  MEDICATION: '用药',
+  GENOMIC: '基因组',
 }
 
 const searchFields = [
