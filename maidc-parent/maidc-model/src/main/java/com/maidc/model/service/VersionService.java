@@ -103,11 +103,37 @@ public class VersionService {
         ModelVersionEntity v2 = versionRepository.findByIdAndIsDeletedFalse(v2Id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.VERSION_NOT_FOUND));
 
-        Map<String, Object> diff = new HashMap<>();
-        if (v1.getTrainingMetrics() != null && v2.getTrainingMetrics() != null) {
-            diff.put("metrics_diff", "请在前端展示详细对比");
+        if (!v1.getModelId().equals(modelId) || !v2.getModelId().equals(modelId)) {
+            throw new BusinessException(ErrorCode.VERSION_NOT_FOUND);
         }
+
+        Map<String, Object> diff = new HashMap<>();
+        diff.put("version_no_delta", v2.getVersionNo() + " vs " + v1.getVersionNo());
         diff.put("file_size_delta", v2.getModelFileSize() - v1.getModelFileSize());
+
+        if (v1.getTrainingMetrics() != null && v2.getTrainingMetrics() != null) {
+            Map<String, Object> metricsDiff = new HashMap<>();
+            v1.getTrainingMetrics().fieldNames().forEachRemaining(field -> {
+                if (v2.getTrainingMetrics().has(field)) {
+                    double val1 = v1.getTrainingMetrics().get(field).asDouble();
+                    double val2 = v2.getTrainingMetrics().get(field).asDouble();
+                    metricsDiff.put(field, val2 - val1);
+                }
+            });
+            diff.put("metrics_diff", metricsDiff);
+        }
+
+        if (v1.getHyperParams() != null && v2.getHyperParams() != null) {
+            Map<String, Object> hyperDiff = new HashMap<>();
+            v1.getHyperParams().fieldNames().forEachRemaining(field -> {
+                if (v2.getHyperParams().has(field)) {
+                    if (!v1.getHyperParams().get(field).equals(v2.getHyperParams().get(field))) {
+                        hyperDiff.put(field, Map.of("v1", v1.getHyperParams().get(field), "v2", v2.getHyperParams().get(field)));
+                    }
+                }
+            });
+            diff.put("hyperparams_diff", hyperDiff);
+        }
 
         return VersionCompareVO.builder()
                 .v1(modelMapper.toVersionVO(v1))
