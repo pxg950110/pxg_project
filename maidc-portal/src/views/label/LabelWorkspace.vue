@@ -131,7 +131,7 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  BorderOutlined, ShapeOutlined, RadiusSettingOutlined,
+  BorderOutlined, GatewayOutlined, RadiusSettingOutlined,
   EditOutlined, FontSizeOutlined, ZoomInOutlined, ZoomOutOutlined,
   UndoOutlined, RedoOutlined, DragOutlined,
   PlusOutlined, DeleteOutlined, CheckOutlined, FastForwardOutlined,
@@ -146,7 +146,7 @@ const route = useRoute()
 const drawingTools = [
   { key: 'select', icon: DragOutlined, tooltip: '选择' },
   { key: 'rectangle', icon: BorderOutlined, tooltip: '矩形框' },
-  { key: 'polygon', icon: ShapeOutlined, tooltip: '多边形' },
+  { key: 'polygon', icon: GatewayOutlined, tooltip: '多边形' },
   { key: 'ellipse', icon: RadiusSettingOutlined, tooltip: '椭圆' },
   { key: 'freehand', icon: EditOutlined, tooltip: '自由绘制' },
   { key: 'text', icon: FontSizeOutlined, tooltip: '文本' },
