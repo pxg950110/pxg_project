@@ -89,6 +89,16 @@ public class AlertService {
         return modelMapper.toAlertRecordVO(record);
     }
 
+    @Transactional
+    public AlertRuleVO toggleAlertRule(Long id) {
+        AlertRuleEntity rule = alertRuleRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        rule.setEnabled(!rule.getEnabled());
+        rule = alertRuleRepository.save(rule);
+        log.info("告警规则状态切换: id={}, enabled={}", id, rule.getEnabled());
+        return modelMapper.toAlertRuleVO(rule);
+    }
+
     public PageResult<AlertRecordVO> getAlertHistory(Long ruleId, int page, int pageSize) {
         Page<AlertRecordEntity> result = alertRecordRepository
                 .findByRuleIdOrderByTriggeredAtDesc(ruleId, PageRequest.of(page - 1, pageSize));
