@@ -58,7 +58,7 @@ public class InferenceService {
             return InferenceResultVO.builder()
                     .requestId(dto.getRequestId())
                     .results(dto.getInput()) // placeholder
-                    .latencyMs((int) latency)
+                    .latencyMs(latency)
                     .modelVersion("latest")
                     .build();
 

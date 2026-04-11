@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -47,9 +49,12 @@ public class DeploymentService {
         deployment = deploymentRepository.save(deployment);
 
         // Send deployment message to MQ
-        messageProducer.sendDeploymentTask(deployment.getId(), dto.getModelVersionId(),
-                dto.getResourceConfig() != null ? dto.getResourceConfig().fields()
-                        .hasNext() ? java.util.Map.of() : java.util.Map.of() : java.util.Map.of());
+        Map<String, Object> configMap = new HashMap<>();
+        if (dto.getResourceConfig() != null) {
+            dto.getResourceConfig().fields().forEachRemaining(entry ->
+                    configMap.put(entry.getKey(), entry.getValue()));
+        }
+        messageProducer.sendDeploymentTask(deployment.getId(), dto.getModelVersionId(), configMap);
 
         log.info("部署创建: id={}, name={}", deployment.getId(), dto.getDeploymentName());
         return modelMapper.toDeploymentVO(deployment);

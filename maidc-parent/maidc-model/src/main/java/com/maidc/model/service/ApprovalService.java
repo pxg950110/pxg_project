@@ -30,9 +30,8 @@ public class ApprovalService {
         approval.setApprovalType(dto.getApprovalType());
         approval.setEvidenceDocs(dto.getEvidenceDocs());
         approval.setRiskAssessment(dto.getRiskAssessment() != null
-                ? com.fasterxml.jackson.databind.JsonNode.class.cast(
-                com.fasterxml.jackson.databind.ObjectMapper.builder().build().createObjectNode()
-                        .put("assessment", dto.getRiskAssessment()))
+                ? new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode()
+                        .put("assessment", dto.getRiskAssessment())
                 : null);
         approval.setStatus("PENDING");
         approval.setCurrentLevel(1);
