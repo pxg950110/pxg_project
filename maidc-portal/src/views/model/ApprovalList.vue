@@ -1,8 +1,18 @@
 <template>
   <PageContainer title="审批管理">
-    <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
+    <a-tabs v-model:activeKey="activeTab" @change="onTabChange">
+      <a-tab-pane key="PENDING">
+        <template #tab>
+          <a-badge :count="pendingCount" :offset="[6, 0]" size="small">
+            待审批
+          </a-badge>
+        </template>
+      </a-tab-pane>
+      <a-tab-pane key="APPROVED" tab="已审批" />
+      <a-tab-pane key="ALL" tab="全部" />
+    </a-tabs>
 
-    <a-table :columns="columns" :data-source="tableData" :loading="loading" :pagination="pagination" @change="handleTableChange" row-key="id">
+    <a-table :columns="columns" :data-source="filteredData" :loading="loading" :pagination="pagination" @change="handleTableChange" row-key="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'status'">
           <StatusBadge :status="record.status" type="approval" />
@@ -11,10 +21,8 @@
           {{ formatDateTime(record.created_at) }}
         </template>
         <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="viewDetail(record)">查看</a>
-            <a v-if="record.status === 'PENDING' && record.current_step === myStep" type="primary" @click="openApproveModal(record)">审批</a>
-          </a-space>
+          <a v-if="record.status === 'PENDING'" type="primary" @click="openApproveModal(record)">审批</a>
+          <span v-else class="text-gray-400">--</span>
         </template>
       </template>
     </a-table>
@@ -37,53 +45,74 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
-import SearchForm from '@/components/SearchForm/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
-import { useTable } from '@/hooks/useTable'
 import { useModal } from '@/hooks/useModal'
-import request from '@/utils/request'
 import { formatDateTime } from '@/utils/date'
 
-const router = useRouter()
 const approveModal = useModal<any>()
 const submitting = ref(false)
-const myStep = ref('TECHNICAL')
+const loading = ref(false)
+const activeTab = ref('PENDING')
 
-const searchFields = [
-  { name: 'status', label: '状态', type: 'select', options: [
-    { label: '待审批', value: 'PENDING' }, { label: '已通过', value: 'APPROVED' }, { label: '已驳回', value: 'REJECTED' },
-  ]},
-]
+interface ApprovalRecord {
+  id: number
+  model_name: string
+  version_no: string
+  approval_type: string
+  submitter_name: string
+  status: string
+  created_at: string
+}
+
+const mockData = ref<ApprovalRecord[]>([
+  { id: 1, model_name: '肺结节检测模型', version_no: 'v2.3.1', approval_type: '上线审批', submitter_name: '张医生', status: 'PENDING', created_at: '2026-04-09 10:00' },
+  { id: 2, model_name: '病理分类模型', version_no: 'v3.0.0', approval_type: '发布审批', submitter_name: '李工', status: 'PENDING', created_at: '2026-04-08 16:30' },
+  { id: 3, model_name: '心电异常检测', version_no: 'v1.5.1', approval_type: '临床使用', submitter_name: '王医生', status: 'PENDING', created_at: '2026-04-08 09:15' },
+  { id: 4, model_name: 'NLP实体识别', version_no: 'v1.0.0', approval_type: '上线审批', submitter_name: '赵工', status: 'PENDING', created_at: '2026-04-07 14:00' },
+  { id: 5, model_name: '基因变异分类', version_no: 'v3.1.0', approval_type: '发布审批', submitter_name: '陈博士', status: 'PENDING', created_at: '2026-04-06 11:30' },
+  { id: 6, model_name: '糖尿病预测模型', version_no: 'v2.0.0', approval_type: '上线审批', submitter_name: '张医生', status: 'APPROVED', created_at: '2026-04-05 15:20' },
+  { id: 7, model_name: '骨折检测模型', version_no: 'v1.2.0', approval_type: '临床使用', submitter_name: '李工', status: 'REJECTED', created_at: '2026-04-04 10:45' },
+])
+
+const pendingCount = computed(() => mockData.value.filter(r => r.status === 'PENDING').length)
+
+const filteredData = computed(() => {
+  if (activeTab.value === 'ALL') return mockData.value
+  if (activeTab.value === 'APPROVED') return mockData.value.filter(r => r.status === 'APPROVED' || r.status === 'REJECTED')
+  return mockData.value.filter(r => r.status === 'PENDING')
+})
+
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: computed(() => filteredData.value.length),
+  showSizeChanger: false,
+  showTotal: (total: number) => `共 ${total} 条`,
+})
+
+function onTabChange() {
+  pagination.current = 1
+}
+
+function handleTableChange(pag: any) {
+  pagination.current = pag.current
+}
 
 const columns = [
-  { title: '审批ID', dataIndex: 'id', key: 'id', width: 80 },
   { title: '模型名称', dataIndex: 'model_name', key: 'model_name' },
   { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 100 },
   { title: '审批类型', dataIndex: 'approval_type', key: 'approval_type', width: 120 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '当前步骤', dataIndex: 'current_step', key: 'current_step', width: 100 },
-  { title: '提交人', dataIndex: 'submitter_name', key: 'submitter_name', width: 100 },
+  { title: '申请人', dataIndex: 'submitter_name', key: 'submitter_name', width: 100 },
   { title: '提交时间', dataIndex: 'created_at', key: 'created_at', width: 170 },
-  { title: '操作', key: 'action', width: 140 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '操作', key: 'action', width: 100 },
 ]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
-  (params) => request.get('/approvals', { params: { page: params.page, page_size: params.pageSize } })
-)
 
 const approveForm = reactive({ action: 'APPROVED', comment: '' })
 let approvingId = 0
-
-function handleSearch() { fetchData() }
-function handleReset() { fetchData() }
-
-function viewDetail(record: any) {
-  message.info('查看审批详情 #' + record.id)
-}
 
 function openApproveModal(record: any) {
   approvingId = record.id
@@ -95,12 +124,14 @@ function openApproveModal(record: any) {
 async function handleApprove() {
   submitting.value = true
   try {
-    await request.put(`/approvals/${approvingId}/review`, approveForm)
+    const idx = mockData.value.findIndex(r => r.id === approvingId)
+    if (idx !== -1) {
+      mockData.value[idx].status = approveForm.action
+    }
     message.success('审批完成')
     approveModal.close()
-    fetchData()
-  } finally { submitting.value = false }
+  } finally {
+    submitting.value = false
+  }
 }
-
-onMounted(() => fetchData())
 </script>
