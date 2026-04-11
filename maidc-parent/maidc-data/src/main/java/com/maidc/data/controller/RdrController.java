@@ -7,9 +7,21 @@ import com.maidc.data.dto.DatasetCreateDTO;
 import com.maidc.data.dto.DatasetQueryDTO;
 import com.maidc.data.dto.ProjectCreateDTO;
 import com.maidc.data.dto.ProjectQueryDTO;
+import com.maidc.data.entity.ClinicalFeatureEntity;
+import com.maidc.data.entity.DatasetAccessLogEntity;
+import com.maidc.data.entity.FeatureDictionaryEntity;
+import com.maidc.data.entity.GenomicDatasetEntity;
+import com.maidc.data.entity.ImagingAnnotationEntity;
+import com.maidc.data.entity.ImagingDatasetEntity;
 import com.maidc.data.entity.ResearchCohortEntity;
 import com.maidc.data.entity.StudySubjectEntity;
+import com.maidc.data.service.ClinicalFeatureService;
+import com.maidc.data.service.DatasetAccessLogService;
 import com.maidc.data.service.DatasetService;
+import com.maidc.data.service.FeatureDictionaryService;
+import com.maidc.data.service.GenomicDatasetService;
+import com.maidc.data.service.ImagingAnnotationService;
+import com.maidc.data.service.ImagingDatasetService;
 import com.maidc.data.service.ProjectService;
 import com.maidc.data.service.ResearchCohortService;
 import com.maidc.data.service.StudySubjectService;
@@ -32,6 +44,12 @@ public class RdrController {
     private final DatasetService datasetService;
     private final ResearchCohortService researchCohortService;
     private final StudySubjectService studySubjectService;
+    private final DatasetAccessLogService datasetAccessLogService;
+    private final ClinicalFeatureService clinicalFeatureService;
+    private final FeatureDictionaryService featureDictionaryService;
+    private final ImagingDatasetService imagingDatasetService;
+    private final ImagingAnnotationService imagingAnnotationService;
+    private final GenomicDatasetService genomicDatasetService;
 
     // ==================== Project ====================
 
@@ -168,6 +186,192 @@ public class RdrController {
     @DeleteMapping("/study-subjects/{id}")
     public R<Void> deleteSubject(@PathVariable Long id) {
         studySubjectService.deleteSubject(id);
+        return R.ok();
+    }
+
+    // ==================== Dataset Access Log ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/dataset-access-logs")
+    public R<Page<DatasetAccessLogEntity>> listAccessLogs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(datasetAccessLogService.listAccessLogs(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/dataset-access-logs/{id}")
+    public R<DatasetAccessLogEntity> getAccessLog(@PathVariable Long id) {
+        return R.ok(datasetAccessLogService.getAccessLog(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createAccessLog")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/dataset-access-logs")
+    public R<DatasetAccessLogEntity> createAccessLog(@RequestBody DatasetAccessLogEntity entity) {
+        return R.ok(datasetAccessLogService.createAccessLog(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteAccessLog")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/dataset-access-logs/{id}")
+    public R<Void> deleteAccessLog(@PathVariable Long id) {
+        datasetAccessLogService.deleteAccessLog(id);
+        return R.ok();
+    }
+
+    // ==================== Clinical Feature ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/clinical-features")
+    public R<Page<ClinicalFeatureEntity>> listFeatures(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(clinicalFeatureService.listFeatures(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/clinical-features/{id}")
+    public R<ClinicalFeatureEntity> getFeature(@PathVariable Long id) {
+        return R.ok(clinicalFeatureService.getFeature(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createFeature")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/clinical-features")
+    public R<ClinicalFeatureEntity> createFeature(@RequestBody ClinicalFeatureEntity entity) {
+        return R.ok(clinicalFeatureService.createFeature(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteFeature")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/clinical-features/{id}")
+    public R<Void> deleteFeature(@PathVariable Long id) {
+        clinicalFeatureService.deleteFeature(id);
+        return R.ok();
+    }
+
+    // ==================== Feature Dictionary ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/feature-dictionary")
+    public R<Page<FeatureDictionaryEntity>> listDictionaries(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(featureDictionaryService.listDictionaries(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/feature-dictionary/{id}")
+    public R<FeatureDictionaryEntity> getDictionary(@PathVariable Long id) {
+        return R.ok(featureDictionaryService.getDictionary(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createDictionary")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/feature-dictionary")
+    public R<FeatureDictionaryEntity> createDictionary(@RequestBody FeatureDictionaryEntity entity) {
+        return R.ok(featureDictionaryService.createDictionary(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteDictionary")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/feature-dictionary/{id}")
+    public R<Void> deleteDictionary(@PathVariable Long id) {
+        featureDictionaryService.deleteDictionary(id);
+        return R.ok();
+    }
+
+    // ==================== Imaging Dataset ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/imaging-datasets")
+    public R<Page<ImagingDatasetEntity>> listImagingDatasets(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(imagingDatasetService.listImagingDatasets(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/imaging-datasets/{id}")
+    public R<ImagingDatasetEntity> getImagingDataset(@PathVariable Long id) {
+        return R.ok(imagingDatasetService.getImagingDataset(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createImagingDataset")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/imaging-datasets")
+    public R<ImagingDatasetEntity> createImagingDataset(@RequestBody ImagingDatasetEntity entity) {
+        return R.ok(imagingDatasetService.createImagingDataset(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteImagingDataset")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/imaging-datasets/{id}")
+    public R<Void> deleteImagingDataset(@PathVariable Long id) {
+        imagingDatasetService.deleteImagingDataset(id);
+        return R.ok();
+    }
+
+    // ==================== Imaging Annotation ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/imaging-annotations")
+    public R<Page<ImagingAnnotationEntity>> listAnnotations(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(imagingAnnotationService.listAnnotations(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/imaging-annotations/{id}")
+    public R<ImagingAnnotationEntity> getAnnotation(@PathVariable Long id) {
+        return R.ok(imagingAnnotationService.getAnnotation(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createAnnotation")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/imaging-annotations")
+    public R<ImagingAnnotationEntity> createAnnotation(@RequestBody ImagingAnnotationEntity entity) {
+        return R.ok(imagingAnnotationService.createAnnotation(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteAnnotation")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/imaging-annotations/{id}")
+    public R<Void> deleteAnnotation(@PathVariable Long id) {
+        imagingAnnotationService.deleteAnnotation(id);
+        return R.ok();
+    }
+
+    // ==================== Genomic Dataset ====================
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/genomic-datasets")
+    public R<Page<GenomicDatasetEntity>> listGenomicDatasets(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(genomicDatasetService.listGenomicDatasets(page, size));
+    }
+
+    @PreAuthorize("hasPermission('rdr:read')")
+    @GetMapping("/genomic-datasets/{id}")
+    public R<GenomicDatasetEntity> getGenomicDataset(@PathVariable Long id) {
+        return R.ok(genomicDatasetService.getGenomicDataset(id));
+    }
+
+    @OperLog(module = "rdr", operation = "createGenomicDataset")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PostMapping("/genomic-datasets")
+    public R<GenomicDatasetEntity> createGenomicDataset(@RequestBody GenomicDatasetEntity entity) {
+        return R.ok(genomicDatasetService.createGenomicDataset(entity));
+    }
+
+    @OperLog(module = "rdr", operation = "deleteGenomicDataset")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @DeleteMapping("/genomic-datasets/{id}")
+    public R<Void> deleteGenomicDataset(@PathVariable Long id) {
+        genomicDatasetService.deleteGenomicDataset(id);
         return R.ok();
     }
 }
