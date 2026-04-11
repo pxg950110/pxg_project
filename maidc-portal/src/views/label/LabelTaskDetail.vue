@@ -1,179 +1,311 @@
 <template>
-  <PageContainer :title="task?.name || '标注任务详情'" :loading="loading">
-    <template #extra>
-      <a-space>
-        <a-button @click="router.push(`/label/workspace/${route.params.id}`)">
-          <EditOutlined /> 进入工作台
-        </a-button>
-        <a-button @click="router.back()">返回</a-button>
-      </a-space>
-    </template>
-
-    <template v-if="task">
-      <!-- Task Info Header -->
-      <a-card style="margin-bottom: 16px">
-        <a-descriptions :column="3" bordered size="small">
-          <a-descriptions-item label="任务名称">{{ task.name }}</a-descriptions-item>
-          <a-descriptions-item label="标注类型">
-            <a-tag :color="task.task_type === 'TEXT' ? 'blue' : 'green'">{{ task.task_type }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="数据集">{{ task.dataset_name || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="标注人">{{ task.assignee_name || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="状态">
-            <a-tag :color="statusColorMap[task.status] || 'default'">{{ task.status }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ formatDateTime(task.created_at) }}</a-descriptions-item>
-        </a-descriptions>
-      </a-card>
-
-      <!-- Metric Cards -->
-      <a-row :gutter="16" style="margin-bottom: 16px">
-        <a-col :span="6">
-          <MetricCard title="总数" :value="stats.total" :loading="statsLoading" />
-        </a-col>
-        <a-col :span="6">
-          <MetricCard title="已完成" :value="stats.completed" :loading="statsLoading" />
-        </a-col>
-        <a-col :span="6">
-          <MetricCard title="进行中" :value="stats.in_progress" :loading="statsLoading" />
-        </a-col>
-        <a-col :span="6">
-          <MetricCard title="已审核" :value="stats.reviewed" :loading="statsLoading" />
-        </a-col>
-      </a-row>
-
-      <!-- Progress Bar -->
-      <a-card style="margin-bottom: 16px">
-        <div style="display: flex; align-items: center; gap: 16px">
-          <span style="white-space: nowrap; color: rgba(0,0,0,0.65)">标注进度</span>
-          <a-progress :percent="progressPercent" :status="progressStatus" style="flex: 1" />
-          <span style="white-space: nowrap; color: rgba(0,0,0,0.45)">
-            {{ stats.completed }} / {{ stats.total }}
-          </span>
+  <div class="page-container">
+    <!-- Custom Header (not using PageContainer title slot since it only renders text) -->
+    <div class="page-header">
+      <div class="task-header">
+        <div class="task-header-left">
+          <a-button type="text" @click="router.back()" class="back-btn">
+            <ArrowLeftOutlined />
+          </a-button>
+          <div class="task-title-block">
+            <h2 class="task-title">肺结节影像标注</h2>
+            <span class="task-subtitle">
+              <a-tag color="blue">影像标注</a-tag>
+              <a-tag color="orange">矩形框标注</a-tag>
+              <a-tag color="green">进行中</a-tag>
+            </span>
+          </div>
         </div>
-      </a-card>
+        <div class="task-header-right">
+          <a-button>
+            <EditOutlined /> 编辑任务
+          </a-button>
+          <a-button danger ghost>
+            <DeleteOutlined /> 删除
+          </a-button>
+        </div>
+      </div>
+    </div>
 
-      <!-- Tabs -->
-      <a-card>
-        <a-tabs v-model:activeKey="activeTab">
-          <!-- Annotations Tab -->
-          <a-tab-pane key="annotations" tab="标注列表">
-            <a-table
-              :columns="annotationColumns"
-              :data-source="annotations"
-              :loading="annotationsLoading"
-              :pagination="{ pageSize: 20 }"
-              size="small"
-              row-key="id"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'status'">
-                  <a-tag :color="annotationStatusMap[record.status] || 'default'">{{ record.status }}</a-tag>
-                </template>
-                <template v-if="column.key === 'created_at'">
-                  {{ formatDateTime(record.created_at) }}
-                </template>
-                <template v-if="column.key === 'action'">
-                  <a-space>
-                    <a @click="router.push(`/label/workspace/${route.params.id}?item=${record.id}`)">标注</a>
-                    <a v-if="record.status === 'COMPLETED'" @click="openReview(record)">审核</a>
-                  </a-space>
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+    <a-spin :spinning="loading">
+      <div class="page-content">
+        <!-- 4 Metric Cards -->
+        <a-row :gutter="16" style="margin-bottom: 16px">
+          <a-col :span="6">
+            <MetricCard
+              title="标注进度"
+              :value="650"
+              suffix="/1000"
+              :icon="DashboardOutlined"
+            />
+          </a-col>
+          <a-col :span="6">
+            <MetricCard
+              title="标注员"
+              :value="3"
+              suffix="人"
+              :icon="TeamOutlined"
+            />
+          </a-col>
+          <a-col :span="6">
+            <MetricCard
+              title="标注数据"
+              :value="650"
+              suffix="条"
+              :icon="DatabaseOutlined"
+            />
+          </a-col>
+          <a-col :span="6">
+            <a-card :bordered="false" class="metric-card">
+              <div class="metric-card-inner">
+                <div class="metric-content">
+                  <div class="metric-title">平均一致性</div>
+                  <div class="metric-value">
+                    <span class="value-number" style="color: #52c41a">0.92</span>
+                  </div>
+                </div>
+                <div class="metric-icon">
+                  <CheckCircleOutlined />
+                </div>
+              </div>
+            </a-card>
+          </a-col>
+        </a-row>
 
-          <!-- Statistics Tab -->
-          <a-tab-pane key="statistics" tab="统计">
-            <a-row :gutter="16">
-              <a-col :span="14">
-                <a-card title="标注人统计" size="small">
-                  <a-table
-                    :columns="annotatorStatColumns"
-                    :data-source="annotatorStats"
-                    size="small"
-                    row-key="user_id"
-                    :pagination="false"
-                  >
-                    <template #bodyCell="{ column, record }">
-                      <template v-if="column.key === 'progress'">
-                        <a-progress :percent="record.progress" size="small" />
-                      </template>
+        <!-- Progress Bar -->
+        <a-card style="margin-bottom: 16px">
+          <div style="display: flex; align-items: center; gap: 16px">
+            <span style="white-space: nowrap; font-weight: 500">总标注进度</span>
+            <a-progress :percent="75" style="flex: 1" />
+            <span style="white-space: nowrap; color: rgba(0,0,0,0.45)">450 / 600</span>
+          </div>
+        </a-card>
+
+        <!-- 5 Tabs -->
+        <a-card>
+          <a-tabs v-model:activeKey="activeTab">
+            <!-- Tab 1: 标注进度 -->
+            <a-tab-pane key="progress" tab="标注进度">
+              <!-- Annotator Progress Table -->
+              <a-table
+                :columns="annotatorProgressColumns"
+                :data-source="annotatorProgressData"
+                :pagination="false"
+                size="middle"
+                row-key="name"
+                style="margin-bottom: 16px"
+              >
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.key === 'completionRate'">
+                    <span :style="{ color: getCompletionColor(record.completionRate), fontWeight: 500 }">
+                      {{ record.completionRate }}%
+                    </span>
+                  </template>
+                  <template v-if="column.key === 'action'">
+                    <a @click="router.push(`/label/workspace/${route.params.id}`)">查看</a>
+                  </template>
+                </template>
+              </a-table>
+              <div>
+                <a-button type="primary" style="margin-right: 12px">分配标注</a-button>
+                <a-button>批量导出</a-button>
+              </div>
+            </a-tab-pane>
+
+            <!-- Tab 2: 质量控制 -->
+            <a-tab-pane key="quality" tab="质量控制">
+              <!-- Quality Metric Cards -->
+              <a-row :gutter="16" style="margin-bottom: 16px">
+                <a-col :span="6">
+                  <a-card size="small">
+                    <a-statistic title="一致性" :value="0.92" :precision="2" :value-style="{ color: '#52c41a' }" />
+                  </a-card>
+                </a-col>
+                <a-col :span="6">
+                  <a-card size="small">
+                    <a-statistic title="准确率" :value="0.88" :precision="2" :value-style="{ color: '#1677ff' }" />
+                  </a-card>
+                </a-col>
+                <a-col :span="6">
+                  <a-card size="small">
+                    <a-statistic title="召回率" :value="0.91" :precision="2" :value-style="{ color: '#1677ff' }" />
+                  </a-card>
+                </a-col>
+                <a-col :span="6">
+                  <a-card size="small">
+                    <a-statistic title="F1" :value="0.89" :precision="2" :value-style="{ color: '#1677ff' }" />
+                  </a-card>
+                </a-col>
+              </a-row>
+
+              <!-- Quality Trend Chart -->
+              <a-card title="质量趋势" size="small" style="margin-bottom: 16px">
+                <MetricChart :option="qualityTrendOption" height="280px" />
+              </a-card>
+
+              <!-- Recent Quality Issues -->
+              <a-card title="近期质量问题" size="small">
+                <a-table
+                  :columns="qualityIssueColumns"
+                  :data-source="qualityIssueData"
+                  :pagination="false"
+                  size="small"
+                  row-key="id"
+                >
+                  <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'severity'">
+                      <a-tag :color="record.severity === '高' ? 'red' : record.severity === '中' ? 'orange' : 'blue'">
+                        {{ record.severity }}
+                      </a-tag>
                     </template>
-                  </a-table>
-                </a-card>
-              </a-col>
-              <a-col :span="10">
-                <a-card title="标注分布" size="small">
-                  <MetricChart :option="labelDistOption" height="280px" />
-                </a-card>
-              </a-col>
-            </a-row>
-          </a-tab-pane>
+                    <template v-if="column.key === 'status'">
+                      <a-tag :color="record.status === '已解决' ? 'green' : 'volcano'">
+                        {{ record.status }}
+                      </a-tag>
+                    </template>
+                  </template>
+                </a-table>
+              </a-card>
+            </a-tab-pane>
 
-          <!-- Settings Tab -->
-          <a-tab-pane key="settings" tab="设置">
-            <a-form layout="vertical" style="max-width: 600px">
-              <a-form-item label="任务名称">
-                <a-input v-model:value="settingsForm.name" />
-              </a-form-item>
-              <a-form-item label="标签列表">
-                <a-select
-                  v-model:value="settingsForm.labels"
-                  mode="tags"
-                  placeholder="输入标签后回车添加"
-                />
-              </a-form-item>
-              <a-form-item label="允许多标签">
-                <a-switch v-model:checked="settingsForm.multi_label" />
-              </a-form-item>
-              <a-form-item label="要求审核">
-                <a-switch v-model:checked="settingsForm.require_review" />
-              </a-form-item>
-              <a-form-item>
-                <a-button type="primary" @click="handleSaveSettings" :loading="savingSettings">保存设置</a-button>
-              </a-form-item>
-            </a-form>
-          </a-tab-pane>
-        </a-tabs>
-      </a-card>
-    </template>
+            <!-- Tab 3: 标注人员 -->
+            <a-tab-pane key="personnel" tab="标注人员">
+              <a-row :gutter="16">
+                <a-col :span="6" v-for="person in personnelData" :key="person.name">
+                  <a-card size="small" hoverable style="text-align: center">
+                    <a-avatar :size="56" :style="{ backgroundColor: person.color, marginBottom: '12px' }">
+                      {{ person.name.charAt(0) }}
+                    </a-avatar>
+                    <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px">{{ person.name }}</div>
+                    <a-tag :color="person.role === '审核员' ? 'purple' : 'blue'" style="margin-bottom: 12px">
+                      {{ person.role }}
+                    </a-tag>
+                    <div style="font-size: 13px; color: rgba(0,0,0,0.65); textAlign: 'left'">
+                      <div style="display: flex; justify-content: space-between; padding: 4px 0">
+                        <span>已分配</span>
+                        <span>{{ person.assigned }} 条</span>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; padding: 4px 0">
+                        <span>已完成</span>
+                        <span>{{ person.completed }} 条</span>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; padding: 4px 0">
+                        <span>状态</span>
+                        <span :style="{ color: person.status === '在线' ? '#52c41a' : '#999' }">{{ person.status }}</span>
+                      </div>
+                    </div>
+                  </a-card>
+                </a-col>
+              </a-row>
+            </a-tab-pane>
 
-    <!-- Annotation Review Modal -->
+            <!-- Tab 4: 标注统计 -->
+            <a-tab-pane key="statistics" tab="标注统计">
+              <a-row :gutter="16">
+                <a-col :span="12">
+                  <a-card title="标注分布" size="small">
+                    <MetricChart :option="labelDistOption" height="300px" />
+                  </a-card>
+                </a-col>
+                <a-col :span="12">
+                  <a-card title="每日标注数量" size="small">
+                    <MetricChart :option="dailyCountOption" height="300px" />
+                  </a-card>
+                </a-col>
+              </a-row>
+            </a-tab-pane>
+
+            <!-- Tab 5: 操作日志 -->
+            <a-tab-pane key="logs" tab="操作日志">
+              <a-table
+                :columns="logColumns"
+                :data-source="logData"
+                :pagination="{ pageSize: 10 }"
+                size="middle"
+                row-key="id"
+              >
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.key === 'type'">
+                    <a-tag :color="logTypeColorMap[record.type] || 'default'">{{ record.type }}</a-tag>
+                  </template>
+                </template>
+              </a-table>
+            </a-tab-pane>
+          </a-tabs>
+        </a-card>
+      </div>
+    </a-spin>
+
+    <!-- Review Modal -->
     <a-modal
       v-model:open="reviewModal.visible"
       title="标注审核"
-      @ok="handleReview"
-      :confirm-loading="reviewing"
-      width="500px"
+      width="720px"
+      :footer="null"
     >
-      <template v-if="reviewModal.currentRecord?.value">
-        <a-descriptions :column="1" size="small" bordered>
-          <a-descriptions-item label="标注内容">{{ reviewModal.currentRecord.value.content }}</a-descriptions-item>
-          <a-descriptions-item label="标注标签">{{ reviewModal.currentRecord.value.label }}</a-descriptions-item>
-          <a-descriptions-item label="标注人">{{ reviewModal.currentRecord.value.annotator_name }}</a-descriptions-item>
-        </a-descriptions>
-        <a-form layout="vertical" style="margin-top: 16px">
-          <a-form-item label="审核结果" required>
-            <a-radio-group v-model:value="reviewForm.action">
-              <a-radio value="APPROVE">通过</a-radio>
-              <a-radio value="REJECT">驳回</a-radio>
-            </a-radio-group>
-          </a-form-item>
-          <a-form-item label="审核意见">
-            <a-textarea v-model:value="reviewForm.comment" :rows="2" placeholder="可选填写审核意见" />
-          </a-form-item>
-        </a-form>
-      </template>
+      <div class="review-modal-body">
+        <a-row :gutter="16">
+          <!-- Left: Image Preview -->
+          <a-col :span="10">
+            <div class="image-preview-box">
+              <CameraOutlined style="font-size: 48px; color: rgba(0,0,0,0.15)" />
+              <div style="margin-top: 8px; color: rgba(0,0,0,0.25)">影像预览区域</div>
+            </div>
+          </a-col>
+          <!-- Right: Annotator Comparison -->
+          <a-col :span="14">
+            <!-- Annotator A -->
+            <a-card size="small" class="annotator-card annotator-card-a" style="margin-bottom: 12px">
+              <template #title>
+                <span style="color: #1677ff">标注员 A — 李医生</span>
+              </template>
+              <pre class="annotation-json">{
+  "label": "nodule",
+  "bbox": [120, 85, 210, 175],
+  "confidence": 0.95
+}</pre>
+            </a-card>
+            <!-- Annotator B -->
+            <a-card size="small" class="annotator-card annotator-card-b" style="margin-bottom: 12px">
+              <template #title>
+                <span style="color: #52c41a">标注员 B — 王技师</span>
+              </template>
+              <pre class="annotation-json">{
+  "label": "nodule",
+  "bbox": [118, 83, 215, 178],
+  "confidence": 0.91
+}</pre>
+            </a-card>
+            <!-- IoU Score -->
+            <div class="iou-score">
+              <span style="color: rgba(0,0,0,0.65)">IoU / 一致性得分:</span>
+              <span style="font-size: 20px; font-weight: 600; color: #52c41a; margin-left: 8px">0.87</span>
+            </div>
+          </a-col>
+        </a-row>
+      </div>
+      <!-- Custom Footer -->
+      <div class="review-modal-footer">
+        <a-button danger ghost @click="reviewModal.close()">驳回</a-button>
+        <a-button type="primary" style="background-color: #52c41a; border-color: #52c41a" @click="reviewModal.close()">通过</a-button>
+      </div>
     </a-modal>
-  </PageContainer>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { EditOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import {
+  ArrowLeftOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  DashboardOutlined,
+  TeamOutlined,
+  DatabaseOutlined,
+  CheckCircleOutlined,
+  CameraOutlined,
+} from '@ant-design/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
@@ -187,178 +319,303 @@ defineOptions({ name: 'LabelTaskDetail' })
 const route = useRoute()
 const router = useRouter()
 const reviewModal = useModal()
-const reviewing = ref(false)
-const savingSettings = ref(false)
-
-const task = ref<any>(null)
 const loading = ref(false)
-const activeTab = ref('annotations')
+const activeTab = ref('progress')
 
-// Stats
-const stats = reactive({ total: 0, completed: 0, in_progress: 0, reviewed: 0 })
-const statsLoading = ref(false)
+// =============================================
+// Tab 1: 标注进度 — Annotator Progress Table
+// =============================================
+const annotatorProgressColumns = [
+  { title: '标注员', dataIndex: 'name', key: 'name', width: 120 },
+  { title: '已分配', dataIndex: 'assigned', key: 'assigned', width: 90 },
+  { title: '已完成', dataIndex: 'completed', key: 'completed', width: 90 },
+  { title: '进行中', dataIndex: 'inProgress', key: 'inProgress', width: 90 },
+  { title: '待处理', dataIndex: 'pending', key: 'pending', width: 90 },
+  { title: '完成率', dataIndex: 'completionRate', key: 'completionRate', width: 100 },
+  { title: '操作', key: 'action', width: 80 },
+]
 
-// Annotations
-const annotations = ref<any[]>([])
-const annotationsLoading = ref(false)
+const annotatorProgressData = ref([
+  { name: '李医生', assigned: 150, completed: 128, inProgress: 12, pending: 10, completionRate: 85 },
+  { name: '王技师', assigned: 180, completed: 162, inProgress: 8, pending: 10, completionRate: 90 },
+  { name: '赵实习生', assigned: 120, completed: 96, inProgress: 14, pending: 10, completionRate: 80 },
+  { name: '张主任', assigned: 100, completed: 50, inProgress: 20, pending: 30, completionRate: 50 },
+  { name: 'AI预标注', assigned: 50, completed: 14, inProgress: 0, pending: 36, completionRate: 28 },
+])
 
-// Annotator stats
-const annotatorStats = ref<any[]>([])
-
-const statusColorMap: Record<string, string> = {
-  PENDING: 'default',
-  IN_PROGRESS: 'processing',
-  COMPLETED: 'success',
+function getCompletionColor(rate: number): string {
+  if (rate >= 80) return '#52c41a'
+  if (rate >= 50) return '#faad14'
+  return '#ff4d4f'
 }
 
-const annotationStatusMap: Record<string, string> = {
-  PENDING: 'default',
-  ANNOTATED: 'blue',
-  REVIEWED: 'green',
-  REJECTED: 'red',
-}
+// =============================================
+// Tab 2: 质量控制
+// =============================================
+const qualityIssueColumns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
+  { title: '标注员', dataIndex: 'annotator', key: 'annotator', width: 100 },
+  { title: '问题类型', dataIndex: 'issueType', key: 'issueType', width: 120 },
+  { title: '严重程度', dataIndex: 'severity', key: 'severity', width: 100 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '时间', dataIndex: 'time', key: 'time', width: 170 },
+]
 
-const progressPercent = computed(() => {
-  if (!stats.total) return 0
-  return Math.round((stats.completed / stats.total) * 100)
+const qualityIssueData = ref([
+  { id: 1, annotator: '赵实习生', issueType: '标注偏差过大', severity: '高', status: '待处理', time: '2026-04-12 09:30' },
+  { id: 2, annotator: '李医生', issueType: '遗漏标注', severity: '中', status: '已解决', time: '2026-04-11 15:20' },
+  { id: 3, annotator: '王技师', issueType: '边界不精确', severity: '低', status: '已解决', time: '2026-04-10 11:45' },
+])
+
+const qualityTrendOption = ref({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['一致性', '准确率', 'F1'] },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  xAxis: {
+    type: 'category',
+    data: ['04-06', '04-07', '04-08', '04-09', '04-10', '04-11', '04-12'],
+  },
+  yAxis: { type: 'value', min: 0.7, max: 1.0 },
+  series: [
+    {
+      name: '一致性',
+      type: 'bar',
+      data: [0.85, 0.88, 0.87, 0.90, 0.89, 0.91, 0.92],
+      itemStyle: { color: '#52c41a' },
+    },
+    {
+      name: '准确率',
+      type: 'bar',
+      data: [0.82, 0.84, 0.85, 0.86, 0.87, 0.87, 0.88],
+      itemStyle: { color: '#1677ff' },
+    },
+    {
+      name: 'F1',
+      type: 'bar',
+      data: [0.83, 0.85, 0.86, 0.88, 0.88, 0.89, 0.89],
+      itemStyle: { color: '#722ed1' },
+    },
+  ],
 })
 
-const progressStatus = computed(() => {
-  if (progressPercent.value >= 100) return 'success' as const
-  if (task.value?.status === 'COMPLETED') return 'success' as const
-  return 'active' as const
-})
+// =============================================
+// Tab 3: 标注人员
+// =============================================
+const personnelData = ref([
+  { name: '李医生', role: '标注员', assigned: 150, completed: 128, status: '在线', color: '#1677ff' },
+  { name: '王技师', role: '标注员', assigned: 180, completed: 162, status: '在线', color: '#52c41a' },
+  { name: '张主任', role: '审核员', assigned: 100, completed: 50, status: '离线', color: '#722ed1' },
+  { name: '赵实习生', role: '标注员', assigned: 120, completed: 96, status: '在线', color: '#fa8c16' },
+])
 
+// =============================================
+// Tab 4: 标注统计
+// =============================================
 const labelDistOption = ref({
   tooltip: { trigger: 'item' },
   legend: { bottom: 0 },
   series: [{
     type: 'pie',
     radius: ['35%', '65%'],
-    data: [] as { value: number; name: string }[],
+    data: [
+      { value: 320, name: '肺结节' },
+      { value: 180, name: '磨玻璃影' },
+      { value: 95, name: '实变' },
+      { value: 55, name: '钙化' },
+    ],
     itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
   }],
 })
 
-const annotationColumns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-  { title: '数据项', dataIndex: 'data_item', key: 'data_item', ellipsis: true },
-  { title: '标注标签', dataIndex: 'label', key: 'label', width: 120 },
-  { title: '标注人', dataIndex: 'annotator_name', key: 'annotator_name', width: 100 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 170 },
-  { title: '操作', key: 'action', width: 120 },
+const dailyCountOption = ref({
+  tooltip: { trigger: 'axis' },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  xAxis: {
+    type: 'category',
+    data: ['04-06', '04-07', '04-08', '04-09', '04-10', '04-11', '04-12'],
+  },
+  yAxis: { type: 'value' },
+  series: [{
+    type: 'bar',
+    data: [45, 62, 58, 71, 68, 75, 80],
+    itemStyle: {
+      color: {
+        type: 'linear',
+        x: 0, y: 0, x2: 0, y2: 1,
+        colorStops: [
+          { offset: 0, color: '#1677ff' },
+          { offset: 1, color: '#69b1ff' },
+        ],
+      },
+      borderRadius: [4, 4, 0, 0],
+    },
+  }],
+})
+
+// =============================================
+// Tab 5: 操作日志
+// =============================================
+const logColumns = [
+  { title: '时间', dataIndex: 'time', key: 'time', width: 170 },
+  { title: '操作人', dataIndex: 'operator', key: 'operator', width: 100 },
+  { title: '操作类型', dataIndex: 'type', key: 'type', width: 120 },
+  { title: '详情', dataIndex: 'detail', key: 'detail' },
 ]
 
-const annotatorStatColumns = [
-  { title: '标注人', dataIndex: 'user_name', key: 'user_name', width: 120 },
-  { title: '已完成', dataIndex: 'completed', key: 'completed', width: 80 },
-  { title: '已审核', dataIndex: 'reviewed', key: 'reviewed', width: 80 },
-  { title: '驳回数', dataIndex: 'rejected', key: 'rejected', width: 80 },
-  { title: '进度', dataIndex: 'progress', key: 'progress' },
-]
-
-const settingsForm = reactive({
-  name: '',
-  labels: [] as string[],
-  multi_label: false,
-  require_review: true,
-})
-
-const reviewForm = reactive({ action: 'APPROVE', comment: '' })
-
-async function loadTask() {
-  loading.value = true
-  try {
-    const res = await getLabelTask(Number(route.params.id))
-    task.value = res.data.data
-    settingsForm.name = task.value.name
-    settingsForm.labels = task.value.labels || []
-    settingsForm.multi_label = task.value.multi_label || false
-    settingsForm.require_review = task.value.require_review !== false
-  } finally {
-    loading.value = false
-  }
+const logTypeColorMap: Record<string, string> = {
+  '创建任务': 'blue',
+  '分配标注': 'cyan',
+  '完成标注': 'green',
+  '审核通过': 'green',
+  '审核驳回': 'red',
+  '修改设置': 'orange',
+  '添加标注员': 'purple',
+  '导出数据': 'geekblue',
 }
 
-async function loadStats() {
-  statsLoading.value = true
-  try {
-    const res = await getLabelTaskStats(Number(route.params.id))
-    const data = res.data.data
-    stats.total = data.total || 0
-    stats.completed = data.completed || 0
-    stats.in_progress = data.in_progress || 0
-    stats.reviewed = data.reviewed || 0
-
-    // Annotator stats
-    annotatorStats.value = data.annotator_stats || []
-
-    // Label distribution chart
-    const labelDist = data.label_distribution || []
-    labelDistOption.value = {
-      ...labelDistOption.value,
-      series: [{
-        type: 'pie',
-        radius: ['35%', '65%'],
-        data: labelDist.map((item: any) => ({ value: item.count, name: item.label })),
-        itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
-      }],
-    }
-  } finally {
-    statsLoading.value = false
-  }
-}
-
-async function loadAnnotations() {
-  annotationsLoading.value = true
-  try {
-    const res = await request.get(`/label/tasks/${route.params.id}/annotations`)
-    annotations.value = res.data.data?.items || res.data.data || []
-  } finally {
-    annotationsLoading.value = false
-  }
-}
-
-function openReview(record: any) {
-  reviewForm.action = 'APPROVE'
-  reviewForm.comment = ''
-  reviewModal.open(record)
-}
-
-async function handleReview() {
-  reviewing.value = true
-  try {
-    const record = reviewModal.currentRecord!.value!
-    await request.post(`/label/annotations/${record.id}/review`, reviewForm)
-    message.success(reviewForm.action === 'APPROVE' ? '审核通过' : '已驳回')
-    reviewModal.close()
-    loadAnnotations()
-    loadStats()
-  } finally {
-    reviewing.value = false
-  }
-}
-
-async function handleSaveSettings() {
-  savingSettings.value = true
-  try {
-    await request.put(`/label/tasks/${route.params.id}`, settingsForm)
-    message.success('设置已保存')
-    loadTask()
-  } finally {
-    savingSettings.value = false
-  }
-}
-
-watch(activeTab, (tab) => {
-  if (tab === 'annotations' && !annotations.value.length) loadAnnotations()
-  else if (tab === 'statistics') loadStats()
-})
-
-onMounted(async () => {
-  await loadTask()
-  loadStats()
-  loadAnnotations()
-})
+const logData = ref([
+  { id: 1, time: '2026-04-12 10:30:00', operator: '管理员', type: '创建任务', detail: '创建标注任务"肺结节影像标注"，分配数据集1000条' },
+  { id: 2, time: '2026-04-12 10:35:00', operator: '管理员', type: '添加标注员', detail: '添加标注员：李医生、王技师、赵实习生' },
+  { id: 3, time: '2026-04-12 10:40:00', operator: '管理员', type: '分配标注', detail: '分配150条数据给李医生，数据ID范围: 1-150' },
+  { id: 4, time: '2026-04-12 11:00:00', operator: '管理员', type: '分配标注', detail: '分配180条数据给王技师，数据ID范围: 151-330' },
+  { id: 5, time: '2026-04-12 14:20:00', operator: '李医生', type: '完成标注', detail: '完成数据ID 1-50的标注，共50条' },
+  { id: 6, time: '2026-04-12 15:00:00', operator: '张主任', type: '审核通过', detail: '审核通过李医生标注的数据ID 1-30，共30条' },
+  { id: 7, time: '2026-04-12 16:30:00', operator: '张主任', type: '审核驳回', detail: '驳回赵实习生标注的数据ID 500-510，原因：标注边界不精确' },
+  { id: 8, time: '2026-04-12 17:00:00', operator: '管理员', type: '修改设置', detail: '修改任务设置：启用AI预标注辅助' },
+])
 </script>
+
+<style scoped>
+.page-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  min-height: 100%;
+}
+.page-header {
+  margin-bottom: 20px;
+}
+.task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.task-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.back-btn {
+  padding: 4px 8px;
+}
+.task-title-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.task-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+  margin: 0;
+}
+.task-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.task-header-right {
+  display: flex;
+  gap: 8px;
+}
+.page-content {
+  min-height: 200px;
+}
+
+/* Fourth Metric Card — consistency with green text */
+.metric-card {
+  border-radius: 8px;
+}
+.metric-card-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.metric-content {
+  flex: 1;
+}
+.metric-title {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 8px;
+}
+.metric-value {
+  font-size: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.value-number {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.metric-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: rgba(22, 119, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #1677ff;
+  flex-shrink: 0;
+}
+
+/* Review Modal */
+.review-modal-body {
+  min-height: 300px;
+}
+.image-preview-box {
+  width: 100%;
+  height: 260px;
+  background: #fafafa;
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.annotator-card-a {
+  border-left: 3px solid #1677ff;
+}
+.annotator-card-b {
+  border-left: 3px solid #52c41a;
+}
+.annotation-json {
+  background: #f5f5f5;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.iou-score {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+}
+.review-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+</style>
