@@ -2,26 +2,39 @@
   <PageContainer title="文本标注工作台" :loading="loading">
     <template #extra>
       <a-space>
-        <a-button @click="handleUndo" :disabled="!canUndo">
+        <a-button @click="handleUndo" :disabled="!canUndo" size="small">
           <UndoOutlined /> 撤销
         </a-button>
-        <a-button @click="handleRedo" :disabled="!canRedo">
+        <a-button @click="handleRedo" :disabled="!canRedo" size="small">
           <RedoOutlined /> 重做
         </a-button>
-        <a-button @click="aiModal.open()">
+        <a-button @click="aiModal.open()" size="small">
           <RobotOutlined /> AI 预标注
-        </a-button>
-        <a-button @click="handleSave" :loading="saving" type="primary">
-          <SaveOutlined /> 保存
-        </a-button>
-        <a-button @click="handleSubmit" :loading="submitting">
-          <SendOutlined /> 提交
         </a-button>
       </a-space>
     </template>
 
+    <!-- Top Navigation Bar -->
+    <div class="top-nav-bar">
+      <div class="top-nav-left">
+        <span class="task-name">病理报告NER标注</span>
+      </div>
+      <div class="top-nav-center">
+        <a-space>
+          <a-button size="small" :disabled="currentIndex <= 0" @click="navigateItem(-1)">上一条</a-button>
+          <span class="doc-counter">DOC_{{ String(currentIndex + 1).padStart(4, '0') }} / {{ totalCount }}</span>
+          <a-button size="small" :disabled="currentIndex >= totalCount - 1" @click="navigateItem(1)">下一条</a-button>
+        </a-space>
+      </div>
+      <div class="top-nav-right">
+        <a-button type="primary" @click="handleSave" :loading="saving">
+          <SaveOutlined /> 保存
+        </a-button>
+      </div>
+    </div>
+
     <template v-if="task">
-      <a-row :gutter="16">
+      <a-row :gutter="16" style="margin-top: 12px">
         <!-- Left Panel: Text Content -->
         <a-col :span="14">
           <a-card title="文本内容" size="small" :style="{ height: '100%' }">
@@ -38,21 +51,13 @@
                 @click="handleSegmentClick(idx)"
               >{{ segment.text }}</span>
             </div>
-
-            <!-- Navigation -->
-            <div style="margin-top: 16px; text-align: center">
-              <a-space>
-                <a-button :disabled="currentIndex <= 0" @click="navigateItem(-1)">上一条</a-button>
-                <span>{{ currentIndex + 1 }} / {{ totalCount }}</span>
-                <a-button :disabled="currentIndex >= totalCount - 1" @click="navigateItem(1)">下一条</a-button>
-              </a-space>
-            </div>
           </a-card>
         </a-col>
 
         <!-- Right Panel: Annotation Panel -->
         <a-col :span="10">
-          <a-card title="实体标签" size="small" style="margin-bottom: 12px">
+          <!-- Entity Types Card -->
+          <a-card title="实体类型" size="small" style="margin-bottom: 12px">
             <div class="label-buttons">
               <div
                 v-for="label in entityLabels"
@@ -71,8 +76,8 @@
             </p>
           </a-card>
 
-          <!-- Annotation List -->
-          <a-card title="标注列表" size="small">
+          <!-- Annotated Entities Card -->
+          <a-card title="已标注实体" size="small">
             <div v-for="(ann, idx) in annotations" :key="idx" class="annotation-item">
               <div class="annotation-item-header">
                 <a-tag :color="getLabelColor(ann.label)">{{ ann.label }}</a-tag>
@@ -85,13 +90,15 @@
             <a-empty v-if="!annotations.length" description="选中文本后点击标签进行标注" :image="null" />
           </a-card>
 
-          <!-- Task Info -->
-          <a-card title="任务信息" size="small" style="margin-top: 12px">
-            <a-descriptions :column="1" size="small">
-              <a-descriptions-item label="任务名">{{ task.name }}</a-descriptions-item>
-              <a-descriptions-item label="进度">{{ currentIndex + 1 }} / {{ totalCount }}</a-descriptions-item>
-            </a-descriptions>
-          </a-card>
+          <!-- Action Buttons at Bottom of Right Panel -->
+          <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px">
+            <a-button type="primary" block @click="handleSubmit" :loading="submitting">
+              <CheckOutlined /> 提交审核
+            </a-button>
+            <a-button block @click="navigateItem(1)">
+              跳过
+            </a-button>
+          </div>
         </a-col>
       </a-row>
 
@@ -247,12 +254,11 @@ const annotations = ref<Annotation[]>([])
 const reviewAnnotations = ref<any[]>([])
 
 const entityLabels = ref<Array<{ name: string; color: string }>>([
-  { name: '疾病', color: '#ff4d4f' },
-  { name: '症状', color: '#faad14' },
-  { name: '药品', color: '#52c41a' },
-  { name: '检查', color: '#1677ff' },
-  { name: '部位', color: '#722ed1' },
-  { name: '时间', color: '#13c2c2' },
+  { name: 'SYMPTOM', color: '#ff4d4f' },
+  { name: 'SIZE', color: '#1677ff' },
+  { name: 'SIGN', color: '#722ed1' },
+  { name: 'DIAGNOSIS', color: '#52c41a' },
+  { name: 'TEST', color: '#faad14' },
 ])
 
 const labelColorMap: Record<string, string> = {}
@@ -324,14 +330,40 @@ async function loadTextItem() {
       reviewAnnotations.value = data.review_annotations || []
     }
   } catch {
-    // Fallback demo content
-    const demoText = '患者，男，65岁，因反复咳嗽、咳痰1月余，加重伴发热3天入院。既往有2型糖尿病病史10年，长期口服二甲双胍治疗。入院查体：体温38.5°C，脉搏96次/分，呼吸22次/分，血压135/85mmHg。'
+    // Fallback demo content - pathology report
+    const demoText = '患者，男，68岁。主诉：反复咳嗽、胸痛2月余。CT检查示右肺上叶3.2×2.8cm占位性病变，边缘可见毛刺征，纵隔淋巴结肿大。术后病理：中分化腺癌，淋巴结转移2/12。'
     textSegments.value = demoText.split('').map((char) => ({
       text: char,
       selected: false,
       annotationLabel: '',
     }))
+
+    // Pre-annotations with start/end indices in the demo text
+    const preAnnotations = [
+      { text: '咳嗽', label: 'SYMPTOM' },
+      { text: '胸痛', label: 'SYMPTOM' },
+      { text: '3.2×2.8cm', label: 'SIZE' },
+      { text: '毛刺征', label: 'SIGN' },
+      { text: '中分化腺癌', label: 'DIAGNOSIS' },
+    ]
+
     annotations.value = []
+    preAnnotations.forEach((pa) => {
+      const startIdx = demoText.indexOf(pa.text)
+      if (startIdx >= 0) {
+        const endIdx = startIdx + pa.text.length
+        annotations.value.push({
+          selectedText: pa.text,
+          label: pa.label,
+          startIdx,
+          endIdx,
+        })
+        for (let i = startIdx; i < endIdx && i < textSegments.value.length; i++) {
+          textSegments.value[i].annotationLabel = pa.label
+        }
+      }
+    })
+
     reviewAnnotations.value = []
   }
 }
@@ -491,6 +523,44 @@ onMounted(loadTask)
 </script>
 
 <style scoped>
+.top-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 24px;
+  border-radius: 6px;
+}
+
+.top-nav-left {
+  flex: 1;
+}
+
+.task-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.top-nav-center {
+  flex: 1;
+  text-align: center;
+}
+
+.doc-counter {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.65);
+  min-width: 120px;
+  display: inline-block;
+  text-align: center;
+}
+
+.top-nav-right {
+  flex: 1;
+  text-align: right;
+}
+
 .text-content-area {
   min-height: 350px;
   padding: 16px;
