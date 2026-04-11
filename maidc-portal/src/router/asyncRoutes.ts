@@ -77,6 +77,7 @@ export const asyncRoutes: RouteRecordRaw[] = [
         children: [
           { path: 'active', name: 'AlertList', meta: { title: '活跃告警' }, component: () => import('@/views/alert/AlertList.vue') },
           { path: 'rules', name: 'AlertRuleList', meta: { title: '告警规则' }, component: () => import('@/views/alert/AlertRuleList.vue') },
+          { path: 'detail/:id', name: 'AlertDetail', meta: { title: '告警详情', hidden: true }, component: () => import('@/views/alert/AlertDetail.vue') },
         ],
       },
       {
@@ -86,6 +87,8 @@ export const asyncRoutes: RouteRecordRaw[] = [
         children: [
           { path: 'operations', name: 'OperationLog', meta: { title: '操作审计' }, component: () => import('@/views/audit/OperationLog.vue') },
           { path: 'data-access', name: 'DataAccessLog', meta: { title: '数据访问' }, component: () => import('@/views/audit/DataAccessLog.vue') },
+          { path: 'system-events', name: 'SystemEventLog', meta: { title: '系统事件' }, component: () => import('@/views/audit/SystemEventLog.vue') },
+          { path: 'compliance', name: 'ComplianceReport', meta: { title: '合规报表' }, component: () => import('@/views/audit/ComplianceReport.vue') },
         ],
       },
       {
