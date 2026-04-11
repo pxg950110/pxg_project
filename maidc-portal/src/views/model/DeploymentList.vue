@@ -1,159 +1,242 @@
 <template>
-  <PageContainer title="部署管理">
-    <template #extra>
-      <a-button type="primary" @click="deployModal.open()">
-        <PlusOutlined /> 新建部署
-      </a-button>
-    </template>
+  <PageContainer title="部署监控" subtitle="实时监控所有模型部署状态与推理性能">
+    <!-- Time Filter + Auto-refresh -->
+    <div class="filter-bar">
+      <a-radio-group v-model:value="timeRange" button-style="solid">
+        <a-radio-button value="1h">近1h</a-radio-button>
+        <a-radio-button value="6h">近6h</a-radio-button>
+        <a-radio-button value="24h">近24h</a-radio-button>
+        <a-radio-button value="7d">近7d</a-radio-button>
+      </a-radio-group>
+      <div class="auto-refresh">
+        <span class="refresh-dot"></span>
+        <span>自动刷新 30s</span>
+      </div>
+    </div>
 
-    <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
+    <!-- 4 Metric Cards -->
+    <a-row :gutter="16" class="metric-row">
+      <a-col :span="6">
+        <MetricCard title="部署实例" :value="45" :icon="RocketOutlined" />
+      </a-col>
+      <a-col :span="6">
+        <MetricCard title="总推理次数" :value="128456" :icon="ThunderboltOutlined" />
+      </a-col>
+      <a-col :span="6">
+        <MetricCard title="平均延迟" value="245" suffix="ms" :icon="ClockCircleOutlined" />
+      </a-col>
+      <a-col :span="6">
+        <MetricCard title="GPU利用率" value="67" suffix="%" :icon="DashboardOutlined" />
+      </a-col>
+    </a-row>
 
-    <a-table :columns="columns" :data-source="tableData" :loading="loading" :pagination="pagination" @change="handleTableChange" row-key="id">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <StatusBadge :status="record.status" type="deploy" />
-        </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="router.push(`/model/deployments/${record.id}`)">详情</a>
-            <a v-if="record.status === 'RUNNING'" @click="handleStop(record.id)">停止</a>
-            <a v-if="record.status === 'STOPPED'" @click="handleStart(record.id)">启动</a>
-            <a-dropdown>
-              <a>更多<DownOutlined /></a>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item @click="handleRestart(record.id)">重启</a-menu-item>
-                  <a-menu-item @click="openScaleModal(record)">扩缩容</a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </a-space>
-        </template>
+    <!-- QPS Trend Chart -->
+    <a-card title="QPS 趋势" class="section-card">
+      <MetricChart :option="qpsChartOption" height="320px" />
+    </a-card>
+
+    <!-- Deployment Status Panel -->
+    <a-card title="部署状态" class="section-card">
+      <div class="deployment-list">
+        <div v-for="item in deployments" :key="item.name" class="deployment-item">
+          <div class="deployment-left">
+            <span class="status-dot" :style="{ backgroundColor: item.color }"></span>
+            <div class="deployment-info">
+              <span class="deployment-name">{{ item.name }} <span class="deployment-version">{{ item.version }}</span></span>
+              <span class="deployment-detail">{{ item.status }} &middot; {{ item.detail }}</span>
+            </div>
+          </div>
+          <span class="status-badge" :style="{ color: item.color, borderColor: item.color }">{{ item.status }}</span>
+        </div>
+      </div>
+    </a-card>
+
+    <!-- Alert Table -->
+    <a-card title="告警规则" class="section-card">
+      <template #extra>
+        <a-button type="primary" size="small">
+          <PlusOutlined /> 新建规则
+        </a-button>
       </template>
-    </a-table>
-
-    <!-- New Deploy Modal -->
-    <a-modal v-model:open="deployModal.visible" title="新建部署" @ok="handleCreateDeploy" :confirm-loading="submitting" width="700px">
-      <a-form layout="vertical">
-        <a-form-item label="模型" required>
-          <ModelSelect v-model:value="deployForm.model_id" />
-        </a-form-item>
-        <a-form-item label="版本" required>
-          <a-select v-model:value="deployForm.version_id" placeholder="选择版本" />
-        </a-form-item>
-        <a-form-item label="部署名称" required>
-          <a-input v-model:value="deployForm.name" placeholder="请输入部署名称" />
-        </a-form-item>
-        <ResourceConfigForm v-model="deployForm.resource_config" />
-      </a-form>
-    </a-modal>
-
-    <!-- Scale Modal -->
-    <a-modal v-model:open="scaleModal.visible" title="扩缩容" @ok="handleScale" :confirm-loading="scaling">
-      <a-form-item label="副本数">
-        <a-input-number v-model:value="scaleForm.replicas" :min="1" :max="10" />
-      </a-form-item>
-    </a-modal>
+      <a-table :columns="alertColumns" :data-source="alerts" :pagination="false" row-key="rule" size="middle">
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'status'">
+            <a-tag :color="statusColorMap[record.status]">{{ record.status }}</a-tag>
+          </template>
+          <template v-if="column.key === 'action'">
+            <a-space>
+              <a>编辑</a>
+              <a>禁用</a>
+            </a-space>
+          </template>
+        </template>
+      </a-table>
+    </a-card>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { PlusOutlined, DownOutlined } from '@ant-design/icons-vue'
-import { message, Modal } from 'ant-design-vue'
+import { ref } from 'vue'
+import {
+  RocketOutlined,
+  ThunderboltOutlined,
+  ClockCircleOutlined,
+  DashboardOutlined,
+  PlusOutlined,
+} from '@ant-design/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
-import SearchForm from '@/components/SearchForm/index.vue'
-import StatusBadge from '@/components/StatusBadge/index.vue'
-import ModelSelect from '@/components/ModelSelect/index.vue'
-import ResourceConfigForm from '@/components/ResourceConfigForm/index.vue'
-import { useTable } from '@/hooks/useTable'
-import { useModal } from '@/hooks/useModal'
-import { createDeployment, startDeployment, stopDeployment } from '@/api/model'
-import request from '@/utils/request'
+import MetricCard from '@/components/MetricCard/index.vue'
+import MetricChart from '@/components/MetricChart/index.vue'
 
-const router = useRouter()
-const deployModal = useModal()
-const scaleModal = useModal<any>()
-const submitting = ref(false)
-const scaling = ref(false)
+// Time range filter
+const timeRange = ref<string>('24h')
 
-const searchFields = [
-  { name: 'status', label: '状态', type: 'select', options: [
-    { label: '创建中', value: 'CREATING' }, { label: '启动中', value: 'STARTING' },
-    { label: '运行中', value: 'RUNNING' }, { label: '已停止', value: 'STOPPED' },
-  ]},
+// QPS chart option
+const qpsChartOption = {
+  tooltip: { trigger: 'axis' },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  xAxis: {
+    type: 'category',
+    data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+  },
+  yAxis: { type: 'value', name: 'QPS' },
+  series: [
+    {
+      type: 'bar',
+      data: [120, 85, 340, 580, 620, 450, 380],
+      itemStyle: { color: '#1677ff', borderRadius: [4, 4, 0, 0] },
+    },
+  ],
+}
+
+// Deployment status items
+const deployments = [
+  { name: '肺结节检测-生产', version: 'v2.1.0', status: 'Running', color: '#52c41a', detail: 'QPS: 56' },
+  { name: '病理分类模型', version: 'v2.0.1', status: 'Stopped', color: '#ff4d4f', detail: '2小时前' },
+  { name: 'NLP命名实体识别', version: 'v1.0.0', status: 'Error', color: '#faad14', detail: 'OOM异常' },
 ]
 
-const columns = [
-  { title: '部署名称', dataIndex: 'name', key: 'name' },
-  { title: '模型', dataIndex: 'model_name', key: 'model_name' },
-  { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 100 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '副本数', dataIndex: 'replicas', key: 'replicas', width: 80 },
-  { title: 'CPU/内存', key: 'resources', width: 120 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 170 },
-  { title: '操作', key: 'action', width: 200 },
+// Alert table columns
+const alertColumns = [
+  { title: '规则名称', dataIndex: 'rule', key: 'rule' },
+  { title: '部署', dataIndex: 'deployment', key: 'deployment' },
+  { title: '指标', dataIndex: 'metric', key: 'metric' },
+  { title: '阈值', dataIndex: 'threshold', key: 'threshold' },
+  { title: '当前值', dataIndex: 'current', key: 'current' },
+  { title: '状态', dataIndex: 'status', key: 'status' },
+  { title: '时间', dataIndex: 'time', key: 'time' },
+  { title: '操作', key: 'action', width: 120 },
 ]
 
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
-  (params) => request.get('/deployments', { params: { page: params.page, page_size: params.pageSize } })
-)
+// Alert mock data
+const alerts = [
+  { rule: '推理延迟过高', deployment: '肺结节检测-生产', metric: 'P99延迟', threshold: '500ms', current: '892ms', status: 'Firing', time: '5分钟前' },
+  { rule: 'GPU内存使用率', deployment: '病理分类模型', metric: 'GPU使用率', threshold: '90%', current: '85%', status: 'Warning', time: '15分钟前' },
+  { rule: '请求错误率超标', deployment: 'NLP命名实体识别', metric: '错误率', threshold: '1%', current: '0.3%', status: 'Resolved', time: '1小时前' },
+  { rule: 'QPS突降告警', deployment: '肺结节检测-生产', metric: 'QPS', threshold: '>10', current: '56', status: 'Resolved', time: '3小时前' },
+]
 
-const deployForm = reactive({
-  model_id: undefined as any,
-  version_id: undefined as any,
-  name: '',
-  resource_config: { cpu: 2, memory: 4096, gpu: 0, replicas: 1 },
-})
-
-function handleSearch() { fetchData() }
-function handleReset() { fetchData() }
-
-async function handleCreateDeploy() {
-  submitting.value = true
-  try {
-    await createDeployment(deployForm)
-    message.success('部署创建成功')
-    deployModal.close()
-    fetchData()
-  } finally { submitting.value = false }
+// Status badge color mapping
+const statusColorMap: Record<string, string> = {
+  Firing: 'red',
+  Warning: 'orange',
+  Resolved: 'green',
 }
-
-async function handleStart(id: number) {
-  await startDeployment(id)
-  message.success('启动中...')
-  fetchData()
-}
-
-async function handleStop(id: number) {
-  Modal.confirm({ title: '确认停止部署？', async onOk() { await stopDeployment(id); message.success('停止中...'); fetchData() } })
-}
-
-async function handleRestart(id: number) {
-  await request.post(`/deployments/${id}/restart`)
-  message.success('重启中...')
-  fetchData()
-}
-
-const scaleForm = reactive({ replicas: 1 })
-let scalingId = 0
-
-function openScaleModal(record: any) {
-  scalingId = record.id
-  scaleForm.replicas = record.replicas || 1
-  scaleModal.open(record)
-}
-
-async function handleScale() {
-  scaling.value = true
-  try {
-    await request.put(`/deployments/${scalingId}/scale`, scaleForm)
-    message.success('扩缩容已提交')
-    scaleModal.close()
-    fetchData()
-  } finally { scaling.value = false }
-}
-
-onMounted(() => fetchData())
 </script>
+
+<style scoped>
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.auto-refresh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+}
+
+.refresh-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #52c41a;
+  display: inline-block;
+}
+
+.metric-row {
+  margin-bottom: 16px;
+}
+
+.section-card {
+  margin-bottom: 16px;
+}
+
+.deployment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.deployment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  transition: box-shadow 0.2s;
+}
+
+.deployment-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.deployment-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.deployment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deployment-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.deployment-version {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  font-weight: 400;
+}
+
+.deployment-detail {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.status-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+  line-height: 20px;
+}
+</style>
