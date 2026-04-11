@@ -195,7 +195,7 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new BusinessException(400, "当前密码不正确");
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));

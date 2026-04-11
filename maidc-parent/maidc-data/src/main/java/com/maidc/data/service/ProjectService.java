@@ -111,7 +111,7 @@ public class ProjectService {
 
         projectMemberRepository.findByProjectIdAndUserIdAndIsDeletedFalse(projectId, userId)
                 .ifPresent(m -> {
-                    throw new BusinessException(409, "该成员已在项目中");
+                    throw new BusinessException(ErrorCode.MEMBER_ALREADY_EXISTS);
                 });
 
         ProjectMemberEntity member = new ProjectMemberEntity();

@@ -1,5 +1,6 @@
 package com.maidc.msg.service;
 
+import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import com.maidc.msg.dto.NotificationSettingDTO;
 import com.maidc.msg.dto.TemplateCreateDTO;
@@ -201,7 +202,7 @@ class NotificationServiceTest {
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> notificationService.createTemplate(dto));
 
-        assertEquals(409, exception.getCode());
+        assertEquals(ErrorCode.CONFLICT.getCode(), exception.getCode());
         assertTrue(exception.getMessage().contains("EXISTING_CODE"));
         verify(messageTemplateRepository, never()).save(any());
     }

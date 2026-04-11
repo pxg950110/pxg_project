@@ -32,6 +32,19 @@ public enum ErrorCode {
     DEPLOYMENT_NOT_FOUND(4041, "部署实例不存在"),
     DEPLOYMENT_NOT_RUNNING(4042, "部署实例未运行"),
 
+    // ==================== 通用业务 41xx ====================
+    ACCOUNT_LOCKED(4101, "账号已锁定，请稍后重试"),
+    INVALID_CREDENTIALS(4102, "用户名或密码错误"),
+    ACCOUNT_DISABLED(4103, "账号已被禁用"),
+    PASSWORD_MISMATCH(4104, "当前密码不正确"),
+    SYSTEM_ROLE_IMMUTABLE(4105, "系统内置角色不可修改"),
+    MEMBER_ALREADY_EXISTS(4106, "该成员已在项目中"),
+    TASK_NOT_RUNNING(4111, "任务未在运行状态"),
+    TASK_NOT_PAUSED(4112, "任务未在暂停状态"),
+    TASK_ALREADY_RUNNING(4113, "任务正在运行中，不能重复触发"),
+    EVALUATION_NOT_COMPLETED(4121, "评估报告仅对已完成的评估可用"),
+    MODEL_STATUS_INVALID(4122, "模型状态不允许此操作"),
+
     // ==================== 数据中心 50xx ====================
     PATIENT_NOT_FOUND(5001, "患者不存在"),
     DATASET_NOT_FOUND(5011, "数据集不存在"),

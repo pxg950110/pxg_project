@@ -67,7 +67,7 @@ public class EtlTaskService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
         if ("RUNNING".equals(entity.getStatus())) {
-            throw new BusinessException(400, "任务正在运行中，不能重复触发");
+            throw new BusinessException(ErrorCode.TASK_ALREADY_RUNNING);
         }
 
         entity.setStatus("RUNNING");
@@ -84,7 +84,7 @@ public class EtlTaskService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
         if (!"RUNNING".equals(entity.getStatus())) {
-            throw new BusinessException(400, "只有运行中的任务可以暂停");
+            throw new BusinessException(ErrorCode.TASK_NOT_RUNNING);
         }
 
         entity.setStatus("PAUSED");

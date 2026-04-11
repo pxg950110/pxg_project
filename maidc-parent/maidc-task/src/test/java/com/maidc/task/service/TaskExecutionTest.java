@@ -1,5 +1,6 @@
 package com.maidc.task.service;
 
+import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import com.maidc.task.entity.TaskEntity;
 import com.maidc.task.entity.TaskExecutionEntity;
@@ -82,8 +83,8 @@ class TaskExecutionTest {
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> taskService.resumeTask(taskId));
 
-        assertEquals(400, exception.getCode());
-        assertTrue(exception.getMessage().contains("not paused"));
+        assertEquals(ErrorCode.TASK_NOT_PAUSED.getCode(), exception.getCode());
+        assertTrue(exception.getMessage().contains("暂停"));
         verify(taskRepository, never()).save(any());
     }
 

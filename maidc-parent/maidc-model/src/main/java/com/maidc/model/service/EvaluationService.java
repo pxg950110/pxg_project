@@ -69,7 +69,7 @@ public class EvaluationService {
         EvaluationEntity eval = evaluationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVALUATION_NOT_FOUND));
         if (!"COMPLETED".equals(eval.getStatus())) {
-            throw new BusinessException(400, "评估报告仅对已完成的评估可用");
+            throw new BusinessException(ErrorCode.EVALUATION_NOT_COMPLETED);
         }
         return eval.getReportUrl();
     }

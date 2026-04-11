@@ -50,19 +50,19 @@ public class AuthService {
         int attempts = attemptsStr != null ? Integer.parseInt(attemptsStr) : 0;
 
         if (attempts >= MAX_ATTEMPTS) {
-            throw new BusinessException(401, "账号已锁定，请30分钟后重试");
+            throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
         }
 
         // Verify password
         if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
             redisTemplate.opsForValue().increment(attemptsKey);
             redisTemplate.expire(attemptsKey, LOCK_DURATION);
-            throw new BusinessException(401, "用户名或密码错误");
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         // Check status
         if (!"ACTIVE".equals(user.getStatus())) {
-            throw new BusinessException(401, "账号已被禁用");
+            throw new BusinessException(ErrorCode.ACCOUNT_DISABLED);
         }
 
         // Clear attempts on success

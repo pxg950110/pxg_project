@@ -1,5 +1,6 @@
 package com.maidc.task.service;
 
+import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import com.maidc.common.core.result.PageResult;
 import com.maidc.task.dto.TaskCreateDTO;
@@ -100,7 +101,7 @@ public class TaskService {
     public TaskVO pauseTask(String id) {
         TaskEntity entity = getTaskOrThrow(id);
         if (!"RUNNING".equals(entity.getStatus())) {
-            throw new BusinessException(400, "Task is not running");
+            throw new BusinessException(ErrorCode.TASK_NOT_RUNNING);
         }
         entity.setStatus("PAUSED");
         taskRepository.save(entity);
@@ -111,7 +112,7 @@ public class TaskService {
     public TaskVO resumeTask(String id) {
         TaskEntity entity = getTaskOrThrow(id);
         if (!"PAUSED".equals(entity.getStatus())) {
-            throw new BusinessException(400, "Task is not paused");
+            throw new BusinessException(ErrorCode.TASK_NOT_PAUSED);
         }
         entity.setStatus("RUNNING");
         taskRepository.save(entity);
@@ -126,6 +127,6 @@ public class TaskService {
 
     private TaskEntity getTaskOrThrow(String id) {
         return taskRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Task not found: " + id));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
     }
 }

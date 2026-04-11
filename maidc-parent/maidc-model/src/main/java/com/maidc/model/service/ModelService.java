@@ -87,7 +87,7 @@ public class ModelService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MODEL_NOT_FOUND));
 
         if ("PUBLISHED".equals(entity.getStatus()) || "DEPRECATED".equals(entity.getStatus())) {
-            throw new BusinessException(400, "已发布或已弃用的模型不可修改");
+            throw new BusinessException(ErrorCode.MODEL_STATUS_INVALID);
         }
 
         if (dto.getDescription() != null) entity.setDescription(dto.getDescription());
@@ -103,7 +103,7 @@ public class ModelService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MODEL_NOT_FOUND));
 
         if ("PUBLISHED".equals(entity.getStatus())) {
-            throw new BusinessException(400, "已发布的模型不能删除，请先弃用");
+            throw new BusinessException(ErrorCode.MODEL_STATUS_INVALID);
         }
 
         modelRepository.delete(entity);

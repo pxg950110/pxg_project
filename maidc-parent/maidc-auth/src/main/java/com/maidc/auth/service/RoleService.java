@@ -82,7 +82,7 @@ public class RoleService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
         if (role.getIsSystem()) {
-            throw new BusinessException(403, "系统内置角色不可修改");
+            throw new BusinessException(ErrorCode.SYSTEM_ROLE_IMMUTABLE);
         }
 
         if (description != null) role.setDescription(description);

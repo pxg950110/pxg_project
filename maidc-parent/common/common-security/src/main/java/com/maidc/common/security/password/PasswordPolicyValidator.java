@@ -1,5 +1,6 @@
 package com.maidc.common.security.password;
 
+import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,31 +33,31 @@ public final class PasswordPolicyValidator {
      */
     public static void validate(String password) {
         if (password == null || password.isBlank()) {
-            throw new BusinessException(400, "密码不能为空");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
 
         if (password.length() < MIN_LENGTH) {
-            throw new BusinessException(400, "密码长度不能少于" + MIN_LENGTH + "位");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
 
         if (password.length() > MAX_LENGTH) {
-            throw new BusinessException(400, "密码长度不能超过" + MAX_LENGTH + "位");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
 
         if (!UPPER_CASE.matcher(password).find()) {
-            throw new BusinessException(400, "密码必须包含至少一个大写字母");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
 
         if (!LOWER_CASE.matcher(password).find()) {
-            throw new BusinessException(400, "密码必须包含至少一个小写字母");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
 
         if (!DIGIT.matcher(password).find()) {
-            throw new BusinessException(400, "密码必须包含至少一个数字");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
 
         if (!SPECIAL.matcher(password).find()) {
-            throw new BusinessException(400, "密码必须包含至少一个特殊字符(!@#$%^&*等)");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
     }
 

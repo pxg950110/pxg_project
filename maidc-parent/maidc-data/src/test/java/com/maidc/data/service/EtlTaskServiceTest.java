@@ -119,8 +119,7 @@ class EtlTaskServiceTest {
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> etlTaskService.triggerTask(taskId));
 
-        assertEquals(400, exception.getCode());
-        assertTrue(exception.getMessage().contains("不能重复触发"));
+        assertEquals(ErrorCode.TASK_ALREADY_RUNNING.getCode(), exception.getCode());
         verify(etlTaskRepository, never()).save(any());
     }
 
@@ -167,8 +166,7 @@ class EtlTaskServiceTest {
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> etlTaskService.pauseTask(taskId));
 
-        assertEquals(400, exception.getCode());
-        assertTrue(exception.getMessage().contains("只有运行中的任务可以暂停"));
+        assertEquals(ErrorCode.TASK_NOT_RUNNING.getCode(), exception.getCode());
         verify(etlTaskRepository, never()).save(any());
     }
 
