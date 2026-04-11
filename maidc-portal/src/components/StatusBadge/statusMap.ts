@@ -9,10 +9,13 @@ interface StatusMeta {
 
 // Model status
 export const ModelStatusMap: Record<string, StatusMeta> = {
-  DRAFT: { text: '草稿', color: 'blue' },
+  DRAFT: { text: '草稿', color: 'default' },
   TRAINING: { text: '训练中', color: 'orange' },
   EVALUATING: { text: '评估中', color: 'purple' },
   ACTIVE: { text: '已激活', color: 'green' },
+  REGISTERED: { text: '已注册', color: 'blue' },
+  PUBLISHED: { text: '已发布', color: 'green' },
+  DEPRECATED: { text: '已弃用', color: 'red' },
 }
 
 // Version status

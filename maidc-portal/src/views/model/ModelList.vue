@@ -1,45 +1,91 @@
 <template>
-  <PageContainer title="模型管理">
-    <template #extra>
-      <a-button type="primary" @click="registerModal.open()">
-        <PlusOutlined /> 注册模型
-      </a-button>
-    </template>
+  <PageContainer title="模型列表" subtitle="管理所有已注册的AI模型">
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <div class="action-bar-left">
+        <a-input-search
+          v-model:value="searchKeyword"
+          placeholder="搜索模型名称或编码..."
+          style="width: 280px"
+          allow-clear
+          @search="handleSearch"
+        />
+        <a-select
+          v-model:value="sortBy"
+          style="width: 140px"
+          @change="handleSortChange"
+        >
+          <a-select-option value="updated_at">更新时间</a-select-option>
+          <a-select-option value="created_at">创建时间</a-select-option>
+          <a-select-option value="model_name">模型名称</a-select-option>
+        </a-select>
+      </div>
+      <div class="action-bar-right">
+        <a-button type="primary" @click="registerModal.open()">
+          <PlusOutlined /> 注册模型
+        </a-button>
+      </div>
+    </div>
 
-    <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
+    <!-- Category Filter Tabs -->
+    <div class="category-tabs">
+      <a-radio-group v-model:value="activeCategory" button-style="solid" @change="handleCategoryChange">
+        <a-radio-button value="全部">全部</a-radio-button>
+        <a-radio-button value="影像">影像</a-radio-button>
+        <a-radio-button value="NLP">NLP</a-radio-button>
+        <a-radio-button value="结构化">结构化</a-radio-button>
+        <a-radio-button value="多模态">多模态</a-radio-button>
+        <a-radio-button value="基因组">基因组</a-radio-button>
+      </a-radio-group>
+    </div>
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <StatusBadge :status="record.status" type="model" />
-        </template>
-        <template v-if="column.key === 'model_type'">
-          <a-tag>{{ record.model_type }}</a-tag>
-        </template>
-        <template v-if="column.key === 'framework'">
-          <a-tag color="blue">{{ record.framework }}</a-tag>
-        </template>
-        <template v-if="column.key === 'created_at'">
-          {{ formatDateTime(record.created_at) }}
-        </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="router.push(`/model/${record.id}`)">详情</a>
-            <a @click="editModal.open(record)">编辑</a>
-            <a-popconfirm title="确定删除此模型？" @confirm="handleDelete(record.id)">
-              <a class="danger-link">删除</a>
-            </a-popconfirm>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+    <!-- Card Grid -->
+    <a-row :gutter="[16, 16]" class="model-card-grid">
+      <a-col v-for="model in filteredModels" :key="model.id" :span="8">
+        <a-card class="model-card" hoverable>
+          <!-- Row 1: Name + Category Tag -->
+          <div class="card-header">
+            <span class="model-name">{{ model.model_name }}</span>
+            <a-tag :color="categoryColorMap[model.category]">{{ model.category }}</a-tag>
+          </div>
+
+          <!-- Row 2: Description -->
+          <div class="model-desc">{{ model.description }}</div>
+
+          <!-- Row 3: Framework + Version + Status -->
+          <div class="card-meta-row">
+            <a-tag size="small" class="framework-tag">{{ model.framework }}</a-tag>
+            <span class="version-text">{{ model.version }}</span>
+            <StatusBadge :status="model.status" type="model" />
+          </div>
+
+          <!-- Row 4: QPS (only for PUBLISHED) -->
+          <div v-if="model.status === 'PUBLISHED' && model.qps !== null" class="qps-row">
+            <span class="qps-label">QPS:</span>
+            <span class="qps-value">{{ model.qps }}</span>
+          </div>
+
+          <!-- Row 5: View Details Link -->
+          <div class="card-footer">
+            <a class="detail-link" @click="router.push(`/model/${model.id}`)">
+              查看详情 <RightOutlined />
+            </a>
+          </div>
+        </a-card>
+      </a-col>
+    </a-row>
+
+    <!-- Pagination -->
+    <div class="pagination-bar">
+      <span class="pagination-total">共 {{ filteredModels.length }} 个模型</span>
+      <a-pagination
+        v-model:current="currentPage"
+        :total="filteredModels.length"
+        :page-size="pageSize"
+        show-quick-jumper
+        size="small"
+      />
+    </div>
 
     <!-- Register Modal -->
     <a-modal
@@ -66,21 +112,21 @@
           <a-col :span="12">
             <a-form-item label="模型类型" name="model_type">
               <a-select v-model:value="registerForm.model_type" placeholder="请选择">
-                <a-select-option value="IMAGE_CLASSIFICATION">图像分类</a-select-option>
-                <a-select-option value="OBJECT_DETECTION">目标检测</a-select-option>
-                <a-select-option value="SEGMENTATION">分割</a-select-option>
-                <a-select-option value="NLP">自然语言处理</a-select-option>
-                <a-select-option value="SERIES_PREDICTION">时序预测</a-select-option>
+                <a-select-option value="IMAGING">影像</a-select-option>
+                <a-select-option value="NLP">NLP</a-select-option>
+                <a-select-option value="STRUCTURED">结构化</a-select-option>
+                <a-select-option value="MULTIMODAL">多模态</a-select-option>
+                <a-select-option value="GENOMIC">基因组</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="框架" name="framework">
               <a-select v-model:value="registerForm.framework" placeholder="请选择">
-                <a-select-option value="PYTORCH">PyTorch</a-select-option>
-                <a-select-option value="TENSORFLOW">TensorFlow</a-select-option>
-                <a-select-option value="ONNX">ONNX</a-select-option>
-                <a-select-option value="SKLEARN">Scikit-learn</a-select-option>
+                <a-select-option value="PyTorch">PyTorch</a-select-option>
+                <a-select-option value="TensorFlow">TensorFlow</a-select-option>
+                <a-select-option value="SKLearn">SKLearn</a-select-option>
+                <a-select-option value="XGBoost">XGBoost</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -115,67 +161,97 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, RightOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
-import SearchForm from '@/components/SearchForm/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
-import { useTable } from '@/hooks/useTable'
 import { useModal } from '@/hooks/useModal'
-import { getModels, createModel, updateModel, deleteModel } from '@/api/model'
-import { formatDateTime } from '@/utils/date'
+import { createModel, updateModel } from '@/api/model'
 
 const router = useRouter()
 const registerModal = useModal()
 const editModal = useModal<any>()
 const submitting = ref(false)
 
-const searchFields = [
-  { name: 'keyword', label: '关键词', type: 'input', placeholder: '模型名称/编码' },
-  { name: 'model_type', label: '模型类型', type: 'select', options: [
-    { label: '图像分类', value: 'IMAGE_CLASSIFICATION' },
-    { label: '目标检测', value: 'OBJECT_DETECTION' },
-    { label: '分割', value: 'SEGMENTATION' },
-    { label: 'NLP', value: 'NLP' },
-  ]},
-  { name: 'status', label: '状态', type: 'select', options: [
-    { label: '草稿', value: 'DRAFT' },
-    { label: '训练中', value: 'TRAINING' },
-    { label: '评估中', value: 'EVALUATING' },
-    { label: '已上线', value: 'ACTIVE' },
-  ]},
-]
-
-const columns = [
-  { title: '模型编码', dataIndex: 'model_code', key: 'model_code', width: 140 },
-  { title: '模型名称', dataIndex: 'model_name', key: 'model_name', width: 180 },
-  { title: '类型', dataIndex: 'model_type', key: 'model_type', width: 120 },
-  { title: '框架', dataIndex: 'framework', key: 'framework', width: 100 },
-  { title: '最新版本', dataIndex: 'latest_version', key: 'latest_version', width: 100 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '负责人', dataIndex: 'owner_name', key: 'owner_name', width: 100 },
-  { title: '更新时间', dataIndex: 'updated_at', key: 'created_at', width: 170 },
-  { title: '操作', key: 'action', width: 150, fixed: 'right' },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
-  (params) => getModels({ page: params.page, page_size: params.pageSize })
-)
-
-const searchParams = ref<Record<string, any>>({})
-
-function handleSearch(values: Record<string, any>) {
-  searchParams.value = values
-  fetchData()
+// --- Category color map ---
+const categoryColorMap: Record<string, string> = {
+  '影像': 'blue',
+  'NLP': 'green',
+  '结构化': 'orange',
+  '多模态': 'purple',
+  '基因组': 'cyan',
 }
 
-function handleReset() {
-  searchParams.value = {}
-  fetchData()
+// --- Mock data ---
+interface ModelItem {
+  id: number
+  model_code: string
+  model_name: string
+  model_type: string
+  category: string
+  framework: string
+  version: string
+  status: string
+  description: string
+  qps: number | null
 }
 
+const allModels = ref<ModelItem[]>([
+  { id: 1, model_code: 'LN-DET-001', model_name: '肺结节检测模型', model_type: 'IMAGING', category: '影像', framework: 'PyTorch', version: 'v2.3.1', status: 'PUBLISHED', description: '基于深度学习的肺部CT图像结节检测模型，支持多种结节类型的自动检测', qps: 56 },
+  { id: 2, model_code: 'PATH-CLS-001', model_name: '病理分类模型', model_type: 'IMAGING', category: '影像', framework: 'TensorFlow', version: 'v3.0.0', status: 'EVALUATING', description: '病理切片图像自动分类，支持多种癌症类型的智能诊断', qps: null },
+  { id: 3, model_code: 'ECG-DET-001', model_name: '心电图异常检测', model_type: 'STRUCTURED', category: '结构化', framework: 'SKLearn', version: 'v1.5.1', status: 'PUBLISHED', description: '心电图信号异常检测，可识别心律不齐、心肌缺血等异常', qps: 23 },
+  { id: 4, model_code: 'NLP-NER-001', model_name: 'NLP命名实体识别', model_type: 'NLP', category: 'NLP', framework: 'PyTorch', version: 'v1.0.0', status: 'DRAFT', description: '医学文本命名实体识别，支持疾病、药物、检查等实体抽取', qps: null },
+  { id: 5, model_code: 'DM-PRED-001', model_name: '糖尿病预测模型', model_type: 'STRUCTURED', category: '结构化', framework: 'XGBoost', version: 'v2.0.0', status: 'PUBLISHED', description: '基于多模态数据的糖尿病风险预测，结合临床指标与生活方式', qps: 12 },
+  { id: 6, model_code: 'GEN-VAR-001', model_name: '基因变异分类', model_type: 'GENOMIC', category: '基因组', framework: 'PyTorch', version: 'v3.1.0', status: 'EVALUATING', description: '基因组变异致病性分类，支持SNP和InDel变异的自动化注释', qps: null },
+])
+
+// --- Filter / search state ---
+const searchKeyword = ref('')
+const activeCategory = ref('全部')
+const sortBy = ref('updated_at')
+const currentPage = ref(1)
+const pageSize = ref(6)
+
+const filteredModels = computed(() => {
+  let result = allModels.value
+
+  // Category filter
+  if (activeCategory.value !== '全部') {
+    result = result.filter(m => m.category === activeCategory.value)
+  }
+
+  // Keyword search
+  if (searchKeyword.value.trim()) {
+    const kw = searchKeyword.value.trim().toLowerCase()
+    result = result.filter(m =>
+      m.model_name.toLowerCase().includes(kw) ||
+      m.model_code.toLowerCase().includes(kw)
+    )
+  }
+
+  // Sort
+  if (sortBy.value === 'model_name') {
+    result = [...result].sort((a, b) => a.model_name.localeCompare(b.model_name, 'zh-CN'))
+  }
+
+  return result
+})
+
+function handleSearch() {
+  currentPage.value = 1
+}
+
+function handleCategoryChange() {
+  currentPage.value = 1
+}
+
+function handleSortChange() {
+  currentPage.value = 1
+}
+
+// --- Register form ---
 const registerForm = reactive({
   model_name: '',
   model_code: '',
@@ -196,12 +272,12 @@ async function handleRegister() {
     await createModel(registerForm)
     message.success('模型注册成功')
     registerModal.close()
-    fetchData()
   } finally {
     submitting.value = false
   }
 }
 
+// --- Edit form ---
 const editForm = reactive({
   model_name: '',
   description: '',
@@ -227,23 +303,139 @@ async function handleEdit() {
     await updateModel(editingId, editForm)
     message.success('模型更新成功')
     editModal.close()
-    fetchData()
   } finally {
     submitting.value = false
   }
 }
-
-async function handleDelete(id: number) {
-  await deleteModel(id)
-  message.success('模型已删除')
-  fetchData()
-}
-
-onMounted(() => fetchData())
 </script>
 
 <style scoped>
-.danger-link {
-  color: #ff4d4f;
+.action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.action-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-bar-right {
+  display: flex;
+  align-items: center;
+}
+
+.category-tabs {
+  margin-bottom: 20px;
+}
+
+.model-card-grid {
+  min-height: 200px;
+}
+
+.model-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.model-card :deep(.ant-card-body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.model-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+  line-height: 1.5;
+}
+
+.model-desc {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 1.6;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.framework-tag {
+  border-style: dashed;
+}
+
+.version-text {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.qps-row {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  margin-bottom: 8px;
+}
+
+.qps-label {
+  color: rgba(0, 0, 0, 0.45);
+  margin-right: 4px;
+}
+
+.qps-value {
+  font-weight: 500;
+}
+
+.card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  text-align: right;
+}
+
+.detail-link {
+  color: #1677ff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.detail-link:hover {
+  color: #4096ff;
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.pagination-total {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
 }
 </style>
