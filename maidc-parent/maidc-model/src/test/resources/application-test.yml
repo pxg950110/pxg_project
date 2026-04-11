@@ -17,6 +17,8 @@ spring:
         enabled: false
       config:
         enabled: false
+        import-check:
+          enabled: false
   autoconfigure:
     exclude:
       - org.springframework.cloud.client.serviceregistry.ServiceRegistryAutoConfiguration
