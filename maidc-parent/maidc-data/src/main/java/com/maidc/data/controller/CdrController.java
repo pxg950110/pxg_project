@@ -45,6 +45,12 @@ public class CdrController {
     private final BloodTransfusionService bloodTransfusionService;
     private final TransferService transferService;
     private final FeeRecordService feeRecordService;
+    private final HealthCheckupService healthCheckupService;
+    private final CheckupPackageService checkupPackageService;
+    private final CheckupItemResultService checkupItemResultService;
+    private final CheckupSummaryService checkupSummaryService;
+    private final CheckupComparisonService checkupComparisonService;
+    private final OrgService orgService;
 
     // ==================== Patient ====================
 
@@ -685,6 +691,192 @@ public class CdrController {
     @DeleteMapping("/fee-records/{id}")
     public R<Void> deleteFeeRecord(@PathVariable Long id) {
         feeRecordService.deleteFeeRecord(id);
+        return R.ok();
+    }
+
+    // ==================== HealthCheckup ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/health-checkups")
+    public R<Page<HealthCheckupEntity>> listHealthCheckups(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(healthCheckupService.listHealthCheckups(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/health-checkups/{id}")
+    public R<HealthCheckupEntity> getHealthCheckup(@PathVariable Long id) {
+        return R.ok(healthCheckupService.getHealthCheckup(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createHealthCheckup")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/health-checkups")
+    public R<HealthCheckupEntity> createHealthCheckup(@RequestBody HealthCheckupEntity entity) {
+        return R.ok(healthCheckupService.createHealthCheckup(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteHealthCheckup")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/health-checkups/{id}")
+    public R<Void> deleteHealthCheckup(@PathVariable Long id) {
+        healthCheckupService.deleteHealthCheckup(id);
+        return R.ok();
+    }
+
+    // ==================== CheckupPackage ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-packages")
+    public R<Page<CheckupPackageEntity>> listCheckupPackages(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(checkupPackageService.listCheckupPackages(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-packages/{id}")
+    public R<CheckupPackageEntity> getCheckupPackage(@PathVariable Long id) {
+        return R.ok(checkupPackageService.getCheckupPackage(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createCheckupPackage")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/checkup-packages")
+    public R<CheckupPackageEntity> createCheckupPackage(@RequestBody CheckupPackageEntity entity) {
+        return R.ok(checkupPackageService.createCheckupPackage(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteCheckupPackage")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/checkup-packages/{id}")
+    public R<Void> deleteCheckupPackage(@PathVariable Long id) {
+        checkupPackageService.deleteCheckupPackage(id);
+        return R.ok();
+    }
+
+    // ==================== CheckupItemResult ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-item-results")
+    public R<Page<CheckupItemResultEntity>> listCheckupItemResults(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(checkupItemResultService.listCheckupItemResults(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-item-results/{id}")
+    public R<CheckupItemResultEntity> getCheckupItemResult(@PathVariable Long id) {
+        return R.ok(checkupItemResultService.getCheckupItemResult(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createCheckupItemResult")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/checkup-item-results")
+    public R<CheckupItemResultEntity> createCheckupItemResult(@RequestBody CheckupItemResultEntity entity) {
+        return R.ok(checkupItemResultService.createCheckupItemResult(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteCheckupItemResult")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/checkup-item-results/{id}")
+    public R<Void> deleteCheckupItemResult(@PathVariable Long id) {
+        checkupItemResultService.deleteCheckupItemResult(id);
+        return R.ok();
+    }
+
+    // ==================== CheckupSummary ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-summaries")
+    public R<Page<CheckupSummaryEntity>> listCheckupSummaries(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(checkupSummaryService.listCheckupSummaries(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-summaries/{id}")
+    public R<CheckupSummaryEntity> getCheckupSummary(@PathVariable Long id) {
+        return R.ok(checkupSummaryService.getCheckupSummary(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createCheckupSummary")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/checkup-summaries")
+    public R<CheckupSummaryEntity> createCheckupSummary(@RequestBody CheckupSummaryEntity entity) {
+        return R.ok(checkupSummaryService.createCheckupSummary(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteCheckupSummary")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/checkup-summaries/{id}")
+    public R<Void> deleteCheckupSummary(@PathVariable Long id) {
+        checkupSummaryService.deleteCheckupSummary(id);
+        return R.ok();
+    }
+
+    // ==================== CheckupComparison ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-comparisons")
+    public R<Page<CheckupComparisonEntity>> listCheckupComparisons(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(checkupComparisonService.listCheckupComparisons(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/checkup-comparisons/{id}")
+    public R<CheckupComparisonEntity> getCheckupComparison(@PathVariable Long id) {
+        return R.ok(checkupComparisonService.getCheckupComparison(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createCheckupComparison")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/checkup-comparisons")
+    public R<CheckupComparisonEntity> createCheckupComparison(@RequestBody CheckupComparisonEntity entity) {
+        return R.ok(checkupComparisonService.createCheckupComparison(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteCheckupComparison")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/checkup-comparisons/{id}")
+    public R<Void> deleteCheckupComparison(@PathVariable Long id) {
+        checkupComparisonService.deleteCheckupComparison(id);
+        return R.ok();
+    }
+
+    // ==================== Org ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/orgs")
+    public R<Page<OrgEntity>> listOrgs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(orgService.listOrgs(page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/orgs/{id}")
+    public R<OrgEntity> getOrg(@PathVariable Long id) {
+        return R.ok(orgService.getOrg(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createOrg")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/orgs")
+    public R<OrgEntity> createOrg(@RequestBody OrgEntity entity) {
+        return R.ok(orgService.createOrg(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteOrg")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/orgs/{id}")
+    public R<Void> deleteOrg(@PathVariable Long id) {
+        orgService.deleteOrg(id);
         return R.ok();
     }
 }
