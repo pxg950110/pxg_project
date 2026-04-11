@@ -2,6 +2,7 @@ package com.maidc.model.service;
 
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
+import com.maidc.model.config.AiWorkerClient;
 import com.maidc.model.dto.InferenceRequestDTO;
 import com.maidc.model.entity.DeploymentEntity;
 import com.maidc.model.entity.InferenceLogEntity;
@@ -22,6 +23,7 @@ public class InferenceService {
 
     private final DeploymentRepository deploymentRepository;
     private final InferenceLogRepository inferenceLogRepository;
+    private final AiWorkerClient aiWorkerClient;
 
     @Transactional
     public InferenceResultVO inference(Long deploymentId, InferenceRequestDTO dto) {
@@ -45,11 +47,13 @@ public class InferenceService {
         logEntry.setModelVersionNo("latest");
 
         try {
-            // TODO: Call aiworker via Feign/HTTP for actual inference
-            // Simulated result
+            // Call AI Worker for actual inference
+            com.fasterxml.jackson.databind.JsonNode aiResult =
+                    aiWorkerClient.predict(deployment.getEndpointUrl(), dto.getInput());
+
             long latency = System.currentTimeMillis() - startTime;
 
-            logEntry.setOutputResult(dto.getInput()); // placeholder
+            logEntry.setOutputResult(aiResult);
             logEntry.setLatencyMs((int) latency);
             logEntry.setStatus("SUCCESS");
 
@@ -57,7 +61,7 @@ public class InferenceService {
 
             return InferenceResultVO.builder()
                     .requestId(dto.getRequestId())
-                    .results(dto.getInput()) // placeholder
+                    .results(aiResult)
                     .latencyMs(latency)
                     .modelVersion("latest")
                     .build();
