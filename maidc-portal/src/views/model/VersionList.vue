@@ -27,6 +27,62 @@
       </template>
     </a-table>
 
+    <!-- Version Comparison Section -->
+    <a-card title="版本对比" style="margin-top: 24px">
+      <a-row :gutter="16" align="middle" style="margin-bottom: 16px">
+        <a-col :span="8">
+          <a-select v-model:value="compareLeft" placeholder="选择版本1" style="width: 100%">
+            <a-select-option v-for="v in versions" :key="v.id" :value="v.id">{{ v.version_no }}</a-select-option>
+          </a-select>
+        </a-col>
+        <a-col :span="8">
+          <a-select v-model:value="compareRight" placeholder="选择版本2" style="width: 100%">
+            <a-select-option v-for="v in versions" :key="v.id" :value="v.id">{{ v.version_no }}</a-select-option>
+          </a-select>
+        </a-col>
+        <a-col :span="4">
+          <a-button type="primary" @click="showComparisonResult" :disabled="!compareLeft || !compareRight">对比</a-button>
+        </a-col>
+      </a-row>
+
+      <template v-if="showComparison">
+        <!-- 超参数对比 -->
+        <a-table
+          :columns="getCompareColumns('超参数对比')"
+          :data-source="comparisonData.hyperparams"
+          :pagination="false"
+          bordered
+          size="small"
+          style="margin-bottom: 16px"
+        />
+
+        <!-- 训练指标对比 -->
+        <a-table
+          :columns="getCompareColumns('训练指标对比')"
+          :data-source="comparisonData.training"
+          :pagination="false"
+          bordered
+          size="small"
+          style="margin-bottom: 16px"
+        />
+
+        <!-- 评估指标对比 -->
+        <a-table
+          :columns="evaluationColumns"
+          :data-source="comparisonData.evaluation"
+          :pagination="false"
+          bordered
+          size="small"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'diff'">
+              <span :style="{ color: getDiffColor(record.diff) }">{{ record.diff }}</span>
+            </template>
+          </template>
+        </a-table>
+      </template>
+    </a-card>
+
     <!-- Upload Modal -->
     <a-modal v-model:open="uploadModal.visible" title="上传新版本" @ok="handleUpload" :confirm-loading="uploading" width="600px">
       <a-form layout="vertical">
@@ -67,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { UploadOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
@@ -142,6 +198,77 @@ async function doCompare() {
 
 function viewDetail(record: any) {
   message.info('查看版本详情: ' + record.version_no)
+}
+
+// --- Inline comparison section ---
+const compareLeft = ref<number>()
+const compareRight = ref<number>()
+const showComparison = ref(false)
+
+const comparisonData = {
+  hyperparams: [
+    { metric: 'learning_rate', v1: '0.001', v2: '0.0005' },
+    { metric: 'batch_size', v1: '32', v2: '64' },
+    { metric: 'epochs', v1: '100', v2: '150' },
+    { metric: 'optimizer', v1: 'Adam', v2: 'AdamW' },
+  ],
+  training: [
+    { metric: 'loss', v1: '0.0823', v2: '0.1205' },
+    { metric: 'accuracy', v1: '96.8%', v2: '95.2%' },
+    { metric: 'val_loss', v1: '0.0912', v2: '0.1356' },
+  ],
+  evaluation: [
+    { metric: 'AUC', v1: '0.983', v2: '0.923', diff: '+0.060' },
+    { metric: 'F1 Score', v1: '0.948', v2: '0.929', diff: '+0.019' },
+    { metric: 'Precision', v1: '0.951', v2: '0.938', diff: '+0.013' },
+    { metric: 'Recall', v1: '0.945', v2: '0.921', diff: '+0.024' },
+    { metric: '推理延迟', v1: '23ms', v2: '21ms', diff: '+2ms' },
+    { metric: '模型大小', v1: '520MB', v2: '500MB', diff: '+20MB' },
+  ],
+}
+
+function getCompareLabels() {
+  const v1 = versions.value.find((v: any) => v.id === compareLeft.value)
+  const v2 = versions.value.find((v: any) => v.id === compareRight.value)
+  return { label1: v1?.version_no || '版本1', label2: v2?.version_no || '版本2' }
+}
+
+function getCompareColumns(title: string) {
+  const { label1, label2 } = getCompareLabels()
+  return [
+    { title: '指标', dataIndex: 'metric', key: 'metric', width: 180 },
+    { title: label1, dataIndex: 'v1', key: 'v1' },
+    { title: label2, dataIndex: 'v2', key: 'v2' },
+  ]
+}
+
+const evaluationColumns = computed(() => {
+  const { label1, label2 } = getCompareLabels()
+  return [
+    { title: '指标', dataIndex: 'metric', key: 'metric', width: 180 },
+    { title: label1, dataIndex: 'v1', key: 'v1' },
+    { title: label2, dataIndex: 'v2', key: 'v2' },
+    { title: '差异', dataIndex: 'diff', key: 'diff', width: 120 },
+  ]
+})
+
+function getDiffColor(diff: string): string {
+  if (!diff) return ''
+  if (diff.startsWith('+')) return '#52c41a'
+  if (diff.startsWith('-')) return '#f5222d'
+  return ''
+}
+
+function showComparisonResult() {
+  if (!compareLeft.value || !compareRight.value) {
+    message.warning('请选择两个版本进行对比')
+    return
+  }
+  if (compareLeft.value === compareRight.value) {
+    message.warning('请选择不同的版本进行对比')
+    return
+  }
+  showComparison.value = true
 }
 
 onMounted(loadVersions)
