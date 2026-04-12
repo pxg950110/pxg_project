@@ -12,6 +12,7 @@ export const constantRoutes = [
   { path: '/500', name: '500', component: () => import('@/views/error/500.vue') },
   {
     path: '/',
+    name: 'Root',
     component: BasicLayout,
     redirect: '/dashboard',
     children: [

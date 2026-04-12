@@ -25,7 +25,7 @@ export function setupGuards(router: Router) {
             routes.forEach(route => {
               if (route.path === '/' && route.children) {
                 route.children.forEach(child => {
-                  router.addRoute('/', child)
+                  router.addRoute('Root', child)
                 })
               } else {
                 router.addRoute(route)

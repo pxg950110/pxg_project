@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { BellOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
