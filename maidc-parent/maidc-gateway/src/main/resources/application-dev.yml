@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: maidc-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+      config:
+        import-check:
+          enabled: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: maidc_redis
+
+maidc:
+  jwt:
+    secret: maidc-jwt-secret-key-2026-change-in-production
+    access-expiration: 7200000
+    refresh-expiration: 604800000

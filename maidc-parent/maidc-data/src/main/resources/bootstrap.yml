@@ -10,9 +10,15 @@ spring:
     nacos:
       discovery:
         server-addr: ${NACOS_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
         file-extension: yaml
+        import-check:
+          enabled: false
         shared-configs:
           - data-id: maidc-shared.yaml
             refresh: true
