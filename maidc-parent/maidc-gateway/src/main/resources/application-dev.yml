@@ -13,11 +13,67 @@ spring:
       config:
         import-check:
           enabled: false
+    gateway:
+      routes:
+        - id: maidc-auth
+          uri: lb://maidc-auth
+          predicates:
+            - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-model
+          uri: lb://maidc-model
+          predicates:
+            - Path=/api/v1/models/**,/api/v1/evaluations/**,/api/v1/approvals/**,/api/v1/deployments/**,/api/v1/routes/**,/api/v1/inference/**,/api/v1/workers/**,/api/v1/alert-rules/**,/api/v1/alerts/**,/api/v1/monitoring/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-data
+          uri: lb://maidc-data
+          predicates:
+            - Path=/api/v1/cdr/**,/api/v1/rdr/**,/api/v1/etl/**,/api/v1/quality/**,/api/v1/dict/**,/api/v1/desensitize/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-task
+          uri: lb://maidc-task
+          predicates:
+            - Path=/api/v1/task/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-label
+          uri: lb://maidc-label
+          predicates:
+            - Path=/api/v1/label/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-audit
+          uri: lb://maidc-audit
+          predicates:
+            - Path=/api/v1/audit/**
+          filters:
+            - StripPrefix=0
+
+        - id: maidc-msg
+          uri: lb://maidc-msg
+          predicates:
+            - Path=/api/v1/messages/**,/api/v1/notifications/**
+          filters:
+            - StripPrefix=0
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
   data:
     redis:
       host: localhost
       port: 6379
-      password: maidc_redis
+      password: maidc123
 
 maidc:
   jwt:
