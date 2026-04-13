@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 
 export function useModal<T = any>() {
   const visible = ref(false)
@@ -14,5 +14,5 @@ export function useModal<T = any>() {
     currentRecord.value = null
   }
 
-  return { visible, currentRecord, open, close }
+  return reactive({ visible, currentRecord, open, close })
 }

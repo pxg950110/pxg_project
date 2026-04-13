@@ -1,0 +1,54 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: maidc-auth
+  datasource:
+    url: jdbc:postgresql://localhost:5432/maidc?currentSchema=system&stringtype=unspecified
+    username: maidc
+    password: maidc123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: system
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: maidc123
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+      config:
+        import-check:
+          enabled: false
+
+maidc:
+  auth:
+    max-login-attempts: 5
+    lock-duration-ms: 1800000
+    password-min-length: 8
+  jwt:
+    secret: maidc-jwt-secret-key-2026-change-in-production
+    access-expiration: 7200000
+    refresh-expiration: 604800000
+
+logging:
+  level:
+    com.maidc: INFO

@@ -8,7 +8,7 @@
         <a-avatar :size="28" style="background-color: #1677ff">
           {{ avatarText }}
         </a-avatar>
-        <span class="username">{{ authStore.userInfo?.real_name || authStore.userInfo?.username }}</span>
+        <span class="username">{{ authStore.userInfo?.realName || authStore.userInfo?.username }}</span>
       </span>
       <template #overlay>
         <a-menu>
@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { BellOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -37,7 +37,7 @@ const authStore = useAuthStore()
 
 const unreadCount = ref(0)
 const avatarText = computed(() => {
-  const name = authStore.userInfo?.real_name || authStore.userInfo?.username || ''
+  const name = authStore.userInfo?.realName || authStore.userInfo?.username || ''
   return name.charAt(0).toUpperCase()
 })
 

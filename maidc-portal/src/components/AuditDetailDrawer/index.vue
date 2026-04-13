@@ -18,8 +18,8 @@
         <a-descriptions-item label="目标ID">{{ record.target_id }}</a-descriptions-item>
         <a-descriptions-item label="状态">
           <a-badge
-            :color="record.status >= 200 && record.status < 300 ? 'green' : 'red'"
-            :text="`${record.status}`"
+            :color="(record.status ?? 0) >= 200 && (record.status ?? 0) < 300 ? 'green' : 'red'"
+            :text="`${record.status ?? '-'}`"
           />
         </a-descriptions-item>
       </a-descriptions>

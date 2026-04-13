@@ -147,7 +147,7 @@ function handleExport() {
 
 // Keep useTable for future API integration
 const { tableData, loading, fetchData, handleTableChange } = useTable<any>(
-  () => Promise.resolve({ data: { code: 0, data: { items: [], total: 0, page: 1 } } })
+  () => Promise.resolve({ data: { code: 0, message: '', data: { items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }, traceId: '' } })
 )
 </script>
 

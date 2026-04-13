@@ -10,36 +10,15 @@ spring:
     nacos:
       discovery:
         server-addr: ${NACOS_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
         file-extension: yaml
+        import-check:
+          enabled: false
         shared-configs:
           - data-id: maidc-shared.yaml
             refresh: true
-  datasource:
-    url: jdbc:postgresql://localhost:5432/maidc?currentSchema=model
-    username: maidc
-    password: maidc123
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        default_schema: model
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASS:guest}
-
-logging:
-  level:
-    com.maidc.msg: DEBUG
-    org.hibernate.SQL: DEBUG

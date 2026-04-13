@@ -22,7 +22,15 @@ export function setupGuards(router: Router) {
             await authStore.getUserInfoAction()
             const permissionStore = usePermissionStore()
             const routes = await permissionStore.generateRoutes()
-            routes.forEach(route => router.addRoute(route))
+            routes.forEach(route => {
+              if (route.path === '/' && route.children) {
+                route.children.forEach(child => {
+                  router.addRoute('Root', child)
+                })
+              } else {
+                router.addRoute(route)
+              }
+            })
             next({ ...to, replace: true })
           } catch {
             authStore.logoutAction()

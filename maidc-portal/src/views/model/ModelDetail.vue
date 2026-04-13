@@ -17,8 +17,8 @@
               </div>
               <p class="model-desc">{{ modelInfo.description }}</p>
               <a-space style="margin-top: 16px">
-                <a-button type="primary">编辑</a-button>
-                <a-button type="primary">注册新版本</a-button>
+                <a-button type="primary" @click="showEditModal">编辑</a-button>
+                <a-button type="primary" @click="showVersionModal">注册新版本</a-button>
               </a-space>
             </a-col>
             <a-col :span="10">
@@ -70,7 +70,7 @@
               <template v-if="column.key === 'action'">
                 <a-button type="link" size="small">详情</a-button>
                 <a-divider type="vertical" />
-                <a-button type="link" size="small">下载</a-button>
+                <a-button type="link" size="small" @click="handleDownload(record)">下载</a-button>
               </template>
             </template>
           </a-table>
@@ -193,13 +193,30 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
+import { useModal } from '@/hooks/useModal'
 
 const route = useRoute()
 const router = useRouter()
 
 const loading = ref(false)
+
+const editModal = useModal()
+const versionModal = useModal()
+
+function showEditModal() {
+  editModal.open()
+}
+
+function showVersionModal() {
+  versionModal.open()
+}
+
+function handleDownload(record: any) {
+  message.info(`开始下载版本 ${record.version}`)
+}
 const activeTab = ref('info')
 
 // Breadcrumb

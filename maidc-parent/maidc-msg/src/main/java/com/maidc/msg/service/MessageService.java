@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +36,17 @@ public class MessageService {
      * 分页查询用户消息列表
      */
     public PageResult<MessageVO> listMessages(Long userId, String type, Boolean isRead, int page, int pageSize) {
-        Page<MessageEntity> result = messageRepository.findByUserIdWithFilters(
-                userId, type, isRead, PageRequest.of(page - 1, pageSize));
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
+        Page<MessageEntity> result;
+        if (type != null && isRead != null) {
+            result = messageRepository.findByUserIdAndTypeAndIsReadAndIsDeletedFalse(userId, type, isRead, pageable);
+        } else if (type != null) {
+            result = messageRepository.findByUserIdAndTypeAndIsDeletedFalse(userId, type, pageable);
+        } else if (isRead != null) {
+            result = messageRepository.findByUserIdAndIsReadAndIsDeletedFalse(userId, isRead, pageable);
+        } else {
+            result = messageRepository.findByUserIdAndIsDeletedFalse(userId, pageable);
+        }
         return PageResult.of(result.map(msgMapper::toMessageVO));
     }
 

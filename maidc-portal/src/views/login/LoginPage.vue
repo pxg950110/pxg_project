@@ -56,7 +56,7 @@
               class="field-input"
               placeholder="请输入用户名"
               autocomplete="username"
-              @keydown.enter="$refs.passwordInput.focus()"
+              @keydown.enter="passwordInput?.focus()"
             />
           </div>
           <div class="field-group">
@@ -121,6 +121,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const loading = ref(false)
+const passwordInput = ref<HTMLInputElement | null>(null)
 
 const formState = reactive({
   username: '',
@@ -140,7 +141,8 @@ async function handleLogin() {
     const redirect = (route.query.redirect as string) || '/'
     router.push(redirect)
   } catch (e: any) {
-    // error already handled by interceptor
+    const msg = e?.message || '登录失败，请检查用户名和密码'
+    message.error(msg)
   } finally {
     loading.value = false
   }
@@ -322,8 +324,8 @@ async function handleLogin() {
 }
 
 .field-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15);
 }
 
 .form-extra {
@@ -344,12 +346,12 @@ async function handleLogin() {
 .remember-me input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #3b82f6;
+  accent-color: #1677ff;
 }
 
 .forgot-link {
   font-size: 13px;
-  color: #3b82f6;
+  color: #1677ff;
   cursor: pointer;
 }
 
@@ -360,7 +362,7 @@ async function handleLogin() {
 .login-btn {
   width: 100%;
   height: 44px;
-  background: #3b82f6;
+  background: #1677ff;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -372,7 +374,7 @@ async function handleLogin() {
 }
 
 .login-btn:hover:not(:disabled) {
-  background: #2563eb;
+  background: #4096ff;
 }
 
 .login-btn:disabled {
@@ -412,8 +414,8 @@ async function handleLogin() {
 }
 
 .sso-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #1677ff;
+  color: #1677ff;
 }
 
 .security-hints {
@@ -439,7 +441,7 @@ async function handleLogin() {
 }
 
 .footer-links a {
-  color: #3b82f6;
+  color: #1677ff;
   cursor: pointer;
 }
 

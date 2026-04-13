@@ -25,9 +25,9 @@
       </div>
     </div>
 
-    <!-- Metric Cards Row: 6 cards -->
+    <!-- Metric Cards Row 1: 3 cards -->
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="4">
+      <a-col :span="8">
         <MetricCard
           title="模型总数"
           :value="28"
@@ -37,7 +37,7 @@
           <template #icon><ExperimentOutlined /></template>
         </MetricCard>
       </a-col>
-      <a-col :span="4">
+      <a-col :span="8">
         <MetricCard
           title="活跃部署"
           :value="8"
@@ -47,7 +47,7 @@
           <template #icon><RocketOutlined /></template>
         </MetricCard>
       </a-col>
-      <a-col :span="4">
+      <a-col :span="8">
         <MetricCard
           title="今日推理次数"
           :value="12456"
@@ -57,7 +57,11 @@
           <template #icon><ThunderboltOutlined /></template>
         </MetricCard>
       </a-col>
-      <a-col :span="4">
+    </a-row>
+
+    <!-- Metric Cards Row 2: 3 cards -->
+    <a-row :gutter="[16, 16]" style="margin-top: 16px">
+      <a-col :span="8">
         <MetricCard
           title="患者记录"
           :value="156000"
@@ -67,7 +71,7 @@
           <template #icon><TeamOutlined /></template>
         </MetricCard>
       </a-col>
-      <a-col :span="4">
+      <a-col :span="8">
         <MetricCard
           title="研究项目"
           :value="12"
@@ -76,7 +80,7 @@
           <template #icon><ProjectOutlined /></template>
         </MetricCard>
       </a-col>
-      <a-col :span="4">
+      <a-col :span="8">
         <MetricCard
           title="待审批"
           :value="5"

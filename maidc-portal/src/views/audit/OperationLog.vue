@@ -174,7 +174,7 @@ const filteredData = computed(() => {
   return mockData.value.filter((item) => {
     if (filters.service && item.service !== filters.service) return false
     if (filters.operationType && item.operation_type !== filters.operationType) return false
-    if (filters.status !== undefined && filters.status !== '' && item.status !== filters.status) return false
+    if (filters.status !== undefined && item.status !== filters.status) return false
     if (filters.keyword) {
       const kw = filters.keyword.toLowerCase()
       if (!item.username.toLowerCase().includes(kw)) return false
@@ -248,7 +248,7 @@ function handleExport() {
 
 // Keep useTable for future API integration
 const { tableData, loading, fetchData, handleTableChange } = useTable<any>(
-  () => Promise.resolve({ data: { code: 0, data: { items: [], total: 0, page: 1 } } })
+  () => Promise.resolve({ data: { code: 0, message: '', data: { items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }, traceId: '' } })
 )
 </script>
 

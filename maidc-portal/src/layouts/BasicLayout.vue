@@ -4,12 +4,15 @@
       v-model:collapsed="uiStore.sidebarCollapsed"
       :trigger="null"
       collapsible
+      theme="light"
       :width="220"
       :collapsed-width="64"
       class="layout-sider"
     >
       <div class="sider-logo">
-        <img src="@/assets/logo.svg" alt="MAIDC" class="logo-img" />
+        <div class="logo-icon-box">
+          <img src="@/assets/logo.svg" alt="MAIDC" class="logo-img" />
+        </div>
         <span v-show="!uiStore.sidebarCollapsed" class="logo-text">MAIDC</span>
       </div>
       <SidebarMenu :collapsed="uiStore.sidebarCollapsed" />
@@ -27,7 +30,7 @@
             class="trigger-icon"
             @click="uiStore.toggleSidebar()"
           />
-          <BreadcrumbNav />
+          <span class="page-title">{{ pageTitle }}</span>
         </div>
         <div class="header-right">
           <HeaderActions />
@@ -45,13 +48,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 import { useUiStore } from '@/stores/ui'
 import SidebarMenu from './SidebarMenu.vue'
-import BreadcrumbNav from './BreadcrumbNav.vue'
 import HeaderActions from './HeaderActions.vue'
 
 const uiStore = useUiStore()
+const route = useRoute()
+
+const pageTitle = computed(() => {
+  // Use the deepest matched route's meta.title
+  const matched = route.matched.filter(r => r.meta?.title)
+  if (matched.length > 0) {
+    return matched[matched.length - 1].meta.title as string
+  }
+  return ''
+})
 </script>
 
 <style scoped>
@@ -61,24 +75,35 @@ const uiStore = useUiStore()
 .layout-sider {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
   z-index: 10;
+  border-right: 1px solid #d9d9d9;
 }
 .sider-logo {
-  height: 56px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid #d9d9d9;
+}
+.logo-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #1677ff;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
 }
-.logo-img {
-  width: 28px;
-  height: 28px;
+.logo-icon-box .logo-img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
 }
 .logo-text {
   font-size: 16px;
   font-weight: 700;
-  color: #1677ff;
+  color: rgba(0, 0, 0, 0.88);
   white-space: nowrap;
 }
 .layout-header {
@@ -87,9 +112,9 @@ const uiStore = useUiStore()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
-  line-height: 56px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  height: 60px;
+  line-height: 60px;
+  border-bottom: 1px solid #d9d9d9;
   z-index: 9;
 }
 .header-left {
@@ -105,16 +130,20 @@ const uiStore = useUiStore()
 .trigger-icon:hover {
   color: #1677ff;
 }
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+}
 .header-right {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 .layout-content {
-  margin: 16px;
-  padding: 20px;
+  padding: 24px;
   background: #f0f2f5;
-  min-height: calc(100vh - 56px - 32px);
+  min-height: calc(100vh - 60px);
   overflow-y: auto;
 }
 </style>

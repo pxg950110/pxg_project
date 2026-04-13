@@ -29,6 +29,8 @@ export const asyncRoutes: RouteRecordRaw[] = [
           { path: 'deployments', name: 'DeploymentList', meta: { title: '部署管理' }, component: () => import('@/views/model/DeploymentList.vue') },
           { path: 'deployments/:id', name: 'DeploymentDetail', meta: { title: '部署详情', hidden: true }, component: () => import('@/views/model/DeploymentDetail.vue') },
           { path: 'routes', name: 'RouteConfig', meta: { title: '流量路由' }, component: () => import('@/views/model/RouteConfig.vue') },
+          { path: 'versions', name: 'VersionList', meta: { title: '版本管理' }, component: () => import('@/views/model/VersionList.vue') },
+          { path: 'inference-logs', name: 'InferenceLog', meta: { title: '推理日志' }, component: () => import('@/views/model/InferenceLog.vue') },
         ],
       },
       {
@@ -60,6 +62,7 @@ export const asyncRoutes: RouteRecordRaw[] = [
         children: [
           { path: 'tasks', name: 'LabelTaskList', meta: { title: '标注任务' }, component: () => import('@/views/label/LabelTaskList.vue') },
           { path: 'workspace/:id', name: 'LabelWorkspace', meta: { title: '标注工作台', hidden: true }, component: () => import('@/views/label/LabelWorkspace.vue') },
+          { path: 'detail/:id', name: 'LabelTaskDetail', meta: { title: '标注详情', hidden: true }, component: () => import('@/views/label/LabelTaskDetail.vue') },
         ],
       },
       {

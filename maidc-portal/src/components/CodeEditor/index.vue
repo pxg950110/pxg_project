@@ -1,5 +1,5 @@
 <template>
-  <div class="code-editor" :class="{ readonly }">
+  <div class="code-editor" :class="{ readonly: readOnly }">
     <div v-if="language" class="editor-lang">{{ language }}</div>
     <textarea
       ref="textareaRef"

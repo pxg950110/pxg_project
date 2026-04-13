@@ -2,7 +2,7 @@
   <PageContainer title="研究项目">
     <template #extra>
       <a-button type="primary" @click="projectModal.open()">
-        <PlusOutlined /> 新建项目
+        <PlusOutlined /> 创建项目
       </a-button>
     </template>
 

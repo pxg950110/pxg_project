@@ -10,20 +10,15 @@ spring:
     nacos:
       discovery:
         server-addr: ${NACOS_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
         file-extension: yaml
+        import-check:
+          enabled: false
         shared-configs:
           - data-id: maidc-shared.yaml
             refresh: true
-  datasource:
-    url: jdbc:postgresql://localhost:5432/maidc?currentSchema=audit
-    username: maidc
-    password: maidc123
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        default_schema: audit

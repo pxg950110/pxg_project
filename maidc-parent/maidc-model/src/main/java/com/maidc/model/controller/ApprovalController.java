@@ -1,6 +1,7 @@
 package com.maidc.model.controller;
 
 import com.maidc.common.core.result.R;
+import com.maidc.common.core.result.PageResult;
 import com.maidc.common.log.annotation.OperLog;
 import com.maidc.model.dto.ApprovalCreateDTO;
 import com.maidc.model.dto.ApprovalReviewDTO;
@@ -17,6 +18,14 @@ import org.springframework.web.bind.annotation.*;
 public class ApprovalController {
 
     private final ApprovalService approvalService;
+
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping
+    public R<PageResult<ApprovalVO>> listApprovals(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        return R.ok(approvalService.listApprovals(page, pageSize));
+    }
 
     @OperLog(module = "model", operation = "submitApproval")
     @PreAuthorize("hasPermission('model:approve')")
