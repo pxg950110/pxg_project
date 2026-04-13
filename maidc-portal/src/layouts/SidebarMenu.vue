@@ -7,8 +7,8 @@
     @openChange="onOpenChange"
     @click="onMenuClick"
   >
-    <template v-for="route in permissionStore.routes" :key="route.name">
-      <a-sub-menu v-if="route.children?.length" :key="route.name">
+    <template v-for="route in menuRoutes" :key="route.name">
+      <a-sub-menu v-if="route.children?.filter(c => !c.meta?.hidden).length" :key="route.name">
         <template #title>
           <component :is="iconMap[route.meta?.icon as string]" v-if="route.meta?.icon" />
           <span>{{ route.meta?.title }}</span>
@@ -19,7 +19,7 @@
           </a-menu-item>
         </template>
       </a-sub-menu>
-      <a-menu-item v-else :key="route.name">
+      <a-menu-item v-else-if="!route.meta?.hidden" :key="route.name">
         <component :is="iconMap[route.meta?.icon as string]" v-if="route.meta?.icon" />
         <span>{{ route.meta?.title }}</span>
       </a-menu-item>
@@ -60,6 +60,15 @@ const iconMap: Record<string, any> = {
 const route = useRoute()
 const router = useRouter()
 const permissionStore = usePermissionStore()
+
+// Unwrap root "/" route to get top-level menu groups (Dashboard, Model, Data, etc.)
+const menuRoutes = computed(() => {
+  const root = permissionStore.routes[0]
+  if (root?.path === '/' && root.children?.length) {
+    return root.children
+  }
+  return permissionStore.routes
+})
 
 const selectedKeys = computed(() => [String(route.name)])
 const openKeys = ref<string[]>([])
