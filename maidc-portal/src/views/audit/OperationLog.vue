@@ -44,11 +44,13 @@
     <!-- Table -->
     <a-table
       :columns="columns"
-      :data-source="filteredData"
+      :data-source="tableData"
+      :loading="loading"
       :pagination="pagination"
       row-key="id"
       size="small"
       :scroll="{ x: 1260 }"
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'created_at'">
@@ -125,63 +127,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
-
-// --- Mock data ---
-interface LogRecord {
-  id: number
-  username: string
-  service: string
-  service_tag: string
-  operation_type: string
-  resource: string
-  method: string
-  url: string
-  duration: number
-  status: number
-  created_at: string
-  request_body: string | null
-  response_body: string | null
-  error_body: string | null
-  ip: string
-}
-
-const mockData = ref<LogRecord[]>([
-  { id: 1, username: 'admin', service: '认证服务', service_tag: 'blue', operation_type: '登录', resource: '系统登录', method: 'POST', url: '/api/auth/login', duration: 45, status: 1, created_at: '2026-04-12 10:30:15', request_body: '{"username":"admin","password":"***"}', response_body: '{"token":"eyJhbG...","user":"admin"}', error_body: null, ip: '192.168.1.100' },
-  { id: 2, username: '李医生', service: '数据服务', service_tag: 'green', operation_type: '查询', resource: '患者 PAT-2026-00123', method: 'GET', url: '/api/data/patients/123', duration: 120, status: 1, created_at: '2026-04-12 10:28:30', request_body: null, response_body: '{"id":123,"name":"张三","age":45}', error_body: null, ip: '192.168.1.105' },
-  { id: 3, username: 'admin', service: '模型服务', service_tag: 'purple', operation_type: '创建', resource: '模型注册 病理分类v3', method: 'POST', url: '/api/model/register', duration: 2300, status: 0, created_at: '2026-04-12 10:25:00', request_body: '{"name":"病理分类v3","framework":"PyTorch"}', response_body: null, error_body: '{"code":"MODEL_EXISTS","message":"模型名称已存在"}', ip: '192.168.1.100' },
-  { id: 4, username: '王技师', service: '标注服务', service_tag: 'orange', operation_type: '更新', resource: '标注任务 #5', method: 'PUT', url: '/api/label/tasks/5', duration: 89, status: 1, created_at: '2026-04-12 10:20:45', request_body: '{"status":"COMPLETED"}', response_body: '{"id":5,"status":"COMPLETED"}', error_body: null, ip: '192.168.1.108' },
-  { id: 5, username: '张主任', service: '模型服务', service_tag: 'purple', operation_type: '删除', resource: '模型版本 v1.2.0', method: 'DELETE', url: '/api/model/versions/12', duration: 56, status: 1, created_at: '2026-04-12 10:15:20', request_body: null, response_body: '{"deleted":true}', error_body: null, ip: '10.0.0.5' },
-  { id: 6, username: '系统', service: '系统服务', service_tag: 'default', operation_type: '导出', resource: '月度报表 2026-03', method: 'POST', url: '/api/system/export', duration: 8500, status: 1, created_at: '2026-04-12 10:10:00', request_body: '{"type":"monthly","period":"2026-03"}', response_body: '{"file":"report_202603.xlsx","size":"2.3MB"}', error_body: null, ip: '127.0.0.1' },
-  { id: 7, username: '赵实习生', service: '数据服务', service_tag: 'green', operation_type: '查询', resource: '数据集列表', method: 'GET', url: '/api/data/datasets?page=1&size=20', duration: 340, status: 1, created_at: '2026-04-12 10:05:18', request_body: null, response_body: '{"total":56,"items":[...]}', error_body: null, ip: '192.168.1.112' },
-  { id: 8, username: 'admin', service: '认证服务', service_tag: 'blue', operation_type: '登录', resource: '系统登录', method: 'POST', url: '/api/auth/login', duration: 23, status: 0, created_at: '2026-04-12 09:58:40', request_body: '{"username":"admin","password":"***"}', response_body: null, error_body: '{"code":"AUTH_FAILED","message":"密码错误"}', ip: '203.0.113.45' },
-])
-
-// --- Filters ---
-const filters = reactive({
-  service: undefined as string | undefined,
-  operationType: undefined as string | undefined,
-  status: undefined as number | undefined,
-  dateRange: undefined as any,
-  keyword: undefined as string | undefined,
-})
-
-// --- Computed filtered data ---
-const filteredData = computed(() => {
-  return mockData.value.filter((item) => {
-    if (filters.service && item.service !== filters.service) return false
-    if (filters.operationType && item.operation_type !== filters.operationType) return false
-    if (filters.status !== undefined && item.status !== filters.status) return false
-    if (filters.keyword) {
-      const kw = filters.keyword.toLowerCase()
-      if (!item.username.toLowerCase().includes(kw)) return false
-    }
-    return true
-  })
-})
+import { getAuditLogs } from '@/api/audit'
 
 // --- Columns ---
 const columns = [
@@ -222,6 +172,24 @@ function durationColor(ms: number): string {
   return '#ff4d4f'
 }
 
+// --- API integration ---
+const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+  (params) => getAuditLogs({
+    page: params.page,
+    page_size: params.pageSize,
+    module: filters.service,
+    operation: filters.operationType,
+    username: filters.keyword,
+    status: filters.status,
+    start_time: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
+    end_time: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
+  })
+)
+
+onMounted(() => {
+  fetchData()
+})
+
 // --- Format JSON ---
 function formatJson(str: string | null): string {
   if (!str) return '-'
@@ -245,11 +213,6 @@ function openDetail(record: LogRecord) {
 function handleExport() {
   // TODO: implement export logic
 }
-
-// Keep useTable for future API integration
-const { tableData, loading, fetchData, handleTableChange } = useTable<any>(
-  () => Promise.resolve({ data: { code: 0, message: '', data: { items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }, traceId: '' } })
-)
 </script>
 
 <style scoped>
