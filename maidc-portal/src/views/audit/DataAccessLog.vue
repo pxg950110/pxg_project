@@ -36,11 +36,13 @@
     <!-- Table -->
     <a-table
       :columns="columns"
-      :data-source="filteredData"
+      :data-source="tableData"
+      :loading="loading"
       :pagination="pagination"
       row-key="id"
       size="small"
       :scroll="{ x: 1050 }"
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'created_at'">
@@ -61,54 +63,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
-
-// --- Mock data ---
-interface DataAccessRecord {
-  id: number
-  username: string
-  data_type: string
-  data_type_color: string
-  action_type: string
-  data_name: string
-  patient_id: string
-  purpose: string
-  ip: string
-  created_at: string
-}
-
-const mockData = ref<DataAccessRecord[]>([
-  { id: 1, username: '李医生', data_type: '患者数据', data_type_color: 'blue', action_type: '查看', data_name: 'PAT-2026-00123', patient_id: 'PAT-2026-00123', purpose: '日常诊疗查阅', ip: '192.168.1.105', created_at: '2026-04-12 10:30:15' },
-  { id: 2, username: '王技师', data_type: '影像数据', data_type_color: 'purple', action_type: '导出', data_name: 'IMG-2026-04567', patient_id: '-', purpose: '科研项目数据导出', ip: '192.168.1.108', created_at: '2026-04-12 10:25:30' },
-  { id: 3, username: '张主任', data_type: '研究数据', data_type_color: 'green', action_type: '下载', data_name: 'DS-2026-LUNG-01', patient_id: '-', purpose: '离线分析下载', ip: '10.0.0.5', created_at: '2026-04-12 10:20:00' },
-  { id: 4, username: '赵实习生', data_type: '标注数据', data_type_color: 'orange', action_type: '修改', data_name: 'TASK-2026-0089', patient_id: '-', purpose: '标注工作修改', ip: '192.168.1.112', created_at: '2026-04-12 10:15:18' },
-  { id: 5, username: 'admin', data_type: '模型数据', data_type_color: 'cyan', action_type: '删除', data_name: 'MODEL-V2.3.1', patient_id: '-', purpose: '过期版本清理', ip: '10.0.0.1', created_at: '2026-04-12 10:10:45' },
-  { id: 6, username: '李医生', data_type: '患者数据', data_type_color: 'blue', action_type: '查看', data_name: 'PAT-2026-00456', patient_id: 'PAT-2026-00456', purpose: '日常诊疗查阅', ip: '192.168.1.105', created_at: '2026-04-12 10:05:20' },
-])
-
-// --- Filters ---
-const filters = reactive({
-  dataType: undefined as string | undefined,
-  actionType: undefined as string | undefined,
-  dateRange: undefined as any,
-  keyword: undefined as string | undefined,
-})
-
-// --- Computed filtered data ---
-const filteredData = computed(() => {
-  return mockData.value.filter((item) => {
-    if (filters.dataType && item.data_type !== filters.dataType) return false
-    if (filters.actionType && item.action_type !== filters.actionType) return false
-    if (filters.keyword) {
-      const kw = filters.keyword.toLowerCase()
-      if (!item.username.toLowerCase().includes(kw)) return false
-    }
-    return true
-  })
-})
+import { getDataAccessLogs } from '@/api/audit'
 
 // --- Columns ---
 const columns = [
@@ -145,10 +104,22 @@ function handleExport() {
   // TODO: implement export logic
 }
 
-// Keep useTable for future API integration
-const { tableData, loading, fetchData, handleTableChange } = useTable<any>(
-  () => Promise.resolve({ data: { code: 0, message: '', data: { items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }, traceId: '' } })
+// --- API integration ---
+const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+  (params) => getDataAccessLogs({
+    page: params.page,
+    page_size: params.pageSize,
+    data_type: filters.dataType,
+    user_id: filters.keyword,
+    patient_id: filters.patientId,
+    start_time: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
+    end_time: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
+  })
 )
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style scoped>
