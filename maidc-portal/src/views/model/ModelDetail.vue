@@ -191,16 +191,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { useModal } from '@/hooks/useModal'
+import { getModel, getVersions, getEvaluations, getDeployments } from '@/api/model'
 
 const route = useRoute()
 const router = useRouter()
 
+const modelId = Number(route.params.id)
 const loading = ref(false)
 
 const editModal = useModal()
@@ -219,35 +221,53 @@ function handleDownload(record: any) {
 }
 const activeTab = ref('info')
 
-// Breadcrumb
-const breadcrumb = [
-  { title: '模型管理', path: '/model' },
-  { title: '肺结节检测模型' },
-]
-
-// Tab 1: Model Overview
+// --- Load model detail from API ---
 const modelInfo = reactive({
-  name: '肺结节检测模型',
-  status: 'PUBLISHED',
-  description: '基于3D卷积神经网络和注意力机制的肺结节自动检测模型，用于胸部CT影像中肺结节的智能识别与定位，支持多尺度结节检测，具备高灵敏度和低误检率。',
-  code: 'MODEL-LN-DET-001',
-  type: '影像分析',
-  framework: 'PyTorch 2.1',
-  task: '目标检测',
-  project: '肺结节检测项目',
-  owner: '张医生',
-  createdAt: '2025-08-15 10:30',
-  updatedAt: '2026-03-22 16:45',
-  latestVersion: 'v2.3.1',
-  tags: ['CT', '肺结节', '目标检测'],
+  name: '',
+  status: '',
+  description: '',
+  code: '',
+  type: '',
+  framework: '',
+  task: '',
+  project: '',
+  owner: '',
+  createdAt: '',
+  updatedAt: '',
+  latestVersion: '',
+  tags: [] as string[],
 })
 
-const metrics = [
-  { label: '准确率', value: 96.8, suffix: '%' },
-  { label: '灵敏度', value: 94.5, suffix: '%' },
-  { label: '特异度', value: 97.3, suffix: '%' },
-  { label: 'AUC', value: 0.983, suffix: '' },
-]
+const metrics = ref<{ label: string; value: number; suffix: string }[]>([])
+
+async function loadModelDetail() {
+  loading.value = true
+  try {
+    const res = await getModel(modelId)
+    const data = res.data.data
+    modelInfo.name = data.model_name || ''
+    modelInfo.status = data.status || ''
+    modelInfo.description = data.description || ''
+    modelInfo.code = data.model_code || ''
+    modelInfo.type = data.model_type || ''
+    modelInfo.framework = data.framework || ''
+    modelInfo.task = data.task_type || ''
+    modelInfo.project = ''
+    modelInfo.owner = data.owner_name || ''
+    modelInfo.createdAt = data.created_at || ''
+    modelInfo.updatedAt = data.updated_at || ''
+    modelInfo.latestVersion = data.latest_version || ''
+    modelInfo.tags = data.tags || []
+  } finally {
+    loading.value = false
+  }
+}
+
+// Breadcrumb
+const breadcrumb = computed(() => [
+  { title: '模型管理', path: '/model' },
+  { title: modelInfo.name || '模型详情' },
+])
 
 // Tab 2: Version List
 const versionColumns = [
@@ -261,37 +281,58 @@ const versionColumns = [
   { title: '操作', key: 'action', width: 140 },
 ]
 
-const versions = ref([
-  { version: 'v2.3.1', desc: '3D卷积+注意力机制', framework: 'PyTorch 2.1', size: '520MB', auc: 0.983, status: 'DEPLOYED', date: '2026-04-07' },
-  { version: 'v2.2.0', desc: '新型注意力机制', framework: 'PyTorch 2.0', size: '500MB', auc: 0.923, status: 'DEPLOYED', date: '2026-03-15' },
-  { version: 'v2.1.0', desc: '多尺度特征融合', framework: 'PyTorch 2.0', size: '490MB', auc: 0.908, status: 'DEPLOYED', date: '2026-02-20' },
-  { version: 'v2.0.0', desc: '基础ResNet50', framework: 'PyTorch 1.13', size: '480MB', auc: 0.895, status: 'DEPRECATED', date: '2026-01-10' },
-  { version: 'v1.0.0', desc: '初始版本', framework: 'PyTorch 1.13', size: '475MB', auc: 0.882, status: 'DEPRECATED', date: '2025-11-01' },
-])
+const versions = ref<any[]>([])
+
+async function loadVersions() {
+  try {
+    const res = await getVersions(modelId, { page: 1, page_size: 100 })
+    versions.value = (res.data.data.items || []).map((v: any) => ({
+      version: v.version || v.version_number,
+      desc: v.description,
+      framework: v.framework,
+      size: v.file_size,
+      auc: v.auc,
+      status: v.status,
+      date: v.created_at,
+    }))
+  } catch {
+    // Silently fail - versions will be empty
+  }
+}
 
 // Version Comparison
-const compareVerA = ref<string>('v2.3.1')
-const compareVerB = ref<string>('v2.2.0')
+const compareVerA = ref<string>('')
+const compareVerB = ref<string>('')
 const comparisonData = ref<any[]>([])
 
-const comparisonColumns = [
+const comparisonColumns = computed(() => [
   { title: '指标', dataIndex: 'metric', key: 'metric' },
   { title: compareVerA.value, dataIndex: 'valA', key: 'valA' },
   { title: compareVerB.value, dataIndex: 'valB', key: 'valB' },
   { title: '差异', dataIndex: 'diff', key: 'diff' },
-]
+])
 
-const versionMetricsMap: Record<string, Record<string, any>> = {
-  'v2.3.1': { auc: 0.983, accuracy: 0.968, recall: 0.965, precision: 0.958, f1: 0.961, params: '45.2M', size: '520MB' },
-  'v2.2.0': { auc: 0.923, accuracy: 0.921, recall: 0.919, precision: 0.905, f1: 0.912, params: '42.8M', size: '500MB' },
-  'v2.1.0': { auc: 0.908, accuracy: 0.912, recall: 0.905, precision: 0.898, f1: 0.901, params: '40.1M', size: '490MB' },
-  'v2.0.0': { auc: 0.895, accuracy: 0.897, recall: 0.891, precision: 0.885, f1: 0.888, params: '38.5M', size: '480MB' },
-  'v1.0.0': { auc: 0.882, accuracy: 0.883, recall: 0.878, precision: 0.870, f1: 0.874, params: '36.2M', size: '475MB' },
-}
+const versionMetricsMap = computed<Record<string, Record<string, any>>>(() => {
+  const map: Record<string, Record<string, any>> = {}
+  for (const v of versions.value) {
+    if (v.version) {
+      map[v.version] = {
+        auc: v.auc,
+        accuracy: v.accuracy,
+        recall: v.recall,
+        precision: v.precision,
+        f1: v.f1,
+        params: v.params,
+        size: v.size,
+      }
+    }
+  }
+  return map
+})
 
 function handleCompare() {
-  const dataA = versionMetricsMap[compareVerA.value]
-  const dataB = versionMetricsMap[compareVerB.value]
+  const dataA = versionMetricsMap.value[compareVerA.value]
+  const dataB = versionMetricsMap.value[compareVerB.value]
   if (!dataA || !dataB) {
     comparisonData.value = []
     return
@@ -325,31 +366,27 @@ function handleCompare() {
 }
 
 // Tab 3: Evaluation Records
-const evaluations = reactive([
-  {
-    title: 'v2.3.1 外部验证集评估',
-    status: 'COMPLETED',
-    type: '外部验证',
-    dataset: '外部验证集-2026Q1 (1500条)',
-    auc: 0.983, f1: 0.961, precision: 0.958, recall: 0.965,
-    duration: '28分45秒',
-  },
-  {
-    title: 'v2.3.1 交叉验证',
-    status: 'RUNNING',
-    type: '内部评估',
-    dataset: '内部训练集 (5000条)',
-    progress: 72,
-  },
-  {
-    title: 'v2.2.0 内部测试集评估',
-    status: 'COMPLETED',
-    type: '内部评估',
-    dataset: '测试集-2026 (800条)',
-    auc: 0.923, f1: 0.912, precision: 0.905, recall: 0.919,
-    duration: '15分20秒',
-  },
-])
+const evaluations = ref<any[]>([])
+
+async function loadEvaluations() {
+  try {
+    const res = await getEvaluations({ page: 1, page_size: 50, model_id: modelId })
+    evaluations.value = (res.data.data.items || []).map((e: any) => ({
+      title: e.title || e.name,
+      status: e.status,
+      type: e.type || '内部评估',
+      dataset: e.dataset || '',
+      auc: e.auc,
+      f1: e.f1,
+      precision: e.precision,
+      recall: e.recall,
+      duration: e.duration,
+      progress: e.progress,
+    }))
+  } catch {
+    // Silently fail
+  }
+}
 
 // Tab 4: Deployments
 const deployColumns = [
@@ -363,11 +400,32 @@ const deployColumns = [
   { title: '操作', key: 'action', width: 140 },
 ]
 
-const deployments = ref([
-  { name: '肺结节检测-生产', version: 'v2.1.0', type: 'ONLINE', cluster: 'TRITON', status: 'RUNNING', qps: 58, latency: '23ms' },
-  { name: '肺结节检测-灰度', version: 'v2.3.1', type: 'ONLINE', cluster: 'TRITON', status: 'RUNNING', qps: 5, latency: '25ms' },
-  { name: '肺结节检测-测试', version: 'v2.3.1', type: 'ONLINE', cluster: 'FASTAPI', status: 'STOPPED', qps: '--', latency: '--' },
-])
+const deployments = ref<any[]>([])
+
+async function loadDeployments() {
+  try {
+    const res = await getDeployments({ page: 1, page_size: 50, status: undefined })
+    // Filter by model if the API supports it; otherwise show all
+    deployments.value = (res.data.data.items || []).filter((d: any) => d.model_id === modelId || !d.model_id).map((d: any) => ({
+      name: d.name || d.deployment_name,
+      version: d.version || d.latest_version,
+      type: d.type || 'ONLINE',
+      cluster: d.cluster || '',
+      status: d.status,
+      qps: d.qps ?? '--',
+      latency: d.latency ?? '--',
+    }))
+  } catch {
+    // Silently fail
+  }
+}
+
+onMounted(async () => {
+  await loadModelDetail()
+  loadVersions()
+  loadEvaluations()
+  loadDeployments()
+})
 </script>
 
 <style scoped>
