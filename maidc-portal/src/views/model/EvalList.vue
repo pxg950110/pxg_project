@@ -177,7 +177,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import {
   PlusOutlined,
   FolderOutlined,
@@ -187,6 +187,8 @@ import {
 import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useModal } from '@/hooks/useModal'
+import { useTable } from '@/hooks/useTable'
+import { getEvaluations, createEvaluation } from '@/api/model'
 
 interface Evaluation {
   id: number
@@ -222,59 +224,10 @@ const statusTextMap: Record<string, string> = {
   FAILED: '失败',
 }
 
-// Mock data
-const evaluations = ref<Evaluation[]>([
-  {
-    id: 1,
-    title: 'v2.3.1 外部验证集评估',
-    version: 'v2.3.1',
-    status: 'COMPLETED',
-    evalType: '外部验证',
-    dataset: '外部验证集-2026Q1 (1500条)',
-    auc: 0.9234,
-    f1: 0.8912,
-    precision: 0.9045,
-    recall: 0.8786,
-    sensitivity: 0.8786,
-    specificity: 0.9512,
-    duration: '28分45秒',
-    tp: 442,
-    fp: 46,
-    fn: 61,
-    tn: 951,
-  },
-  {
-    id: 2,
-    title: 'v2.3.1 交叉验证',
-    version: 'v2.3.1',
-    status: 'RUNNING',
-    evalType: '内部评估',
-    dataset: '内部训练集 (5000条)',
-    progress: 72,
-  },
-  {
-    id: 3,
-    title: 'v2.2.0 内部测试集评估',
-    version: 'v2.2.0',
-    status: 'COMPLETED',
-    evalType: '内部评估',
-    dataset: '测试集-2026 (800条)',
-    auc: 0.908,
-    f1: 0.872,
-    precision: 0.889,
-    recall: 0.856,
-    duration: '15分20秒',
-  },
-  {
-    id: 4,
-    title: 'v1.1.0 外部验证集评估',
-    version: 'v1.1.0',
-    status: 'FAILED',
-    evalType: '外部验证',
-    dataset: '外部验证集-2025Q4 (1200条)',
-    error: '评估失败：数据格式异常，请检查数据集',
-  },
-])
+// API data via useTable
+const { tableData: evaluations, loading, fetchData } = useTable<Evaluation>(
+  (params) => getEvaluations({ page: params.page, page_size: params.pageSize })
+)
 
 // Filters
 const filters = reactive({
@@ -284,7 +237,7 @@ const filters = reactive({
 })
 
 const filteredEvaluations = computed(() => {
-  return evaluations.value.filter((item) => {
+  return evaluations.value.filter((item: Evaluation) => {
     if (filters.evalType && item.evalType !== filters.evalType) return false
     if (filters.status && item.status !== filters.status) return false
     if (filters.keyword && !item.title.includes(filters.keyword)) return false
@@ -297,10 +250,10 @@ function handleSearch() {
 }
 
 // Selection
-const selectedId = ref<number>(1)
+const selectedId = ref<number | undefined>(undefined)
 
 const selectedEval = computed(() => {
-  return evaluations.value.find((e) => e.id === selectedId.value)
+  return evaluations.value.find((e: Evaluation) => e.id === selectedId.value)
 })
 
 // Modal
@@ -321,7 +274,7 @@ const metricOptions = [
   { label: 'Recall', value: 'recall' },
 ]
 
-// Mock select options
+// Select options (to be loaded from API later)
 const modelOptions = ref<any[]>([])
 const versionOptions = ref<any[]>([])
 const datasetOptions = ref<any[]>([])
@@ -337,14 +290,21 @@ function exportReport(item: Evaluation) {
 async function handleCreateEval() {
   submitting.value = true
   try {
-    // Simulate creation
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await createEvaluation({
+      model_id: evalForm.model_id,
+      version_id: evalForm.version_id,
+      dataset_id: evalForm.dataset_id,
+      metrics: evalForm.metrics,
+    })
     message.success('评估任务已创建')
     evalModal.close()
+    fetchData()
   } finally {
     submitting.value = false
   }
 }
+
+onMounted(() => fetchData())
 </script>
 
 <style scoped>
