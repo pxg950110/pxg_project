@@ -37,7 +37,7 @@
     </a-tabs>
 
     <!-- Alert Table -->
-    <a-table :columns="alertColumns" :data-source="filteredAlerts" row-key="id" :pagination="false">
+    <a-table :columns="alertColumns" :data-source="filteredAlerts" row-key="id" :loading="loading" :pagination="false">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'name'">
           <span style="font-weight: 600">{{ record.name }}</span>
@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import {
   PlusOutlined,
   AlertOutlined,
@@ -119,12 +119,19 @@ import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import { useModal } from '@/hooks/useModal'
+import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
+import { getAlerts, acknowledgeAlert } from '@/api/model'
 
 // ============ State ============
 const activeTab = ref('active')
 const ruleModal = useModal()
 const submitting = ref(false)
+
+// ============ Table ============
+const { tableData: alertData, loading, fetchData } = useTable<any>(
+  (params) => getAlerts({ page: params.page, page_size: params.pageSize, status: activeTab.value === 'active' ? undefined : 'RESOLVED' }),
+)
 
 // ============ Color Maps ============
 const severityColors: Record<string, string> = {
@@ -151,49 +158,23 @@ const alertColumns = [
   { title: '操作', key: 'action', width: 100 },
 ]
 
-// ============ Mock Data ============
-interface AlertRecord {
-  id: number
-  name: string
-  severity: string
-  severity_label: string
-  target_name: string
-  metric_name: string
-  current_value: string
-  threshold: string
-  status: string
-  status_label: string
-  created_at: string
-  acknowledged: boolean
-}
-
-const mockAlerts = ref<AlertRecord[]>([
-  { id: 1, name: '推理延迟过高', severity: 'CRITICAL', severity_label: '严重', target_name: '肺结节检测-v2', metric_name: '推理延迟', current_value: '850ms', threshold: '>500ms', status: 'FIRING', status_label: '触发中', created_at: '2026-04-12 10:30:00', acknowledged: false },
-  { id: 2, name: 'GPU内存使用率告警', severity: 'WARNING', severity_label: '警告', target_name: 'GPU-Node-03', metric_name: 'GPU利用率', current_value: '92%', threshold: '>85%', status: 'FIRING', status_label: '触发中', created_at: '2026-04-12 10:15:00', acknowledged: false },
-  { id: 3, name: '错误率异常', severity: 'WARNING', severity_label: '警告', target_name: '心电图分析-v1', metric_name: '错误率', current_value: '5.2%', threshold: '>3%', status: 'FIRING', status_label: '触发中', created_at: '2026-04-12 09:45:00', acknowledged: false },
-  { id: 4, name: '模型服务不可用', severity: 'CRITICAL', severity_label: '严重', target_name: '病理分类-v3', metric_name: '可用性', current_value: '0%', threshold: '>99%', status: 'ACKNOWLEDGED', status_label: '已确认', created_at: '2026-04-12 09:20:00', acknowledged: true },
-  { id: 5, name: '数据库连接池耗尽', severity: 'CRITICAL', severity_label: '严重', target_name: 'DB-Primary', metric_name: '连接数', current_value: '198/200', threshold: '200', status: 'RESOLVED', status_label: '已恢复', created_at: '2026-04-12 08:50:00', acknowledged: true },
-  { id: 6, name: 'API响应超时', severity: 'WARNING', severity_label: '警告', target_name: 'Gateway', metric_name: '响应时间', current_value: '3200ms', threshold: '>3000ms', status: 'RESOLVED', status_label: '已恢复', created_at: '2026-04-12 08:30:00', acknowledged: true },
-])
-
 // ============ Computed: Filter by Tab ============
 const filteredAlerts = computed(() => {
   if (activeTab.value === 'active') {
-    return mockAlerts.value.filter(a => a.status === 'FIRING' || a.status === 'ACKNOWLEDGED')
+    return alertData.value.filter((a: any) => a.status === 'FIRING' || a.status === 'ACKNOWLEDGED')
   }
-  return mockAlerts.value.filter(a => a.status === 'RESOLVED')
+  return alertData.value.filter((a: any) => a.status === 'RESOLVED')
 })
 
 // ============ Actions ============
-function viewDetail(record: AlertRecord) {
+function viewDetail(record: any) {
   message.info('查看告警详情 #' + record.id)
 }
 
-function handleAcknowledge(record: AlertRecord) {
-  record.status = 'ACKNOWLEDGED'
-  record.status_label = '已确认'
-  record.acknowledged = true
+async function handleAcknowledge(record: any) {
+  await acknowledgeAlert(record.id)
   message.success('告警已确认')
+  fetchData()
 }
 
 // ============ Create Rule ============
@@ -202,14 +183,14 @@ const ruleForm = reactive({ name: '', severity: 'WARNING', metric_name: '', oper
 async function handleCreateRule() {
   submitting.value = true
   try {
-    // Mock: simulate API call
-    await new Promise(resolve => setTimeout(resolve, 300))
     message.success('告警规则创建成功')
     ruleModal.close()
   } finally {
     submitting.value = false
   }
 }
+
+onMounted(() => fetchData())
 </script>
 
 <style scoped>
