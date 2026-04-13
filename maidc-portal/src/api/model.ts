@@ -89,3 +89,51 @@ export function startDeployment(id: number) {
 export function stopDeployment(id: number) {
   return request.put<ApiResponse<any>>(`/deployments/${id}/stop`)
 }
+
+// Evaluation list
+export function getEvaluations(params: { page?: number; page_size?: number; status?: string; model_id?: number }) {
+  return request.get<ApiResponse<PageResult<any>>>('/evaluations', { params })
+}
+
+// Approval APIs
+export function getApprovals(params: { page?: number; page_size?: number; status?: string }) {
+  return request.get<ApiResponse<PageResult<any>>>('/approvals', { params })
+}
+
+export function submitApproval(data: Record<string, any>) {
+  return request.post<ApiResponse<any>>('/approvals', data)
+}
+
+export function reviewApproval(id: number, data: Record<string, any>) {
+  return request.put<ApiResponse<any>>(`/approvals/${id}/review`, data)
+}
+
+export function getApproval(id: number) {
+  return request.get<ApiResponse<any>>(`/approvals/${id}`)
+}
+
+// Deployment APIs
+export function getDeployments(params: { page?: number; page_size?: number; status?: string }) {
+  return request.get<ApiResponse<PageResult<any>>>('/deployments', { params })
+}
+
+export function getDeployment(id: number) {
+  return request.get<ApiResponse<any>>(`/deployments/${id}`)
+}
+
+export function scaleDeployment(id: number, replicas: number) {
+  return request.put<ApiResponse<any>>(`/deployments/${id}/scale`, { replicas })
+}
+
+export function restartDeployment(id: number) {
+  return request.put<ApiResponse<any>>(`/deployments/${id}/restart`)
+}
+
+// Monitoring APIs
+export function getInferenceLogs(params: { page?: number; page_size?: number; model_id?: number; deployment_id?: number }) {
+  return request.get<ApiResponse<PageResult<any>>>('/monitoring/inference-logs', { params })
+}
+
+export function getMetricsOverview() {
+  return request.get<ApiResponse<any>>('/monitoring/metrics')
+}
