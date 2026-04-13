@@ -36,9 +36,9 @@
     </a-card>
 
     <!-- Deployment Status Panel -->
-    <a-card title="部署状态" class="section-card">
+    <a-card title="部署状态" class="section-card" :loading="loading">
       <div class="deployment-list">
-        <div v-for="item in deployments" :key="item.name" class="deployment-item">
+        <div v-for="item in deployments" :key="item.id" class="deployment-item">
           <div class="deployment-left">
             <span class="status-dot" :style="{ backgroundColor: item.color }"></span>
             <div class="deployment-info">
@@ -61,7 +61,7 @@
       <a-table :columns="alertColumns" :data-source="alerts" :pagination="false" row-key="rule" size="middle">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'status'">
-            <a-tag :color="statusColorMap[record.status]">{{ record.status }}</a-tag>
+            <a-tag :color="alertStatusColorMap[record.status]">{{ record.status }}</a-tag>
           </template>
           <template v-if="column.key === 'action'">
             <a-space>
@@ -76,7 +76,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 import {
   RocketOutlined,
   ThunderboltOutlined,
@@ -87,6 +88,8 @@ import {
 import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
+import { useTable } from '@/hooks/useTable'
+import { getDeployments, scaleDeployment, restartDeployment } from '@/api/model'
 
 // Time range filter
 const timeRange = ref<string>('24h')
@@ -109,12 +112,36 @@ const qpsChartOption = {
   ],
 }
 
-// Deployment status items
-const deployments = [
-  { name: '肺结节检测-生产', version: 'v2.1.0', status: 'Running', color: '#52c41a', detail: 'QPS: 56' },
-  { name: '病理分类模型', version: 'v2.0.1', status: 'Stopped', color: '#ff4d4f', detail: '2小时前' },
-  { name: 'NLP命名实体识别', version: 'v1.0.0', status: 'Error', color: '#faad14', detail: 'OOM异常' },
-]
+// Deployment status items via API
+interface DeploymentItem {
+  id: number
+  name: string
+  version: string
+  status: string
+  color: string
+  detail: string
+}
+
+const { tableData: deploymentData, loading, fetchData } = useTable<any>(
+  (params) => getDeployments({ page: params.page, page_size: params.pageSize })
+)
+
+const statusColorMap: Record<string, string> = {
+  Running: '#52c41a',
+  Stopped: '#ff4d4f',
+  Error: '#faad14',
+}
+
+const deployments = computed<DeploymentItem[]>(() =>
+  deploymentData.value.map((item: any) => ({
+    id: item.id,
+    name: item.name || item.deployment_name,
+    version: item.version || item.version_no || '--',
+    status: item.status,
+    color: statusColorMap[item.status] || '#d9d9d9',
+    detail: item.detail || item.qps ? `QPS: ${item.qps || item.detail}` : '--',
+  }))
+)
 
 // Alert table columns
 const alertColumns = [
@@ -128,20 +155,37 @@ const alertColumns = [
   { title: '操作', key: 'action', width: 120 },
 ]
 
-// Alert mock data
-const alerts = [
-  { rule: '推理延迟过高', deployment: '肺结节检测-生产', metric: 'P99延迟', threshold: '500ms', current: '892ms', status: 'Firing', time: '5分钟前' },
-  { rule: 'GPU内存使用率', deployment: '病理分类模型', metric: 'GPU使用率', threshold: '90%', current: '85%', status: 'Warning', time: '15分钟前' },
-  { rule: '请求错误率超标', deployment: 'NLP命名实体识别', metric: '错误率', threshold: '1%', current: '0.3%', status: 'Resolved', time: '1小时前' },
-  { rule: 'QPS突降告警', deployment: '肺结节检测-生产', metric: 'QPS', threshold: '>10', current: '56', status: 'Resolved', time: '3小时前' },
-]
+// Alert data (to be connected to alert API later)
+const alerts = ref<any[]>([])
 
-// Status badge color mapping
-const statusColorMap: Record<string, string> = {
+// Alert status color mapping
+const alertStatusColorMap: Record<string, string> = {
   Firing: 'red',
   Warning: 'orange',
   Resolved: 'green',
 }
+
+async function handleRestart(id: number) {
+  try {
+    await restartDeployment(id)
+    message.success('重启成功')
+    fetchData()
+  } catch {
+    message.error('重启失败')
+  }
+}
+
+async function handleScale(id: number, replicas: number) {
+  try {
+    await scaleDeployment(id, replicas)
+    message.success('扩缩容成功')
+    fetchData()
+  } catch {
+    message.error('扩缩容失败')
+  }
+}
+
+onMounted(() => fetchData())
 </script>
 
 <style scoped>
