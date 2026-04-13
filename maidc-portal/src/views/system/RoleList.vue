@@ -188,24 +188,9 @@ const columns = [
   { title: '操作', key: 'action', width: 80, align: 'right' as const },
 ]
 
-const mockRoles = [
-  { id: 1, code: 'ADMIN', name: '平台管理员', description: '系统运维与权限管理', user_count: 3, built_in: true, created_at: '2026-01-01' },
-  { id: 2, code: 'DATA_MANAGER', name: '数据管理员', description: '临床/科研数据治理', user_count: 5, built_in: true, created_at: '2026-01-01' },
-  { id: 3, code: 'RESEARCHER', name: '研究员', description: '科研项目负责人', user_count: 12, built_in: true, created_at: '2026-01-01' },
-  { id: 4, code: 'AI_ENGINEER', name: 'AI工程师', description: '模型开发与部署', user_count: 8, built_in: true, created_at: '2026-01-01' },
-  { id: 5, code: 'CLINICIAN', name: '临床医生', description: 'AI辅助诊断使用者', user_count: 25, built_in: true, created_at: '2026-01-01' },
-  { id: 6, code: 'AUDITOR', name: '审计员', description: '合规审查', user_count: 2, built_in: true, created_at: '2026-01-01' },
-]
-
 const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
   (params) => getRoles({ page: params.page, page_size: params.pageSize })
 )
-
-// Use mock data reactively
-tableData.value = mockRoles
-loading.value = false
-pagination.total = mockRoles.length
-pagination.current = 1
 
 // Permission definitions
 const permissionGroups = reactive({
@@ -295,8 +280,7 @@ async function handleUpdate() {
 }
 
 onMounted(() => {
-  // Mock data already loaded; keep fetchData for future API integration
-  // fetchData()
+  fetchData()
 })
 </script>
 
