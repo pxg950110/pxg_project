@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   PlusOutlined,
@@ -150,6 +150,8 @@ import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useModal } from '@/hooks/useModal'
+import { useTable } from '@/hooks/useTable'
+import { getProjects, createProject } from '@/api/data'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -160,75 +162,10 @@ const inviting = ref(false)
 const inviteUserId = ref<string>()
 let invitingProjectId = 0
 
-// ---- Mock Data ----
-const mockProjects = ref([
-  {
-    id: 1,
-    name: '肺癌早筛多中心研究',
-    status: 'ACTIVE',
-    pi: '张医生',
-    field: '肿瘤学',
-    startDate: '2025-03-01',
-    endDate: '2026-12-31',
-    teamSize: 12,
-    progress: 68,
-  },
-  {
-    id: 2,
-    name: '糖尿病并发症预测',
-    status: 'ACTIVE',
-    pi: '李医生',
-    field: '内分泌',
-    startDate: '2025-06-15',
-    endDate: '2027-06-15',
-    teamSize: 8,
-    progress: 45,
-  },
-  {
-    id: 3,
-    name: '心血管风险评估队列',
-    status: 'PLANNED',
-    pi: '王医生',
-    field: '心血管',
-    startDate: '2026-01-01',
-    endDate: '2028-12-31',
-    teamSize: 15,
-    progress: 0,
-  },
-  {
-    id: 4,
-    name: '影像AI辅助诊断验证',
-    status: 'COMPLETED',
-    pi: '赵医生',
-    field: '影像医学',
-    startDate: '2024-01-01',
-    endDate: '2025-12-31',
-    teamSize: 20,
-    progress: 100,
-  },
-  {
-    id: 5,
-    name: '基因组学罕见病研究',
-    status: 'ACTIVE',
-    pi: '刘医生',
-    field: '遗传学',
-    startDate: '2025-09-01',
-    endDate: '2027-09-01',
-    teamSize: 6,
-    progress: 32,
-  },
-  {
-    id: 6,
-    name: 'NLP病历质控研究',
-    status: 'SUSPENDED',
-    pi: '陈医生',
-    field: 'NLP',
-    startDate: '2025-04-01',
-    endDate: '2026-10-01',
-    teamSize: 10,
-    progress: 60,
-  },
-])
+// ---- Table Data from API ----
+const { tableData: projects, loading, fetchData } = useTable<any>(
+  (params) => getProjects({ page: params.page, page_size: params.pageSize }),
+)
 
 // ---- Filters ----
 const searchKeyword = ref('')
@@ -236,12 +173,12 @@ const filterStatus = ref<string | undefined>(undefined)
 const filterCategory = ref<string | undefined>(undefined)
 
 const categories = computed(() => {
-  const set = new Set(mockProjects.value.map((p) => p.field))
+  const set = new Set(projects.value.map((p: any) => p.field))
   return Array.from(set)
 })
 
 const filteredProjects = computed(() => {
-  return mockProjects.value.filter((p) => {
+  return projects.value.filter((p: any) => {
     const matchKeyword = !searchKeyword.value || p.name.includes(searchKeyword.value)
     const matchStatus = !filterStatus.value || p.status === filterStatus.value
     const matchCategory = !filterCategory.value || p.field === filterCategory.value
@@ -300,8 +237,10 @@ const projectForm = reactive({ name: '', research_type: 'CLINICAL', description:
 async function handleCreate() {
   submitting.value = true
   try {
+    await createProject(projectForm)
     message.success('项目创建成功')
     projectModal.close()
+    fetchData()
   } finally {
     submitting.value = false
   }
@@ -323,6 +262,8 @@ async function handleInvite() {
     inviting.value = false
   }
 }
+
+onMounted(() => fetchData())
 </script>
 
 <style scoped>
