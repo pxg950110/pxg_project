@@ -1,5 +1,6 @@
 <template>
   <PageContainer title="系统配置" subtitle="管理系统全局参数与基础配置">
+    <a-spin :spinning="loading">
     <div class="config-cards">
       <div v-for="group in configGroups" :key="group.key" class="config-card">
         <div class="config-card-header">
@@ -35,11 +36,12 @@
         </div>
       </div>
     </div>
+    </a-spin>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import {
   SettingOutlined,
   DatabaseOutlined,
@@ -48,12 +50,16 @@ import {
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
+import { getConfigs, updateConfig } from '@/api/system'
 
 interface ConfigItem {
+  id: number
   label: string
   value: string
   editValue: string
   editing: boolean
+  configKey: string
+  configGroup: string
 }
 
 interface ConfigGroup {
@@ -63,8 +69,60 @@ interface ConfigGroup {
   items: ConfigItem[]
 }
 
-function createItem(label: string, value: string): ConfigItem {
-  return reactive({ label, value, editValue: value, editing: false })
+const groupIconMap: Record<string, typeof SettingOutlined> = {
+  basic: SettingOutlined,
+  storage: DatabaseOutlined,
+  security: SafetyCertificateOutlined,
+  notification: BellOutlined
+}
+
+const groupTitleMap: Record<string, string> = {
+  basic: '基础配置',
+  storage: '存储配置',
+  security: '安全配置',
+  notification: '通知配置'
+}
+
+const loading = ref(false)
+const configGroups = ref<ConfigGroup[]>([])
+
+function createItem(raw: any): ConfigItem {
+  return reactive({
+    id: raw.id,
+    label: raw.description || raw.config_key,
+    value: raw.config_value ?? '',
+    editValue: raw.config_value ?? '',
+    editing: false,
+    configKey: raw.config_key,
+    configGroup: raw.config_group
+  })
+}
+
+async function loadConfigs() {
+  loading.value = true
+  try {
+    const res = await getConfigs({ page: 1, page_size: 100 })
+    const items = res.data?.items || res.data?.data?.items || []
+    // Group items by config_group
+    const groupMap = new Map<string, ConfigItem[]>()
+    for (const raw of items) {
+      const group = raw.config_group || 'basic'
+      if (!groupMap.has(group)) {
+        groupMap.set(group, [])
+      }
+      groupMap.get(group)!.push(createItem(raw))
+    }
+    configGroups.value = Array.from(groupMap.entries()).map(([key, items]) => ({
+      key,
+      title: groupTitleMap[key] || key,
+      icon: groupIconMap[key] || SettingOutlined,
+      items
+    }))
+  } catch {
+    message.error('加载配置失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 function startEdit(item: ConfigItem) {
@@ -77,56 +135,24 @@ function cancelEdit(item: ConfigItem) {
   item.editing = false
 }
 
-function saveItem(item: ConfigItem) {
-  item.value = item.editValue
-  item.editing = false
-  message.success('配置保存成功')
+async function saveItem(item: ConfigItem) {
+  try {
+    await updateConfig(item.id, {
+      config_key: item.configKey,
+      config_value: item.editValue,
+      config_group: item.configGroup,
+      description: item.label
+    })
+    item.value = item.editValue
+    item.editing = false
+    message.success('配置保存成功')
+    await loadConfigs()
+  } catch {
+    message.error('保存配置失败')
+  }
 }
 
-const configGroups = reactive<ConfigGroup[]>([
-  {
-    key: 'basic',
-    title: '基础配置',
-    icon: SettingOutlined,
-    items: [
-      createItem('系统名称', 'MAIDC医疗AI数据中心'),
-      createItem('系统版本', 'v1.0.0'),
-      createItem('默认语言', '中文'),
-      createItem('会话超时', '30分钟')
-    ]
-  },
-  {
-    key: 'storage',
-    title: '存储配置',
-    icon: DatabaseOutlined,
-    items: [
-      createItem('MinIO地址', 'http://minio:9000'),
-      createItem('默认Bucket', 'maidc'),
-      createItem('最大上传', '2GB')
-    ]
-  },
-  {
-    key: 'security',
-    title: '安全配置',
-    icon: SafetyCertificateOutlined,
-    items: [
-      createItem('密码最小长度', '8位'),
-      createItem('两步验证', '开启'),
-      createItem('登录失败锁定', '5次'),
-      createItem('锁定时间', '24小时')
-    ]
-  },
-  {
-    key: 'notification',
-    title: '通知配置',
-    icon: BellOutlined,
-    items: [
-      createItem('SMTP服务器', 'smtp.example.com'),
-      createItem('SMS服务', '阿里云SMS'),
-      createItem('Webhook', 'https://hook.example.com')
-    ]
-  }
-])
+onMounted(loadConfigs)
 </script>
 
 <style scoped>
