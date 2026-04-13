@@ -61,12 +61,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message as antMessage } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
+import { getMessages, markAsRead, markAllAsRead } from '@/api/msg'
+import { useTable } from '@/hooks/useTable'
 
-interface MockMessage {
+interface MessageItem {
   id: number
   type: string
   typeLabel: string
@@ -77,8 +79,18 @@ interface MockMessage {
   isRead: boolean
 }
 
+const TYPE_MAP: Record<string, { label: string; color: string }> = {
+  SYSTEM: { label: '系统', color: '#1677ff' },
+  ALERT: { label: '告警', color: '#ff4d4f' },
+  APPROVAL: { label: '审批', color: '#52c41a' },
+}
+
 const router = useRouter()
 const activeTab = ref('all')
+
+const { tableData: messages, loading, pagination, fetchData } = useTable<MessageItem>(
+  (params) => getMessages({ page: params.page, page_size: params.pageSize }),
+)
 
 const tabs = computed(() => [
   { key: 'all', label: '全部' },
@@ -86,21 +98,17 @@ const tabs = computed(() => [
   { key: 'read', label: '已读' },
 ])
 
-const messages = ref<MockMessage[]>([
-  { id: 1, type: 'SYSTEM', typeLabel: '系统', typeColor: '#1677ff', title: '模型部署完成通知', content: '肺结节检测v3.3已成功部署至生产环境', time: '10分钟前', isRead: false },
-  { id: 2, type: 'ALERT', typeLabel: '告警', typeColor: '#ff4d4f', title: 'GPU内存告警', content: 'GPU-Node-03内存使用率已超过90%阈值', time: '30分钟前', isRead: false },
-  { id: 3, type: 'APPROVAL', typeLabel: '审批', typeColor: '#52c41a', title: '审批待处理', content: '张医生提交了新模型注册审批(APR-2026-0018)', time: '1小时前', isRead: false },
-  { id: 4, type: 'SYSTEM', typeLabel: '系统', typeColor: '#1677ff', title: '数据同步完成', content: '患者数据增量同步完成，新增128条记录', time: '2小时前', isRead: false },
-  { id: 5, type: 'ALERT', typeLabel: '告警', typeColor: '#ff4d4f', title: '数据质量异常', content: '数据集"CT肺结节数据集v2"质量评分低于阈值', time: '3小时前', isRead: false },
-  { id: 6, type: 'SYSTEM', typeLabel: '系统', typeColor: '#1677ff', title: '系统维护通知', content: '系统将于本周六凌晨2:00-4:00进行维护升级', time: '昨天', isRead: true },
-])
-
 const unreadCount = computed(() => messages.value.filter((m) => !m.isRead).length)
 
 const filteredMessages = computed(() => {
-  if (activeTab.value === 'unread') return messages.value.filter((m) => !m.isRead)
-  if (activeTab.value === 'read') return messages.value.filter((m) => m.isRead)
-  return messages.value
+  const list = messages.value.map((m) => ({
+    ...m,
+    typeLabel: m.typeLabel || TYPE_MAP[m.type]?.label || m.type,
+    typeColor: m.typeColor || TYPE_MAP[m.type]?.color || '#1677ff',
+  }))
+  if (activeTab.value === 'unread') return list.filter((m) => !m.isRead)
+  if (activeTab.value === 'read') return list.filter((m) => m.isRead)
+  return list
 })
 
 function isFirstUnread(id: number): boolean {
@@ -108,21 +116,23 @@ function isFirstUnread(id: number): boolean {
   return firstUnread ? firstUnread.id === id : false
 }
 
-function handleViewDetail(msg: MockMessage) {
+function handleViewDetail(msg: MessageItem) {
   router.push(`/message/detail/${msg.id}`)
 }
 
-function handleMarkRead(msg: MockMessage) {
-  msg.isRead = true
+async function handleMarkRead(msg: MessageItem) {
+  await markAsRead(msg.id)
   antMessage.success('已标记为已读')
+  fetchData()
 }
 
-function handleMarkAllRead() {
-  messages.value.forEach((m) => {
-    m.isRead = true
-  })
+async function handleMarkAllRead() {
+  await markAllAsRead()
   antMessage.success('已全部标记为已读')
+  fetchData()
 }
+
+onMounted(() => fetchData())
 </script>
 
 <style scoped>
