@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 
 @Data
 public class TaskVO {
-
     private String id;
     private String taskName;
     private String taskType;

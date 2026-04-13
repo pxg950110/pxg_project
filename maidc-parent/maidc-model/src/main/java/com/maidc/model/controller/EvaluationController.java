@@ -1,6 +1,7 @@
 package com.maidc.model.controller;
 
 import com.maidc.common.core.result.R;
+import com.maidc.common.core.result.PageResult;
 import com.maidc.common.log.annotation.OperLog;
 import com.maidc.model.dto.EvaluationCreateDTO;
 import com.maidc.model.service.EvaluationService;
@@ -16,6 +17,14 @@ import org.springframework.web.bind.annotation.*;
 public class EvaluationController {
 
     private final EvaluationService evaluationService;
+
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping
+    public R<PageResult<EvaluationVO>> listEvaluations(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        return R.ok(evaluationService.listEvaluations(page, pageSize));
+    }
 
     @OperLog(module = "model", operation = "evaluate")
     @PreAuthorize("hasPermission('model:evaluate')")

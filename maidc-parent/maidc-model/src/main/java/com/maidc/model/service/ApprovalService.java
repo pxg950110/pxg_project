@@ -3,6 +3,7 @@ package com.maidc.model.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
+import com.maidc.common.core.result.PageResult;
 import com.maidc.model.dto.ApprovalCreateDTO;
 import com.maidc.model.dto.ApprovalReviewDTO;
 import com.maidc.model.entity.ApprovalEntity;
@@ -11,6 +12,8 @@ import com.maidc.model.repository.ApprovalRepository;
 import com.maidc.model.vo.ApprovalVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,5 +75,11 @@ public class ApprovalService {
         ApprovalEntity approval = approvalRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPROVAL_NOT_FOUND));
         return modelMapper.toApprovalVO(approval);
+    }
+
+    public PageResult<ApprovalVO> listApprovals(int page, int pageSize) {
+        Page<ApprovalEntity> result = approvalRepository.findAll(
+                PageRequest.of(page - 1, pageSize));
+        return PageResult.of(result.map(modelMapper::toApprovalVO));
     }
 }

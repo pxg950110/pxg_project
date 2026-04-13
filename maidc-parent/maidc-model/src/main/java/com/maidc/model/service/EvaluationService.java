@@ -2,6 +2,7 @@ package com.maidc.model.service;
 
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
+import com.maidc.common.core.result.PageResult;
 import com.maidc.model.dto.EvaluationCreateDTO;
 import com.maidc.model.entity.EvaluationEntity;
 import com.maidc.model.entity.ModelVersionEntity;
@@ -12,6 +13,8 @@ import com.maidc.model.repository.VersionRepository;
 import com.maidc.model.vo.EvaluationVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +66,12 @@ public class EvaluationService {
         EvaluationEntity eval = evaluationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVALUATION_NOT_FOUND));
         return modelMapper.toEvaluationVO(eval);
+    }
+
+    public PageResult<EvaluationVO> listEvaluations(int page, int pageSize) {
+        Page<EvaluationEntity> result = evaluationRepository.findAll(
+                PageRequest.of(page - 1, pageSize));
+        return PageResult.of(result.map(modelMapper::toEvaluationVO));
     }
 
     public String getEvaluationReportUrl(Long id) {

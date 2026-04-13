@@ -20,6 +20,17 @@ public class MonitoringController {
     private final MonitoringService monitoringService;
 
     @PreAuthorize("hasPermission('model:read')")
+    @GetMapping("/metrics")
+    public R<Map<String, Object>> getMetricsOverview() {
+        return R.ok(Map.of(
+                "totalDeployments", 0,
+                "activeDeployments", 0,
+                "totalInferences", 0,
+                "avgLatency", 0.0
+        ));
+    }
+
+    @PreAuthorize("hasPermission('model:read')")
     @GetMapping("/deployments/{id}/logs")
     public R<PageResult<Map<String, Object>>> getInferenceLogs(
             @PathVariable Long id,
