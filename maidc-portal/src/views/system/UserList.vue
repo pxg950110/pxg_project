@@ -63,15 +63,15 @@
       <!-- Table -->
       <a-table
         :columns="columns"
-        :data-source="filteredData"
+        :data-source="tableData"
         :loading="loading"
-        :pagination="tablePagination"
+        :pagination="pagination"
         row-key="id"
         @change="handleTableChange"
       >
         <template #bodyCell="{ column, record, index }">
           <template v-if="column.key === 'index'">
-            {{ (tablePagination.current - 1) * tablePagination.pageSize + index + 1 }}
+            {{ (pagination.current - 1) * pagination.pageSize + index + 1 }}
           </template>
           <template v-if="column.key === 'role'">
             <a-tag color="blue">{{ record.role }}</a-tag>
@@ -167,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, h, onMounted, watch } from 'vue'
+import { ref, reactive, h, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
@@ -185,23 +185,6 @@ const resetPwdModal = useModal<any>()
 const submitting = ref(false)
 const roleOptions = ref<any[]>([])
 
-// Mock data
-interface MockUser {
-  id: number
-  username: string
-  real_name: string
-  email: string
-  role: string
-  status: string
-}
-
-const mockUsers = ref<MockUser[]>([
-  { id: 1, username: 'admin', real_name: '系统管理员', email: 'admin@maidc.cn', role: '管理员', status: '启用' },
-  { id: 2, username: 'zhangsan', real_name: '张三', email: 'zhangsan@hospital.cn', role: 'AI工程师', status: '启用' },
-  { id: 3, username: 'lisi', real_name: '李主任', email: 'lisi@hospital.cn', role: '研究员', status: '启用' },
-  { id: 4, username: 'wangwu', real_name: '王五', email: 'wangwu@hospital.cn', role: '数据管理员', status: '禁用' },
-])
-
 // Filters
 const filters = reactive({
   status: undefined as string | undefined,
@@ -210,22 +193,15 @@ const filters = reactive({
   keyword: '' as string,
 })
 
-// Filtered data
-const filteredData = computed(() => {
-  return mockUsers.value.filter((user) => {
-    if (filters.status && user.status !== filters.status) return false
-    if (filters.role && user.role !== filters.role) return false
-    if (filters.keyword) {
-      const kw = filters.keyword.toLowerCase()
-      const match =
-        user.username.toLowerCase().includes(kw) ||
-        user.real_name.toLowerCase().includes(kw) ||
-        user.email.toLowerCase().includes(kw)
-      if (!match) return false
-    }
-    return true
+// Table hook with API
+const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+  (params) => getUsers({
+    page: params.page,
+    page_size: params.pageSize,
+    keyword: filters.keyword || undefined,
+    status: filters.status || undefined,
   })
-})
+)
 
 // Table columns
 const columns = [
@@ -237,29 +213,6 @@ const columns = [
   { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
   { title: '操作', key: 'action', width: 100, align: 'right' as const },
 ]
-
-// Pagination (mock total 15 to show page numbers)
-const tablePagination = reactive({
-  current: 1,
-  pageSize: 10,
-  total: 15,
-  showSizeChanger: false,
-  showTotal: (total: number) => `共 ${total} 个用户`,
-})
-
-// Loading state (for API compatibility)
-const loading = ref(false)
-
-// Handle table pagination change
-function handleTableChange(pag: any) {
-  tablePagination.current = pag.current
-  tablePagination.pageSize = pag.pageSize
-}
-
-// Use table hook for API compatibility (still imported but we use mock data)
-const { tableData, fetchData } = useTable<any>(
-  (params) => getUsers({ page: params.page, page_size: params.pageSize })
-)
 
 // Forms
 const userForm = reactive({
@@ -292,7 +245,7 @@ function openCreateModal() {
 }
 
 // View user detail
-function handleView(record: MockUser) {
+function handleView(record: any) {
   router.push(`/system/users/${record.id}`)
 }
 
@@ -320,6 +273,7 @@ async function handleCreateUser() {
     await createUser(userForm)
     message.success('用户创建成功')
     userModal.close()
+    fetchData()
   } finally {
     submitting.value = false
   }
@@ -331,6 +285,7 @@ async function handleUpdateUser() {
     await updateUser(editingUserId, editForm)
     message.success('用户更新成功')
     editModal.close()
+    fetchData()
   } finally {
     submitting.value = false
   }
@@ -342,6 +297,7 @@ async function handleResetPwd() {
     await resetPassword(resetPwdModal.currentRecord.value!.id, pwdForm)
     message.success('密码重置成功')
     resetPwdModal.close()
+    fetchData()
   } finally {
     submitting.value = false
   }
@@ -353,12 +309,18 @@ async function loadRoles() {
     const res = await getRoles({ page: 1, page_size: 100 })
     roleOptions.value = res.data.data.items
   } catch {
-    // Silently fail for mock mode
+    roleOptions.value = []
   }
 }
 
 onMounted(() => {
+  fetchData()
   loadRoles()
+})
+
+// Watch filters to reload from API
+watch(filters, () => {
+  fetchData({ page: 1 })
 })
 </script>
 
