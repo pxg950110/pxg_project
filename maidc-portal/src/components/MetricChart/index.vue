@@ -47,12 +47,12 @@ use([
 interface Props {
   option: Record<string, any>
   loading?: boolean
-  height?: string
+  height?: string | number
 }
 
 withDefaults(defineProps<Props>(), {
   loading: false,
-  height: '320px',
+  height: 320,
 })
 </script>
 

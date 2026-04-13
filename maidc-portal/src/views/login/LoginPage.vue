@@ -56,7 +56,7 @@
               class="field-input"
               placeholder="请输入用户名"
               autocomplete="username"
-              @keydown.enter="$refs.passwordInput.focus()"
+              @keydown.enter="passwordInput?.focus()"
             />
           </div>
           <div class="field-group">
@@ -121,6 +121,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const loading = ref(false)
+const passwordInput = ref<HTMLInputElement | null>(null)
 
 const formState = reactive({
   username: '',

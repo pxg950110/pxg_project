@@ -42,7 +42,7 @@ import type { SelectProps } from 'ant-design-vue'
 interface FieldDef {
   name: string
   label: string
-  type?: 'input' | 'select' | 'dateRange'
+  type?: 'input' | 'select' | 'dateRange' | string
   options?: SelectProps['options']
   placeholder?: string
 }
