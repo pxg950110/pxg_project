@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
@@ -147,13 +147,13 @@ const columns = [
   { title: '操作', key: 'action', width: 60, fixed: 'right' as const },
 ]
 
-// --- Pagination ---
-const pagination = reactive({
-  current: 1,
-  pageSize: 20,
-  total: 15234,
-  showSizeChanger: true,
-  showTotal: (total: number) => `共 ${total.toLocaleString()} 条记录`,
+// --- Filters ---
+const filters = reactive({
+  service: undefined as string | undefined,
+  operationType: undefined as string | undefined,
+  status: undefined as number | undefined,
+  dateRange: null as any,
+  keyword: '',
 })
 
 // --- Method badge colors ---
@@ -185,6 +185,8 @@ const { tableData, loading, pagination, fetchData, handleTableChange } = useTabl
     end_time: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
   })
 )
+
+watch(filters, () => fetchData({ page: 1 }))
 
 onMounted(() => {
   fetchData()
