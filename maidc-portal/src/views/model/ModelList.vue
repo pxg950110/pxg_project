@@ -40,8 +40,9 @@
     </div>
 
     <!-- Card Grid -->
+    <a-spin :spinning="loading">
     <a-row :gutter="[16, 16]" class="model-card-grid">
-      <a-col v-for="model in filteredModels" :key="model.id" :span="8">
+      <a-col v-for="model in tableData" :key="model.id" :span="8">
         <a-card class="model-card" hoverable>
           <!-- Row 1: Name + Category Tag -->
           <div class="card-header">
@@ -74,16 +75,19 @@
         </a-card>
       </a-col>
     </a-row>
+    </a-spin>
 
     <!-- Pagination -->
     <div class="pagination-bar">
-      <span class="pagination-total">共 {{ filteredModels.length }} 个模型</span>
+      <span class="pagination-total">共 {{ pagination.total }} 个模型</span>
       <a-pagination
-        v-model:current="currentPage"
-        :total="filteredModels.length"
-        :page-size="pageSize"
+        v-model:current="pagination.current"
+        :total="pagination.total"
+        :page-size="pagination.pageSize"
         show-quick-jumper
+        show-size-changer
         size="small"
+        @change="(page: number, pageSize: number) => fetchData({ page, pageSize })"
       />
     </div>
 
@@ -161,14 +165,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { PlusOutlined, RightOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { useModal } from '@/hooks/useModal'
-import { createModel, updateModel } from '@/api/model'
+import { useTable } from '@/hooks/useTable'
+import { getModels, createModel, updateModel } from '@/api/model'
 
 const router = useRouter()
 const registerModal = useModal()
@@ -184,72 +189,44 @@ const categoryColorMap: Record<string, string> = {
   '基因组': 'cyan',
 }
 
-// --- Mock data ---
-interface ModelItem {
-  id: number
-  model_code: string
-  model_name: string
-  model_type: string
-  category: string
-  framework: string
-  version: string
-  status: string
-  description: string
-  qps: number | null
-}
-
-const allModels = ref<ModelItem[]>([
-  { id: 1, model_code: 'LN-DET-001', model_name: '肺结节检测模型', model_type: 'IMAGING', category: '影像', framework: 'PyTorch', version: 'v2.3.1', status: 'PUBLISHED', description: '基于深度学习的肺部CT图像结节检测模型，支持多种结节类型的自动检测', qps: 56 },
-  { id: 2, model_code: 'PATH-CLS-001', model_name: '病理分类模型', model_type: 'IMAGING', category: '影像', framework: 'TensorFlow', version: 'v3.0.0', status: 'EVALUATING', description: '病理切片图像自动分类，支持多种癌症类型的智能诊断', qps: null },
-  { id: 3, model_code: 'ECG-DET-001', model_name: '心电图异常检测', model_type: 'STRUCTURED', category: '结构化', framework: 'SKLearn', version: 'v1.5.1', status: 'PUBLISHED', description: '心电图信号异常检测，可识别心律不齐、心肌缺血等异常', qps: 23 },
-  { id: 4, model_code: 'NLP-NER-001', model_name: 'NLP命名实体识别', model_type: 'NLP', category: 'NLP', framework: 'PyTorch', version: 'v1.0.0', status: 'DRAFT', description: '医学文本命名实体识别，支持疾病、药物、检查等实体抽取', qps: null },
-  { id: 5, model_code: 'DM-PRED-001', model_name: '糖尿病预测模型', model_type: 'STRUCTURED', category: '结构化', framework: 'XGBoost', version: 'v2.0.0', status: 'PUBLISHED', description: '基于多模态数据的糖尿病风险预测，结合临床指标与生活方式', qps: 12 },
-  { id: 6, model_code: 'GEN-VAR-001', model_name: '基因变异分类', model_type: 'GENOMIC', category: '基因组', framework: 'PyTorch', version: 'v3.1.0', status: 'EVALUATING', description: '基因组变异致病性分类，支持SNP和InDel变异的自动化注释', qps: null },
-])
-
 // --- Filter / search state ---
 const searchKeyword = ref('')
 const activeCategory = ref('全部')
 const sortBy = ref('updated_at')
-const currentPage = ref(1)
-const pageSize = ref(6)
 
-const filteredModels = computed(() => {
-  let result = allModels.value
+// Category to model_type mapping for API filter
+const categoryToType: Record<string, string | undefined> = {
+  '全部': undefined,
+  '影像': 'IMAGING',
+  'NLP': 'NLP',
+  '结构化': 'STRUCTURED',
+  '多模态': 'MULTIMODAL',
+  '基因组': 'GENOMIC',
+}
 
-  // Category filter
-  if (activeCategory.value !== '全部') {
-    result = result.filter(m => m.category === activeCategory.value)
-  }
-
-  // Keyword search
-  if (searchKeyword.value.trim()) {
-    const kw = searchKeyword.value.trim().toLowerCase()
-    result = result.filter(m =>
-      m.model_name.toLowerCase().includes(kw) ||
-      m.model_code.toLowerCase().includes(kw)
-    )
-  }
-
-  // Sort
-  if (sortBy.value === 'model_name') {
-    result = [...result].sort((a, b) => a.model_name.localeCompare(b.model_name, 'zh-CN'))
-  }
-
-  return result
-})
+// --- Table hook with API ---
+const { tableData, loading, pagination, fetchData } = useTable<any>(
+  (params) => getModels({
+    page: params.page,
+    page_size: params.pageSize,
+    model_type: categoryToType[activeCategory.value],
+    keyword: searchKeyword.value.trim() || undefined,
+  })
+)
 
 function handleSearch() {
-  currentPage.value = 1
+  fetchData({ page: 1 })
 }
 
 function handleCategoryChange() {
-  currentPage.value = 1
+  fetchData({ page: 1 })
 }
 
 function handleSortChange() {
-  currentPage.value = 1
+  fetchData({ page: 1 })
 }
+
+onMounted(() => fetchData())
 
 // --- Register form ---
 const registerForm = reactive({
@@ -272,6 +249,7 @@ async function handleRegister() {
     await createModel(registerForm)
     message.success('模型注册成功')
     registerModal.close()
+    fetchData()
   } finally {
     submitting.value = false
   }
@@ -303,6 +281,7 @@ async function handleEdit() {
     await updateModel(editingId, editForm)
     message.success('模型更新成功')
     editModal.close()
+    fetchData()
   } finally {
     submitting.value = false
   }
