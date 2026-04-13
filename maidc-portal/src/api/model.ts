@@ -137,3 +137,12 @@ export function getInferenceLogs(params: { page?: number; page_size?: number; mo
 export function getMetricsOverview() {
   return request.get<ApiResponse<any>>('/monitoring/metrics')
 }
+
+// Alert APIs
+export function getAlerts(params: { page?: number; page_size?: number; status?: string; severity?: string }) {
+  return request.get<ApiResponse<PageResult<any>>>('/alerts', { params })
+}
+
+export function acknowledgeAlert(id: number) {
+  return request.put<ApiResponse<any>>(`/alerts/${id}/acknowledge`)
+}
