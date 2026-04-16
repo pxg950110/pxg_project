@@ -77,11 +77,10 @@ const openKeys = ref<string[]>([])
 watch(
   () => route.name,
   (name) => {
-    for (const parent of permissionStore.routes) {
+    for (const parent of menuRoutes.value) {
       if (parent.children?.some(c => c.name === name)) {
-        if (!openKeys.value.includes(parent.name as string)) {
-          openKeys.value.push(parent.name as string)
-        }
+        openKeys.value = [parent.name as string]
+        return
       }
     }
   },
@@ -89,7 +88,9 @@ watch(
 )
 
 function onOpenChange(keys: string[]) {
-  openKeys.value = keys
+  // Accordion mode: keep only the latest opened submenu
+  const latest = keys.find(k => !openKeys.value.includes(k))
+  openKeys.value = latest ? [latest] : []
 }
 
 function onMenuClick({ key }: { key: string }) {

@@ -37,14 +37,16 @@
         </div>
       </a-layout-header>
       <a-layout-content class="layout-content">
-        <router-view />
+        <router-view v-slot="{ Component, route }">
+          <component :is="Component" :key="route.fullPath" />
+        </router-view>
       </a-layout-content>
     </a-layout>
   </a-layout>
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 import { useUiStore } from '@/stores/ui'
@@ -53,13 +55,6 @@ import HeaderActions from './HeaderActions.vue'
 
 const uiStore = useUiStore()
 const route = useRoute()
-
-// Suppress parentNode errors during route transitions (Ant Design Vue DOM cleanup)
-onErrorCaptured((err) => {
-  if (err instanceof TypeError && err.message?.includes('parentNode')) {
-    return false
-  }
-})
 
 const pageTitle = computed(() => {
   // Use the deepest matched route's meta.title
