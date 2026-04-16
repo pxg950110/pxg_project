@@ -36,6 +36,7 @@
           <HeaderActions />
         </div>
       </a-layout-header>
+      <TabBar />
       <a-layout-content class="layout-content">
         <router-view v-slot="{ Component, route }">
           <component :is="Component" :key="route.fullPath" />
@@ -46,24 +47,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 import { useUiStore } from '@/stores/ui'
 import SidebarMenu from './SidebarMenu.vue'
 import HeaderActions from './HeaderActions.vue'
+import TabBar from './TabBar.vue'
 
 const uiStore = useUiStore()
 const route = useRoute()
 
 const pageTitle = computed(() => {
-  // Use the deepest matched route's meta.title
   const matched = route.matched.filter(r => r.meta?.title)
   if (matched.length > 0) {
     return matched[matched.length - 1].meta.title as string
   }
   return ''
 })
+
+// Auto-add tab on route change
+watch(
+  () => route.name,
+  () => {
+    if (route.name && route.meta?.title) {
+      uiStore.addTab({
+        name: String(route.name),
+        title: String(route.meta.title),
+        fullPath: route.fullPath,
+      })
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
@@ -87,7 +103,7 @@ const pageTitle = computed(() => {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #1677ff;
+  background: var(--ant-color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,7 +142,7 @@ const pageTitle = computed(() => {
   transition: color 0.3s;
 }
 .trigger-icon:hover {
-  color: #1677ff;
+  color: var(--ant-color-primary);
 }
 .page-title {
   font-size: 18px;

@@ -1,11 +1,40 @@
 <template>
   <div class="header-actions">
+    <!-- Tab bar toggle -->
+    <a-tooltip :title="uiStore.tabBarEnabled ? '关闭页签栏' : '开启页签栏'">
+      <AppstoreOutlined
+        :class="['action-icon', { active: uiStore.tabBarEnabled }]"
+        @click="uiStore.toggleTabBar()"
+      />
+    </a-tooltip>
+
+    <!-- Color picker -->
+    <a-dropdown :trigger="['click']">
+      <a-tooltip title="主题色">
+        <div class="color-dot" :style="{ background: '#' + uiStore.primaryColor }" />
+      </a-tooltip>
+      <template #overlay>
+        <a-menu @click="onColorClick">
+          <a-menu-item v-for="c in presetColors" :key="c.value">
+            <div class="color-option">
+              <span class="color-swatch" :style="{ background: c.value }" />
+              <span>{{ c.label }}</span>
+              <CheckOutlined v-if="'#' + uiStore.primaryColor === c.value" class="color-check" />
+            </div>
+          </a-menu-item>
+        </a-menu>
+      </template>
+    </a-dropdown>
+
+    <!-- Notification bell -->
     <a-badge :count="unreadCount" :offset="[-2, 2]">
       <BellOutlined class="action-icon" @click="router.push('/message/list')" />
     </a-badge>
+
+    <!-- User dropdown -->
     <a-dropdown>
       <span class="user-info">
-        <a-avatar :size="28" style="background-color: #1677ff">
+        <a-avatar :size="28" :style="{ backgroundColor: '#' + uiStore.primaryColor }">
           {{ avatarText }}
         </a-avatar>
         <span class="username">{{ authStore.userInfo?.realName || authStore.userInfo?.username }}</span>
@@ -28,18 +57,35 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { BellOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons-vue'
+import {
+  BellOutlined, UserOutlined, LogoutOutlined,
+  AppstoreOutlined, CheckOutlined,
+} from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 import { Modal } from 'ant-design-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const uiStore = useUiStore()
+
+const presetColors = [
+  { label: '极客蓝', value: '#1677ff' },
+  { label: '极光绿', value: '#52c41a' },
+  { label: '酱紫', value: '#722ed1' },
+  { label: '薄暮红', value: '#f5222d' },
+  { label: '日暮橙', value: '#fa8c16' },
+]
 
 const unreadCount = ref(0)
 const avatarText = computed(() => {
   const name = authStore.userInfo?.realName || authStore.userInfo?.username || ''
   return name.charAt(0).toUpperCase()
 })
+
+function onColorClick({ key }: { key: string }) {
+  uiStore.setPrimaryColor(key.replace('#', ''))
+}
 
 function handleLogout() {
   Modal.confirm({
@@ -57,15 +103,48 @@ function handleLogout() {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 .action-icon {
   font-size: 18px;
   cursor: pointer;
   transition: color 0.3s;
+  color: rgba(0, 0, 0, 0.65);
 }
 .action-icon:hover {
-  color: #1677ff;
+  color: var(--ant-color-primary);
+}
+.action-icon.active {
+  color: var(--ant-color-primary);
+}
+.color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+}
+.color-dot:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+}
+.color-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+.color-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.color-check {
+  margin-left: auto;
+  color: var(--ant-color-primary);
+  font-size: 12px;
 }
 .user-info {
   display: flex;
