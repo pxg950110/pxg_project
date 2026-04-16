@@ -15,9 +15,11 @@
         </div>
         <span v-show="!uiStore.sidebarCollapsed" class="logo-text">MAIDC</span>
       </div>
-      <SidebarMenu :collapsed="uiStore.sidebarCollapsed" />
+      <div class="sider-menu">
+        <SidebarMenu :collapsed="uiStore.sidebarCollapsed" />
+      </div>
     </a-layout-sider>
-    <a-layout>
+    <a-layout class="layout-main">
       <a-layout-header class="layout-header">
         <div class="header-left">
           <MenuFoldOutlined
@@ -84,22 +86,40 @@ watch(
 
 <style lang="scss" scoped>
 .basic-layout {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .layout-sider {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
   z-index: 10;
   border-right: 1px solid #d9d9d9;
+  display: flex;
+  flex-direction: column;
+
+  // Ant Design sider override: allow height to fill
+  :deep(.ant-layout-sider-children) {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
 }
 
 .sider-logo {
   height: 60px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 16px;
   border-bottom: 1px solid #d9d9d9;
+}
+
+.sider-menu {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .logo-icon-box {
@@ -126,6 +146,12 @@ watch(
   white-space: nowrap;
 }
 
+.layout-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .layout-header {
   background: #fff;
   padding: 0 24px;
@@ -133,6 +159,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   height: 60px;
+  flex-shrink: 0;
   line-height: 60px;
   border-bottom: 1px solid #d9d9d9;
   z-index: 9;
@@ -169,7 +196,7 @@ watch(
 .layout-content {
   padding: 24px;
   background: #f0f2f5;
-  min-height: calc(100vh - 60px);
+  flex: 1;
   overflow-y: auto;
 }
 </style>
