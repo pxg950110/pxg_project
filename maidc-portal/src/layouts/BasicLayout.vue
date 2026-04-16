@@ -82,15 +82,17 @@ watch(
 )
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .basic-layout {
   min-height: 100vh;
 }
+
 .layout-sider {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
   z-index: 10;
   border-right: 1px solid #d9d9d9;
 }
+
 .sider-logo {
   height: 60px;
   display: flex;
@@ -99,6 +101,7 @@ watch(
   padding: 0 16px;
   border-bottom: 1px solid #d9d9d9;
 }
+
 .logo-icon-box {
   width: 32px;
   height: 32px;
@@ -108,18 +111,21 @@ watch(
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+
+  .logo-img {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
 }
-.logo-icon-box .logo-img {
-  width: 20px;
-  height: 20px;
-  filter: brightness(0) invert(1);
-}
+
 .logo-text {
   font-size: 16px;
   font-weight: 700;
   color: rgba(0, 0, 0, 0.88);
   white-space: nowrap;
 }
+
 .layout-header {
   background: #fff;
   padding: 0 24px;
@@ -131,29 +137,35 @@ watch(
   border-bottom: 1px solid #d9d9d9;
   z-index: 9;
 }
+
 .header-left {
   display: flex;
   align-items: center;
   gap: 16px;
 }
+
 .trigger-icon {
   font-size: 18px;
   cursor: pointer;
   transition: color 0.3s;
+
+  &:hover {
+    color: var(--ant-color-primary);
+  }
 }
-.trigger-icon:hover {
-  color: var(--ant-color-primary);
-}
+
 .page-title {
   font-size: 18px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.88);
 }
+
 .header-right {
   display: flex;
   align-items: center;
   gap: 16px;
 }
+
 .layout-content {
   padding: 24px;
   background: #f0f2f5;
