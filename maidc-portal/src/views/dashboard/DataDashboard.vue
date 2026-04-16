@@ -7,7 +7,7 @@
           title="患者总数"
           :value="metrics.totalPatients"
           suffix="人"
-          :trend="{ value: 234, type: 'up' }"
+          :trend="{ value: 5, type: 'up' }"
           :loading="loading"
         >
           <template #icon><TeamOutlined /></template>
