@@ -98,21 +98,21 @@ const tabs = computed(() => [
   { key: 'read', label: '已读' },
 ])
 
-const unreadCount = computed(() => messages.value.filter((m) => !m.isRead).length)
+const unreadCount = computed(() => messages.value.filter((m: MessageItem) => !m.isRead).length)
 
 const filteredMessages = computed(() => {
-  const list = messages.value.map((m) => ({
+  const list = messages.value.map((m: MessageItem) => ({
     ...m,
     typeLabel: m.typeLabel || TYPE_MAP[m.type]?.label || m.type,
     typeColor: m.typeColor || TYPE_MAP[m.type]?.color || '#1677ff',
   }))
-  if (activeTab.value === 'unread') return list.filter((m) => !m.isRead)
-  if (activeTab.value === 'read') return list.filter((m) => m.isRead)
+  if (activeTab.value === 'unread') return list.filter((m: MessageItem) => !m.isRead)
+  if (activeTab.value === 'read') return list.filter((m: MessageItem) => m.isRead)
   return list
 })
 
 function isFirstUnread(id: number): boolean {
-  const firstUnread = messages.value.find((m) => !m.isRead)
+  const firstUnread = messages.value.find((m: MessageItem) => !m.isRead)
   return firstUnread ? firstUnread.id === id : false
 }
 

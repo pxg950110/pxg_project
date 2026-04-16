@@ -33,6 +33,7 @@ export default defineConfig(({ mode }) => {
         '/api/v1/audit': { target: 'http://localhost:8086' },
         '/api/v1/messages': { target: 'http://localhost:8087' },
         '/api/v1/notifications': { target: 'http://localhost:8087' },
+        '/api/v1/system': { target: 'http://localhost:8081' },
       },
     },
     build: {

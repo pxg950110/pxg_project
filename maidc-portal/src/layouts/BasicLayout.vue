@@ -38,9 +38,7 @@
       </a-layout-header>
       <a-layout-content class="layout-content">
         <router-view v-slot="{ Component, route }">
-          <keep-alive :include="uiStore.cachedViews">
-            <component :is="Component" :key="route.path" />
-          </keep-alive>
+          <component :is="Component" :key="route.path" />
         </router-view>
       </a-layout-content>
     </a-layout>
