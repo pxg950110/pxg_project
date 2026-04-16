@@ -207,7 +207,7 @@ const { tableData, loading, pagination, fetchData, handleTableChange } = useTabl
 const columns = [
   { title: '#', key: 'index', width: 60 },
   { title: '用户名', dataIndex: 'username', key: 'username', width: 120 },
-  { title: '姓名', dataIndex: 'real_name', key: 'real_name', width: 120 },
+  { title: '姓名', dataIndex: 'realName', key: 'realName', width: 120 },
   { title: '邮箱', dataIndex: 'email', key: 'email' },
   { title: '角色', dataIndex: 'role', key: 'role', width: 120 },
   { title: '状态', dataIndex: 'status', key: 'status', width: 80 },

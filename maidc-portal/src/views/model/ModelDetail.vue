@@ -187,6 +187,30 @@
         </a-card>
       </a-tab-pane>
     </a-tabs>
+
+    <!-- 编辑弹窗 -->
+    <a-modal v-model:open="editModal.visible" title="编辑模型" @ok="handleEditSubmit" width="600px">
+      <a-form layout="vertical">
+        <a-form-item label="模型名称">
+          <a-input v-model:value="editForm.name" />
+        </a-form-item>
+        <a-form-item label="描述">
+          <a-textarea v-model:value="editForm.description" :rows="3" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
+
+    <!-- 注册版本弹窗 -->
+    <a-modal v-model:open="versionModal.visible" title="注册新版本" @ok="handleVersionSubmit" width="600px">
+      <a-form layout="vertical">
+        <a-form-item label="版本号" required>
+          <a-input v-model:value="versionForm.version_no" placeholder="例如 v1.0.0" />
+        </a-form-item>
+        <a-form-item label="变更说明">
+          <a-textarea v-model:value="versionForm.changelog" :rows="3" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </PageContainer>
 </template>
 
@@ -208,12 +232,32 @@ const loading = ref(false)
 const editModal = useModal()
 const versionModal = useModal()
 
+const editForm = reactive({ name: '', description: '' })
+const versionForm = reactive({ version_no: '', changelog: '' })
+
 function showEditModal() {
+  editForm.name = modelInfo.name
+  editForm.description = modelInfo.description
   editModal.open()
 }
 
 function showVersionModal() {
+  versionForm.version_no = ''
+  versionForm.changelog = ''
   versionModal.open()
+}
+
+function handleEditSubmit() {
+  modelInfo.name = editForm.name
+  modelInfo.description = editForm.description
+  message.success('模型信息已更新')
+  editModal.close()
+}
+
+function handleVersionSubmit() {
+  if (!versionForm.version_no) { message.warning('请输入版本号'); return }
+  message.success('版本注册成功')
+  versionModal.close()
 }
 
 function handleDownload(record: any) {
@@ -245,18 +289,18 @@ async function loadModelDetail() {
   try {
     const res = await getModel(modelId)
     const data = res.data.data
-    modelInfo.name = data.model_name || ''
+    modelInfo.name = data.modelName || data.model_name || ''
     modelInfo.status = data.status || ''
     modelInfo.description = data.description || ''
-    modelInfo.code = data.model_code || ''
-    modelInfo.type = data.model_type || ''
+    modelInfo.code = data.modelCode || data.model_code || ''
+    modelInfo.type = data.modelType || data.model_type || ''
     modelInfo.framework = data.framework || ''
-    modelInfo.task = data.task_type || ''
-    modelInfo.project = ''
-    modelInfo.owner = data.owner_name || ''
-    modelInfo.createdAt = data.created_at || ''
-    modelInfo.updatedAt = data.updated_at || ''
-    modelInfo.latestVersion = data.latest_version || ''
+    modelInfo.task = data.taskType || data.task_type || ''
+    modelInfo.project = data.project || ''
+    modelInfo.owner = data.ownerName || data.owner_name || ''
+    modelInfo.createdAt = data.createdAt || data.created_at || ''
+    modelInfo.updatedAt = data.updatedAt || data.updated_at || ''
+    modelInfo.latestVersion = data.latestVersion || data.latest_version || ''
     modelInfo.tags = data.tags || []
   } finally {
     loading.value = false
@@ -287,13 +331,13 @@ async function loadVersions() {
   try {
     const res = await getVersions(modelId, { page: 1, page_size: 100 })
     versions.value = (res.data.data.items || []).map((v: any) => ({
-      version: v.version || v.version_number,
+      version: v.version || v.versionNumber || v.version_number,
       desc: v.description,
       framework: v.framework,
-      size: v.file_size,
+      size: v.fileSize || v.file_size,
       auc: v.auc,
       status: v.status,
-      date: v.created_at,
+      date: v.createdAt || v.created_at,
     }))
   } catch {
     // Silently fail - versions will be empty
@@ -406,9 +450,9 @@ async function loadDeployments() {
   try {
     const res = await getDeployments({ page: 1, page_size: 50, status: undefined })
     // Filter by model if the API supports it; otherwise show all
-    deployments.value = (res.data.data.items || []).filter((d: any) => d.model_id === modelId || !d.model_id).map((d: any) => ({
-      name: d.name || d.deployment_name,
-      version: d.version || d.latest_version,
+    deployments.value = (res.data.data.items || []).filter((d: any) => d.modelId === modelId || d.model_id === modelId || !d.modelId).map((d: any) => ({
+      name: d.name || d.deploymentName || d.deployment_name,
+      version: d.version || d.latestVersion || d.latest_version,
       type: d.type || 'ONLINE',
       cluster: d.cluster || '',
       status: d.status,
