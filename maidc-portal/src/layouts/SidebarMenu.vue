@@ -93,6 +93,6 @@ function onOpenChange(keys: string[]) {
 }
 
 function onMenuClick({ key }: { key: string }) {
-  router.push({ name: key })
+  router.push({ name: key }).catch(() => {})
 }
 </script>

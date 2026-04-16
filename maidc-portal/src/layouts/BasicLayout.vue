@@ -37,18 +37,14 @@
         </div>
       </a-layout-header>
       <a-layout-content class="layout-content">
-        <router-view v-slot="{ Component, route }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" :key="route.path" />
-          </transition>
-        </router-view>
+        <router-view />
       </a-layout-content>
     </a-layout>
   </a-layout>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onErrorCaptured } from 'vue'
 import { useRoute } from 'vue-router'
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 import { useUiStore } from '@/stores/ui'
@@ -57,6 +53,13 @@ import HeaderActions from './HeaderActions.vue'
 
 const uiStore = useUiStore()
 const route = useRoute()
+
+// Suppress parentNode errors during route transitions (Ant Design Vue DOM cleanup)
+onErrorCaptured((err) => {
+  if (err instanceof TypeError && err.message?.includes('parentNode')) {
+    return false
+  }
+})
 
 const pageTitle = computed(() => {
   // Use the deepest matched route's meta.title
@@ -69,14 +72,6 @@ const pageTitle = computed(() => {
 </script>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
 .basic-layout {
   min-height: 100vh;
 }
