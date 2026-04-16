@@ -102,7 +102,8 @@ async function loadConfigs() {
   loading.value = true
   try {
     const res = await getConfigs({ page: 1, page_size: 100 })
-    const items = res.data?.items || res.data?.data?.items || []
+    const pageData = (res.data as any)?.data || (res.data as any)
+    const items = pageData?.items || pageData?.records || []
     // Group items by config_group
     const groupMap = new Map<string, ConfigItem[]>()
     for (const raw of items) {

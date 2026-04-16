@@ -204,9 +204,9 @@ function formatJson(str: string | null): string {
 
 // --- Detail drawer ---
 const detailVisible = ref(false)
-const currentRecord = ref<LogRecord | null>(null)
+const currentRecord = ref<any>(null)
 
-function openDetail(record: LogRecord) {
+function openDetail(record: any) {
   currentRecord.value = record
   detailVisible.value = true
 }

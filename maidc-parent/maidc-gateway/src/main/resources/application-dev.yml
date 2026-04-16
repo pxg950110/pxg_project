@@ -18,7 +18,7 @@ spring:
         - id: maidc-auth
           uri: lb://maidc-auth
           predicates:
-            - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**
+            - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**,/api/v1/system/**
           filters:
             - StripPrefix=0
 
@@ -73,7 +73,7 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password: maidc123
+      password: maidc_redis
 
 maidc:
   jwt:
