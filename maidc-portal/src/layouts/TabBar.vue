@@ -94,7 +94,7 @@ function closeAll() {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .tab-bar {
   background: #fff;
   border-bottom: 1px solid #e8e8e8;
@@ -102,15 +102,18 @@ function closeAll() {
   position: relative;
   user-select: none;
 }
+
 .tab-scroll {
   display: flex;
   overflow-x: auto;
   gap: 4px;
   scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
-.tab-scroll::-webkit-scrollbar {
-  display: none;
-}
+
 .tab-item {
   display: flex;
   align-items: center;
@@ -125,41 +128,48 @@ function closeAll() {
   border: 1px solid transparent;
   border-bottom: none;
   position: relative;
+
+  &:hover {
+    color: rgba(0, 0, 0, 0.88);
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  &.active {
+    color: var(--ant-color-primary);
+    background: #fff;
+    border-color: #e8e8e8;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--ant-color-primary);
+      border-radius: 2px 2px 0 0;
+    }
+  }
 }
-.tab-item:hover {
-  color: rgba(0, 0, 0, 0.88);
-  background: rgba(0, 0, 0, 0.02);
-}
-.tab-item.active {
-  color: var(--ant-color-primary);
-  background: #fff;
-  border-color: #e8e8e8;
-}
-.tab-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--ant-color-primary);
-  border-radius: 2px 2px 0 0;
-}
+
 .tab-title {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .tab-close {
   font-size: 10px;
   padding: 2px;
   border-radius: 50%;
   transition: all 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.12);
+    color: rgba(0, 0, 0, 0.88);
+  }
 }
-.tab-close:hover {
-  background: rgba(0, 0, 0, 0.12);
-  color: rgba(0, 0, 0, 0.88);
-}
+
 .tab-context-menu {
   position: fixed;
   z-index: 1050;
@@ -169,17 +179,20 @@ function closeAll() {
   padding: 4px 0;
   min-width: 120px;
 }
+
 .ctx-item {
   padding: 6px 16px;
   cursor: pointer;
   font-size: 13px;
   color: rgba(0, 0, 0, 0.65);
   transition: all 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--ant-color-primary);
+  }
 }
-.ctx-item:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--ant-color-primary);
-}
+
 .ctx-overlay {
   position: fixed;
   top: 0;
