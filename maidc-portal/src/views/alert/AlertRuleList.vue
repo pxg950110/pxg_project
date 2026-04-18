@@ -77,7 +77,7 @@ const ruleForm = reactive({ name: '', severity: 'WARNING', metric_name: '', oper
 
 async function loadRules() {
   loading.value = true
-  try { const res = await request.get('/alerts/rules'); rules.value = res.data.data || [] }
+  try { const res = await request.get('/alert-rules'); rules.value = res.data.data || [] }
   finally { loading.value = false }
 }
 
@@ -90,8 +90,8 @@ function openEdit(record: any) {
 async function handleSave() {
   submitting.value = true
   try {
-    if (editingId.value) await request.put(`/alerts/rules/${editingId.value}`, ruleForm)
-    else await request.post('/alerts/rules', ruleForm)
+    if (editingId.value) await request.put(`/alert-rules/${editingId.value}`, ruleForm)
+    else await request.post('/alert-rules', ruleForm)
     message.success('保存成功')
     ruleModal.close()
     editingId.value = null
@@ -100,13 +100,13 @@ async function handleSave() {
 }
 
 async function handleDelete(id: number) {
-  await request.delete(`/alerts/rules/${id}`)
+  await request.delete(`/alert-rules/${id}`)
   message.success('规则已删除')
   loadRules()
 }
 
 async function handleToggle(record: any, enabled: boolean) {
-  await request.put(`/alerts/rules/${record.id}`, { ...record, enabled })
+  await request.put(`/alert-rules/${record.id}`, { ...record, enabled })
   record.enabled = enabled
 }
 

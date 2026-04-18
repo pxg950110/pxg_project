@@ -44,6 +44,10 @@ spring:
         import-check:
           enabled: false
 
+maidc:
+  jwt:
+    secret: maidc-jwt-secret-key-2026-change-in-production
+
 logging:
   level:
     com.maidc: INFO

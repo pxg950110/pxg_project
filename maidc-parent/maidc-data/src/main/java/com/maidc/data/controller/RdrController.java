@@ -540,6 +540,20 @@ public class RdrController {
         return R.ok(dataQualityRuleService.createDataQualityRule(entity));
     }
 
+    @OperLog(module = "rdr", operation = "updateQualityRule")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PutMapping("/quality-rules/{id}")
+    public R<DataQualityRuleEntity> updateQualityRule(@PathVariable Long id, @RequestBody DataQualityRuleEntity entity) {
+        return R.ok(dataQualityRuleService.updateDataQualityRule(id, entity));
+    }
+
+    @OperLog(module = "rdr", operation = "toggleQualityRule")
+    @PreAuthorize("hasPermission('rdr:create')")
+    @PutMapping("/quality-rules/{id}/toggle")
+    public R<DataQualityRuleEntity> toggleQualityRule(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> body) {
+        return R.ok(dataQualityRuleService.toggleDataQualityRule(id, body.get("enabled")));
+    }
+
     @OperLog(module = "rdr", operation = "deleteQualityRule")
     @PreAuthorize("hasPermission('rdr:create')")
     @DeleteMapping("/quality-rules/{id}")

@@ -79,7 +79,10 @@ watch(
   (name) => {
     for (const parent of menuRoutes.value) {
       if (parent.children?.some(c => c.name === name)) {
-        openKeys.value = [parent.name as string]
+        const key = parent.name as string
+        if (!openKeys.value.includes(key)) {
+          openKeys.value = [...openKeys.value, key]
+        }
         return
       }
     }

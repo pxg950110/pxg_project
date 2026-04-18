@@ -117,61 +117,61 @@ export function retrySyncTask(id: number) {
 
 // ========== Data Quality Rule APIs ==========
 export function getQualityRules(params: { page?: number; page_size?: number; keyword?: string; type?: string; status?: string }) {
-  return request.get<ApiResponse<PageResult<any>>>('/cdr/quality-rules', { params })
+  return request.get<ApiResponse<PageResult<any>>>('/rdr/quality-rules', { params })
 }
 
 export function getQualityRule(id: number) {
-  return request.get<ApiResponse<any>>(`/cdr/quality-rules/${id}`)
+  return request.get<ApiResponse<any>>(`/rdr/quality-rules/${id}`)
 }
 
 export function createQualityRule(data: Record<string, any>) {
-  return request.post<ApiResponse<any>>('/cdr/quality-rules', data)
+  return request.post<ApiResponse<any>>('/rdr/quality-rules', data)
 }
 
 export function updateQualityRule(id: number, data: Record<string, any>) {
-  return request.put<ApiResponse<any>>(`/cdr/quality-rules/${id}`, data)
+  return request.put<ApiResponse<any>>(`/rdr/quality-rules/${id}`, data)
 }
 
 export function deleteQualityRule(id: number) {
-  return request.delete<ApiResponse<void>>(`/cdr/quality-rules/${id}`)
+  return request.delete<ApiResponse<void>>(`/rdr/quality-rules/${id}`)
 }
 
 export function toggleQualityRule(id: number, enabled: boolean) {
-  return request.put<ApiResponse<any>>(`/cdr/quality-rules/${id}/toggle`, { enabled })
+  return request.put<ApiResponse<any>>(`/rdr/quality-rules/${id}/toggle`, { enabled })
 }
 
 // ========== Quality Check Result APIs ==========
 export function getQualityResults(params: { page?: number; page_size?: number; rule_id?: number; status?: string; start_time?: string; end_time?: string }) {
-  return request.get<ApiResponse<PageResult<any>>>('/cdr/quality-results', { params })
+  return request.get<ApiResponse<PageResult<any>>>('/rdr/quality-results', { params })
 }
 
 export function getQualityResult(id: number) {
-  return request.get<ApiResponse<any>>(`/cdr/quality-results/${id}`)
+  return request.get<ApiResponse<any>>(`/rdr/quality-results/${id}`)
 }
 
 // ========== Desensitize Rule APIs ==========
 export function getDesensitizeRules(params: { page?: number; page_size?: number; keyword?: string }) {
-  return request.get<ApiResponse<PageResult<any>>>('/system/desensitize-rules', { params })
+  return request.get<ApiResponse<PageResult<any>>>('/cdr/desensitize-rules', { params })
 }
 
 export function createDesensitizeRule(data: Record<string, any>) {
-  return request.post<ApiResponse<any>>('/system/desensitize-rules', data)
+  return request.post<ApiResponse<any>>('/cdr/desensitize-rules', data)
 }
 
 export function updateDesensitizeRule(id: number, data: Record<string, any>) {
-  return request.put<ApiResponse<any>>(`/system/desensitize-rules/${id}`, data)
+  return request.put<ApiResponse<any>>(`/cdr/desensitize-rules/${id}`, data)
 }
 
 export function deleteDesensitizeRule(id: number) {
-  return request.delete<ApiResponse<void>>(`/system/desensitize-rules/${id}`)
+  return request.delete<ApiResponse<void>>(`/cdr/desensitize-rules/${id}`)
 }
 
 export function toggleDesensitizeRule(id: number, enabled: boolean) {
-  return request.put<ApiResponse<any>>(`/system/desensitize-rules/${id}/toggle`, { enabled })
+  return request.put<ApiResponse<any>>(`/cdr/desensitize-rules/${id}/toggle`, { enabled })
 }
 
 export function previewDesensitize(data: { field: string; strategy: string; params: Record<string, any> }) {
-  return request.post<ApiResponse<{ original: string; desensitized: string }>>('/system/desensitize-rules/preview', data)
+  return request.post<ApiResponse<{ original: string; desensitized: string }>>('/cdr/desensitize-rules/preview', data)
 }
 
 // ========== Data Dictionary APIs ==========

@@ -33,4 +33,22 @@ public class DataQualityRuleService {
     public void deleteDataQualityRule(Long id) {
         dataQualityRuleRepository.deleteById(id);
     }
+
+    @Transactional
+    public DataQualityRuleEntity updateDataQualityRule(Long id, DataQualityRuleEntity entity) {
+        DataQualityRuleEntity existing = dataQualityRuleRepository.findById(id).orElse(null);
+        if (existing == null) return null;
+        entity.setId(id);
+        entity.setCreatedBy(existing.getCreatedBy());
+        entity.setCreatedAt(existing.getCreatedAt());
+        return dataQualityRuleRepository.save(entity);
+    }
+
+    @Transactional
+    public DataQualityRuleEntity toggleDataQualityRule(Long id, boolean enabled) {
+        DataQualityRuleEntity entity = dataQualityRuleRepository.findById(id).orElse(null);
+        if (entity == null) return null;
+        entity.setEnabled(enabled);
+        return dataQualityRuleRepository.save(entity);
+    }
 }

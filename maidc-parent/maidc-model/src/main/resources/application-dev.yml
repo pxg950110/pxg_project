@@ -54,6 +54,10 @@ minio:
   secretKey: maidc12345
   secure: false
 
+maidc:
+  jwt:
+    secret: maidc-jwt-secret-key-2026-change-in-production
+
 logging:
   level:
     com.maidc: INFO
