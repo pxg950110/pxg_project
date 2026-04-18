@@ -89,11 +89,10 @@
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
 
-        <!-- PostgreSQL -->
+        <!-- PostgreSQL (compile scope needed for CopyManager API) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
         </dependency>
 
         <!-- MapStruct -->

@@ -42,6 +42,14 @@ spring:
 maidc:
   jwt:
     secret: maidc-jwt-secret-key-2026-change-in-production
+  etl:
+    csv-base-dir: E:/pxg_project/data/icu-datasets
+    parallel: 3
+    db-url: jdbc:postgresql://localhost:5432/maidc
+    db-schema: ods
+    db-user: maidc
+    db-password: maidc123
+    ddl-path: E:/pxg_project/docker/init-db
 
 logging:
   level:
