@@ -163,20 +163,23 @@ public class OdsImportService {
 
         // 尝试多种路径模式
         String[] candidates = {
-                // Pattern 1: base/iii/TABLENAME.csv.gz (compressed single file)
-                baseDir + "/" + subDir + "/" + csvFileName + ".gz",
-                // Pattern 2: base/iii/TABLENAME.csv/TABLENAME (directory with file inside)
-                baseDir + "/" + subDir + "/" + csvFileName + "/" + csvFileName.replace(".csv", ""),
-                // Pattern 3: base/iii/TABLENAME.csv (plain file)
+                // MIMIC-III: base/iii/PATIENTS.csv/PATIENTS.csv (directory with file inside)
+                baseDir + "/" + subDir + "/" + csvFileName + "/" + csvFileName,
+                // MIMIC-III: base/iii/PATIENTS.csv (plain file)
                 baseDir + "/" + subDir + "/" + csvFileName,
-                // Pattern 4: lowercase variants
-                baseDir + "/" + subDir + "/" + csvFileName.toLowerCase() + ".gz",
-                baseDir + "/" + subDir + "/" + csvFileName.toLowerCase(),
-                // Pattern 5: hosp/icu subdirectories for MIMIC-IV
-                baseDir + "/" + subDir + "/hosp/" + csvFileName + ".gz",
-                baseDir + "/" + subDir + "/icu/" + csvFileName + ".gz",
+                // MIMIC-III: compressed
+                baseDir + "/" + subDir + "/" + csvFileName + ".gz",
+                // MIMIC-IV: base/iv/content/mimic-iv-3.1/hosp/patients.csv
+                baseDir + "/" + subDir + "/content/mimic-iv-3.1/hosp/" + csvFileName,
+                baseDir + "/" + subDir + "/content/mimic-iv-3.1/icu/" + csvFileName,
+                // MIMIC-IV: compressed
+                baseDir + "/" + subDir + "/content/mimic-iv-3.1/hosp/" + csvFileName + ".gz",
+                baseDir + "/" + subDir + "/content/mimic-iv-3.1/icu/" + csvFileName + ".gz",
+                // MIMIC-IV: direct hosp/icu (no content prefix)
                 baseDir + "/" + subDir + "/hosp/" + csvFileName,
                 baseDir + "/" + subDir + "/icu/" + csvFileName,
+                baseDir + "/" + subDir + "/hosp/" + csvFileName + ".gz",
+                baseDir + "/" + subDir + "/icu/" + csvFileName + ".gz",
         };
 
         for (String candidate : candidates) {

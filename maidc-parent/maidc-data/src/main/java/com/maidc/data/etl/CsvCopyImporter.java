@@ -64,7 +64,7 @@ public class CsvCopyImporter {
         String columnList = String.join(", ", csvColumns);
 
         String copySql = String.format(
-                "COPY %s(%s) FROM STDIN WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '\"')",
+                "COPY %s(%s) FROM STDIN WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '\"', NULL '')",
                 qualifiedTable, columnList
         );
 
