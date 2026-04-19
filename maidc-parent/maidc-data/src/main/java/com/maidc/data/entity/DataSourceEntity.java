@@ -1,7 +1,10 @@
 package com.maidc.data.entity;
 
 import com.maidc.common.jpa.base.BaseEntity;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.maidc.common.jpa.converter.JsonNodeConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -53,4 +56,11 @@ public class DataSourceEntity extends BaseEntity {
 
     @Column(name = "description", length = 512)
     private String description;
+
+    @Column(name = "source_type_code", length = 64)
+    private String sourceTypeCode;
+
+    @Convert(converter = JsonNodeConverter.class)
+    @Column(name = "connection_params", columnDefinition = "jsonb")
+    private JsonNode connectionParams;
 }
