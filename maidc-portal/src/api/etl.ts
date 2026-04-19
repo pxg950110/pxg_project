@@ -91,3 +91,16 @@ export function getEtlTables(schema: string) {
 export function getEtlColumns(schema: string, table: string) {
   return request.get<ApiResponse<any[]>>(`/cdr/etl/metadata/tables/${schema}.${table}/columns`)
 }
+
+// ==================== Graph (Visual Designer) ====================
+export function getEtlPipelineGraph(id: number) {
+  return request.get<ApiResponse<{ nodes: any[]; edges: any[] }>>(`/cdr/etl/pipelines/${id}/graph`)
+}
+
+export function saveEtlPipelineGraph(id: number, graph: { nodes: any[]; edges: any[] }) {
+  return request.put<ApiResponse<void>>(`/cdr/etl/pipelines/${id}/graph`, graph)
+}
+
+export function previewEtlYaml(id: number) {
+  return request.get<ApiResponse<string>>(`/cdr/etl/pipelines/${id}/preview`)
+}
