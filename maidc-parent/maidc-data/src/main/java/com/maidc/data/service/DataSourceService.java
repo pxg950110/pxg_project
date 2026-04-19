@@ -80,8 +80,13 @@ public class DataSourceService {
 
         Map<String, Object> params = new HashMap<>();
         if (ds.getConnectionParams() != null) {
-            ds.getConnectionParams().fields().forEachRemaining(e ->
-                params.put(e.getKey(), e.getValue().isTextual() ? e.getValue().asText() : e.getValue()));
+            ds.getConnectionParams().fields().forEachRemaining(e -> {
+                var node = e.getValue();
+                if (node.isTextual()) params.put(e.getKey(), node.asText());
+                else if (node.isNumber()) params.put(e.getKey(), node.numberValue());
+                else if (node.isBoolean()) params.put(e.getKey(), node.asBoolean());
+                else params.put(e.getKey(), node.asText());
+            });
         }
         params.put("_typeCode", ds.getSourceTypeCode());
 

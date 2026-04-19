@@ -13,18 +13,18 @@
       :pagination="pagination" @change="handleTableChange" row-key="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'sourceTypeCode'">
-          <a-tag :color="categoryColorMap[getTypeCategory(record.source_type_code)] || 'default'">
-            {{ getTypeName(record.source_type_code) || record.source_type_code || record.source_type }}
+          <a-tag :color="categoryColorMap[getTypeCategory(record.sourceTypeCode)] || 'default'">
+            {{ getTypeName(record.sourceTypeCode) || record.sourceType || record.source_type }}
           </a-tag>
         </template>
         <template v-if="column.key === 'lastSyncTime'">
-          {{ record.last_sync_time ? formatDateTime(record.last_sync_time) : '-' }}
+          {{ record.lastSyncTime ? formatDateTime(record.lastSyncTime) : '-' }}
         </template>
         <template v-if="column.key === 'action'">
           <a-space>
             <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
             <a-button type="link" size="small" @click="handleTestConnection(record)">测试连接</a-button>
-            <a-button type="link" size="small" @click="router.push(`/cdr/datasources/${record.id}`)">详情</a-button>
+            <a-button type="link" size="small" @click="router.push(`/etl/datasources/${record.id}`)">详情</a-button>
             <a-popconfirm title="确定删除此数据源？" @confirm="handleDelete(record)">
               <a-button type="link" danger size="small">删除</a-button>
             </a-popconfirm>
@@ -44,8 +44,8 @@
         <a-form-item label="数据源类型" name="sourceTypeCode">
           <a-select v-model:value="formState.sourceTypeCode" placeholder="请选择类型"
             :disabled="isEdit" @change="handleTypeChange">
-            <a-select-option v-for="t in dataSourceTypes" :key="t.type_code" :value="t.type_code">
-              {{ t.type_name }}
+            <a-select-option v-for="t in dataSourceTypes" :key="t.typeCode" :value="t.typeCode">
+              {{ t.typeName }}
             </a-select-option>
           </a-select>
         </a-form-item>
@@ -93,10 +93,10 @@ const router = useRouter()
 const dataSourceTypes = ref<any[]>([])
 const typeMap = computed(() => {
   const m: Record<string, any> = {}
-  dataSourceTypes.value.forEach(t => m[t.type_code] = t)
+  dataSourceTypes.value.forEach(t => m[t.typeCode] = t)
   return m
 })
-function getTypeName(code: string) { return typeMap.value[code]?.type_name }
+function getTypeName(code: string) { return typeMap.value[code]?.typeName }
 function getTypeCategory(code: string) { return typeMap.value[code]?.category }
 const categoryColorMap: Record<string, string> = { DATABASE: 'blue', API: 'green', FILE: 'orange' }
 
@@ -104,7 +104,7 @@ async function loadTypes() {
   const res = await getDataSourceTypes()
   dataSourceTypes.value = res.data.data
 }
-const typeOptions = computed(() => dataSourceTypes.value.map(t => ({ label: t.type_name, value: t.type_code })))
+const typeOptions = computed(() => dataSourceTypes.value.map(t => ({ label: t.typeName, value: t.typeCode })))
 
 const searchFields = computed(() => [
   { name: 'keyword', label: '关键词', type: 'input' as const, placeholder: '数据源名称' },
@@ -121,7 +121,11 @@ const columns = [
   { title: '操作', key: 'action', width: 280, fixed: 'right' as const },
 ]
 const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
-  (params) => getDataSources({ page: params.page, page_size: params.pageSize, ...currentSearchParams }),
+  async (params) => {
+    const res = await getDataSources({ page: params.page, page_size: params.pageSize, ...currentSearchParams })
+    const page = res.data.data
+    return { data: { code: res.data.code, message: res.data.message, data: { items: page.content, total: page.totalElements, page: page.number + 1, pageSize: page.size, totalPages: page.totalPages }, traceId: res.data.traceId } }
+  },
 )
 
 const modalVisible = ref(false)
@@ -147,7 +151,7 @@ const formRules: Record<string, Rule[]> = {
 const currentSchema = computed(() => {
   if (!formState.sourceTypeCode) return null
   const t = typeMap.value[formState.sourceTypeCode]
-  return t?.param_schema || null
+  return t?.paramSchema || null
 })
 
 function handleTypeChange() {

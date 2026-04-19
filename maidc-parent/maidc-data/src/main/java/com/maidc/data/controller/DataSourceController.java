@@ -30,7 +30,7 @@ public class DataSourceController {
     @GetMapping
     public R<Page<DataSourceEntity>> listDataSources(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(value = "page_size", defaultValue = "20") int size) {
         return R.ok(dataSourceService.listDataSources(page, size));
     }
 
@@ -43,12 +43,24 @@ public class DataSourceController {
     @PreAuthorize("hasPermission('cdr:create')")
     @PostMapping
     public R<DataSourceEntity> createDataSource(@RequestBody DataSourceEntity entity) {
+        if (entity.getSourceType() == null && entity.getSourceTypeCode() != null) {
+            entity.setSourceType(entity.getSourceTypeCode());
+        }
+        if (entity.getStatus() == null) {
+            entity.setStatus("ACTIVE");
+        }
+        if (entity.getOrgId() == null) {
+            entity.setOrgId(0L);
+        }
         return R.ok(dataSourceService.createDataSource(entity));
     }
 
     @PreAuthorize("hasPermission('cdr:create')")
     @PutMapping("/{id}")
     public R<DataSourceEntity> updateDataSource(@PathVariable Long id, @RequestBody DataSourceEntity entity) {
+        if (entity.getSourceType() == null && entity.getSourceTypeCode() != null) {
+            entity.setSourceType(entity.getSourceTypeCode());
+        }
         return R.ok(dataSourceService.updateDataSource(id, entity));
     }
 

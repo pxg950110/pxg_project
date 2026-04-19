@@ -12,10 +12,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       proxy: {
-        '/api/v1/auth': { target: 'http://localhost:8081' },
-        '/api/v1/users': { target: 'http://localhost:8081' },
-        '/api/v1/roles': { target: 'http://localhost:8081' },
-        '/api/v1/permissions': { target: 'http://localhost:8081' },
+        '/api/v1/auth': { target: 'http://localhost:8080' },
+        '/api/v1/users': { target: 'http://localhost:8080' },
+        '/api/v1/roles': { target: 'http://localhost:8080' },
+        '/api/v1/permissions': { target: 'http://localhost:8080' },
         '/api/v1/models': { target: 'http://localhost:8083' },
         '/api/v1/evaluations': { target: 'http://localhost:8083' },
         '/api/v1/approvals': { target: 'http://localhost:8083' },
@@ -31,9 +31,9 @@ export default defineConfig(({ mode }) => {
         '/api/v1/tasks': { target: 'http://localhost:8084' },
         '/api/v1/label-tasks': { target: 'http://localhost:8085' },
         '/api/v1/audit': { target: 'http://localhost:8086' },
-        '/api/v1/messages': { target: 'http://localhost:8087' },
-        '/api/v1/notifications': { target: 'http://localhost:8087' },
-        '/api/v1/system': { target: 'http://localhost:8081' },
+        '/api/v1/messages': { target: 'http://localhost:8080' },
+        '/api/v1/notifications': { target: 'http://localhost:8080' },
+        '/api/v1/system': { target: 'http://localhost:8080' },
       },
     },
     build: {

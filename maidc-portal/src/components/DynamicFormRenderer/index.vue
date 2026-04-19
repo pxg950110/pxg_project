@@ -1,38 +1,28 @@
 <template>
   <template v-for="field in schema.fields" :key="field.key">
-    <!-- text -->
-    <a-form-item v-if="field.type === 'text'" :label="field.label" :name="['params', field.key]"
-      :rules="field.required ? [{ required: true, message: `请输入${field.label}` }] : []">
+    <a-form-item v-if="field.type === 'text'" :label="field.label">
       <a-input v-model:value="params[field.key]" :placeholder="field.placeholder || `请输入${field.label}`" />
     </a-form-item>
 
-    <!-- password -->
-    <a-form-item v-else-if="field.type === 'password'" :label="field.label" :name="['params', field.key]"
-      :rules="field.required ? [{ required: true, message: `请输入${field.label}` }] : []">
+    <a-form-item v-else-if="field.type === 'password'" :label="field.label">
       <a-input-password v-model:value="params[field.key]" :placeholder="field.placeholder || `请输入${field.label}`" />
     </a-form-item>
 
-    <!-- number -->
-    <a-form-item v-else-if="field.type === 'number'" :label="field.label" :name="['params', field.key]"
-      :rules="field.required ? [{ required: true, message: `请输入${field.label}` }] : []">
+    <a-form-item v-else-if="field.type === 'number'" :label="field.label">
       <a-input-number v-model:value="params[field.key]" :min="field.min" :max="field.max"
         :placeholder="field.placeholder || `请输入${field.label}`" style="width: 100%" />
     </a-form-item>
 
-    <!-- select -->
-    <a-form-item v-else-if="field.type === 'select'" :label="field.label" :name="['params', field.key]"
-      :rules="field.required ? [{ required: true, message: `请选择${field.label}` }] : []">
+    <a-form-item v-else-if="field.type === 'select'" :label="field.label">
       <a-select v-model:value="params[field.key]" :placeholder="`请选择${field.label}`">
         <a-select-option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</a-select-option>
       </a-select>
     </a-form-item>
 
-    <!-- textarea -->
-    <a-form-item v-else-if="field.type === 'textarea'" :label="field.label" :name="['params', field.key]">
+    <a-form-item v-else-if="field.type === 'textarea'" :label="field.label">
       <a-textarea v-model:value="params[field.key]" :rows="3" :placeholder="field.placeholder" />
     </a-form-item>
 
-    <!-- keyvalue (headers) -->
     <a-form-item v-else-if="field.type === 'keyvalue'" :label="field.label">
       <div v-for="(kv, idx) in getKeyValuePairs(field.key)" :key="idx" style="display: flex; gap: 8px; margin-bottom: 4px;">
         <a-input v-model:value="kv.key" placeholder="Key" style="flex: 1" @change="syncKeyValue(field.key)" />
@@ -76,25 +66,24 @@ const params = reactive<Record<string, any>>({})
 
 const kvStore = reactive<Record<string, Array<{ key: string; value: string }>>>({})
 
-// Initialize defaults from schema
 watch(() => props.schema, (schema) => {
   if (!schema?.fields) return
+  Object.keys(params).forEach(k => delete params[k])
   schema.fields.forEach(field => {
-    if (field.default !== undefined && params[field.key] === undefined) {
+    if (field.default !== undefined) {
       params[field.key] = field.default
     }
     if (field.type === 'keyvalue') {
       kvStore[field.key] = []
     }
   })
+  emit('update:modelValue', { ...params })
 }, { immediate: true })
 
-// Sync params back to parent
 watch(params, () => {
   emit('update:modelValue', { ...params })
 }, { deep: true })
 
-// Also initialize from modelValue
 watch(() => props.modelValue, (val) => {
   if (val) {
     Object.keys(val).forEach(k => {
