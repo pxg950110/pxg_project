@@ -9,6 +9,7 @@ import com.maidc.data.service.etl.EtlPipelineService;
 import com.maidc.data.vo.EtlExecutionVO;
 import com.maidc.data.vo.EtlPipelineDetailVO;
 import com.maidc.data.vo.EtlPipelineVO;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EtlPipelineController {
 
+    private static final String ORG_ID_HEADER = "X-Org-Id";
+
     private final EtlPipelineService pipelineService;
     private final EtlExecutionService executionService;
 
@@ -33,8 +36,11 @@ public class EtlPipelineController {
 
     @PreAuthorize("hasPermission('data:create')")
     @PostMapping
-    public R<EtlPipelineVO> createPipeline(@RequestBody @Valid EtlPipelineCreateDTO dto) {
-        return R.ok(pipelineService.createPipeline(dto));
+    public R<EtlPipelineVO> createPipeline(@RequestBody @Valid EtlPipelineCreateDTO dto,
+                                           HttpServletRequest request) {
+        String orgIdHeader = request.getHeader(ORG_ID_HEADER);
+        Long orgId = orgIdHeader != null ? Long.valueOf(orgIdHeader) : 0L;
+        return R.ok(pipelineService.createPipeline(dto, orgId));
     }
 
     @PreAuthorize("hasPermission('data:read')")
@@ -85,5 +91,30 @@ public class EtlPipelineController {
     @PutMapping("/{id}/status")
     public R<EtlPipelineVO> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         return R.ok(pipelineService.updateStatus(id, body.get("status")));
+    }
+
+    // ===== Visual Designer Graph API =====
+
+    @PreAuthorize("hasPermission('data:read')")
+    @GetMapping("/{id}/graph")
+    public R<Map<String, Object>> getPipelineGraph(@PathVariable Long id) {
+        return R.ok(pipelineService.getPipelineGraph(id));
+    }
+
+    @PreAuthorize("hasPermission('data:update')")
+    @PutMapping("/{id}/graph")
+    public R<Void> savePipelineGraph(@PathVariable Long id,
+                                      @RequestBody Map<String, Object> graphData,
+                                      HttpServletRequest request) {
+        String orgIdHeader = request.getHeader(ORG_ID_HEADER);
+        Long orgId = orgIdHeader != null ? Long.valueOf(orgIdHeader) : 0L;
+        pipelineService.savePipelineGraph(id, graphData, orgId);
+        return R.ok();
+    }
+
+    @PreAuthorize("hasPermission('data:read')")
+    @GetMapping("/{id}/preview")
+    public R<String> previewEmbulkYaml(@PathVariable Long id) {
+        return R.ok(pipelineService.previewEmbulkYaml(id));
     }
 }
