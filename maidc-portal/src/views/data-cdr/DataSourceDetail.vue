@@ -21,9 +21,17 @@
           <a-descriptions-item label="连接状态">
             <StatusBadge :status="sourceData.connection_status" type="connection" />
           </a-descriptions-item>
-          <a-descriptions-item label="主机">{{ sourceData.config?.host }}</a-descriptions-item>
-          <a-descriptions-item label="端口">{{ sourceData.config?.port }}</a-descriptions-item>
-          <a-descriptions-item label="数据库">{{ sourceData.config?.database }}</a-descriptions-item>
+          <a-descriptions-item label="数据源类型">
+            {{ sourceData.sourceTypeCode || sourceData.source_type_code }}
+          </a-descriptions-item>
+          <a-descriptions-item :span="2" label="连接参数">
+            <template v-if="sourceData.connectionParams || sourceData.connection_params">
+              <a-tag v-for="(val, key) in parseConnectionParams()" :key="key" style="margin: 2px">
+                {{ key }}: {{ key === 'password' ? '***' : val }}
+              </a-tag>
+            </template>
+            <span v-else>-</span>
+          </a-descriptions-item>
           <a-descriptions-item label="同步模式">{{ syncModeMap[sourceData.sync_mode] || sourceData.sync_mode }}</a-descriptions-item>
           <a-descriptions-item label="Cron 表达式">{{ sourceData.cron_expression || '-' }}</a-descriptions-item>
           <a-descriptions-item label="最后同步">
@@ -110,6 +118,10 @@
               </a-col>
             </a-row>
           </a-tab-pane>
+
+          <a-tab-pane key="health" tab="健康监控">
+            <HealthMonitor :source-id="sourceId" />
+          </a-tab-pane>
         </a-tabs>
       </a-card>
     </template>
@@ -124,6 +136,7 @@ import { SwapOutlined } from '@ant-design/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
+import HealthMonitor from '@/components/HealthMonitor/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
 import {
   getDataSource,
@@ -150,6 +163,15 @@ const sourceTypeColorMap: Record<string, string> = {
 }
 const syncModeMap: Record<string, string> = {
   realtime: '实时同步', batch: '批量同步', manual: '手动同步',
+}
+
+function parseConnectionParams(): Record<string, any> {
+  const raw = sourceData.value?.connectionParams || sourceData.value?.connection_params
+  if (!raw) return {}
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw) } catch { return {} }
+  }
+  return raw
 }
 
 // ===== 基础数据 =====

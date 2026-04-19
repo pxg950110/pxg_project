@@ -2,14 +2,18 @@ package com.maidc.data.controller;
 
 import com.maidc.common.core.result.R;
 import com.maidc.data.entity.DataSourceEntity;
+import com.maidc.data.entity.DataSourceHealthEntity;
 import com.maidc.data.entity.SyncTaskEntity;
+import com.maidc.data.service.DataSourceHealthService;
 import com.maidc.data.service.DataSourceService;
 import com.maidc.data.service.SyncTaskService;
+import com.maidc.data.service.connection.ConnectionTestResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +24,7 @@ public class DataSourceController {
 
     private final DataSourceService dataSourceService;
     private final SyncTaskService syncTaskService;
+    private final DataSourceHealthService dataSourceHealthService;
 
     @PreAuthorize("hasPermission('cdr:read')")
     @GetMapping
@@ -57,12 +62,44 @@ public class DataSourceController {
     @PreAuthorize("hasPermission('cdr:create')")
     @PostMapping("/{id}/test-connection")
     public R<Map<String, Object>> testConnection(@PathVariable Long id) {
-        DataSourceEntity ds = dataSourceService.getDataSource(id);
-        if (ds == null) {
-            return R.fail(404, "数据源不存在");
-        }
-        // Simulate connection test
-        return R.ok(Map.of("success", true, "message", "连接成功"));
+        ConnectionTestResult result = dataSourceService.testSavedConnection(id);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("success", result.success());
+        resp.put("message", result.message());
+        resp.put("latencyMs", result.latencyMs());
+        resp.put("details", result.details());
+        return R.ok(resp);
+    }
+
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/test-connection")
+    public R<Map<String, Object>> testConnectionPreSave(@RequestBody Map<String, Object> body) {
+        String typeCode = (String) body.get("type_code");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> params = (Map<String, Object>) body.get("connection_params");
+        ConnectionTestResult result = dataSourceService.testConnection(typeCode, params);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("success", result.success());
+        resp.put("message", result.message());
+        resp.put("latencyMs", result.latencyMs());
+        resp.put("details", result.details());
+        return R.ok(resp);
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/{id}/health")
+    public R<List<DataSourceHealthEntity>> getHealthHistory(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "50") int limit) {
+        return R.ok(dataSourceHealthService.getRecentHealth(id, limit));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/{id}/health/stats")
+    public R<Map<String, Object>> getHealthStats(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "30") int days) {
+        return R.ok(dataSourceHealthService.getHealthStats(id, days));
     }
 
     @PreAuthorize("hasPermission('cdr:create')")

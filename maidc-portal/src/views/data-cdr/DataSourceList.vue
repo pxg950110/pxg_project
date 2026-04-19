@@ -9,25 +9,13 @@
 
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
+    <a-table :columns="columns" :data-source="tableData" :loading="loading"
+      :pagination="pagination" @change="handleTableChange" row-key="id">
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'type'">
-          <a-tag :color="sourceTypeColorMap[record.type] || 'default'">
-            {{ sourceTypeMap[record.type] || record.type }}
+        <template v-if="column.key === 'sourceTypeCode'">
+          <a-tag :color="categoryColorMap[getTypeCategory(record.source_type_code)] || 'default'">
+            {{ getTypeName(record.source_type_code) || record.source_type_code || record.source_type }}
           </a-tag>
-        </template>
-        <template v-if="column.key === 'connectionStatus'">
-          <StatusBadge :status="record.connection_status" type="connection" />
-        </template>
-        <template v-if="column.key === 'syncMode'">
-          {{ syncModeMap[record.sync_mode] || record.sync_mode }}
         </template>
         <template v-if="column.key === 'lastSyncTime'">
           {{ record.last_sync_time ? formatDateTime(record.last_sync_time) : '-' }}
@@ -36,7 +24,7 @@
           <a-space>
             <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
             <a-button type="link" size="small" @click="handleTestConnection(record)">测试连接</a-button>
-            <a-button type="link" size="small" @click="handleSync(record)">同步</a-button>
+            <a-button type="link" size="small" @click="router.push(`/cdr/datasources/${record.id}`)">详情</a-button>
             <a-popconfirm title="确定删除此数据源？" @confirm="handleDelete(record)">
               <a-button type="link" danger size="small">删除</a-button>
             </a-popconfirm>
@@ -45,71 +33,39 @@
       </template>
     </a-table>
 
-    <!-- 新建/编辑数据源弹窗 -->
-    <a-modal
-      v-model:open="modalVisible"
-      :title="isEdit ? '编辑数据源' : '新建数据源'"
-      :confirm-loading="submitLoading"
-      :width="680"
-      @ok="handleSubmit"
-      @cancel="handleModalCancel"
-      destroy-on-close
-    >
-      <a-form
-        ref="formRef"
-        :model="formState"
-        :rules="formRules"
-        :label-col="{ span: 5 }"
-        :wrapper-col="{ span: 18 }"
-      >
-        <a-form-item label="数据源名称" name="name">
-          <a-input v-model:value="formState.name" placeholder="请输入数据源名称" />
+    <a-modal v-model:open="modalVisible" :title="isEdit ? '编辑数据源' : '新建数据源'"
+      :confirm-loading="submitLoading" :width="720" @ok="handleSubmit" @cancel="handleModalCancel"
+      destroy-on-close>
+      <a-form ref="formRef" :model="formState" :rules="formRules"
+        :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
+        <a-form-item label="数据源名称" name="sourceName">
+          <a-input v-model:value="formState.sourceName" placeholder="请输入数据源名称" />
         </a-form-item>
-
-        <a-form-item label="数据源类型" name="type">
-          <a-select v-model:value="formState.type" placeholder="请选择类型" :disabled="isEdit">
-            <a-select-option v-for="item in sourceTypeOptions" :key="item.value" :value="item.value">
-              {{ item.label }}
+        <a-form-item label="数据源类型" name="sourceTypeCode">
+          <a-select v-model:value="formState.sourceTypeCode" placeholder="请选择类型"
+            :disabled="isEdit" @change="handleTypeChange">
+            <a-select-option v-for="t in dataSourceTypes" :key="t.type_code" :value="t.type_code">
+              {{ t.type_name }}
             </a-select-option>
           </a-select>
         </a-form-item>
-
-        <a-divider orientation="left">连接配置</a-divider>
-
-        <a-form-item label="主机地址" name="host">
-          <a-input v-model:value="formState.host" placeholder="如: 192.168.1.100" />
+        <a-form-item label="描述" name="description">
+          <a-textarea v-model:value="formState.description" :rows="2" placeholder="可选描述" />
         </a-form-item>
 
-        <a-form-item label="端口" name="port">
-          <a-input-number v-model:value="formState.port" :min="1" :max="65535" placeholder="端口号" style="width: 100%" />
-        </a-form-item>
+        <template v-if="currentSchema">
+          <a-divider orientation="left">连接配置</a-divider>
+          <DynamicFormRenderer :schema="currentSchema" v-model="formState.connectionParams" />
+        </template>
 
-        <a-form-item label="数据库" name="database">
-          <a-input v-model:value="formState.database" placeholder="数据库名称" />
-        </a-form-item>
-
-        <a-form-item label="用户名" name="username">
-          <a-input v-model:value="formState.username" placeholder="数据库用户名" />
-        </a-form-item>
-
-        <a-form-item label="密码" name="password">
-          <a-input-password v-model:value="formState.password" :placeholder="isEdit ? '留空则不修改' : '数据库密码'" />
-        </a-form-item>
-
-        <a-divider orientation="left">同步配置</a-divider>
-
-        <a-form-item label="同步模式" name="sync_mode">
-          <a-radio-group v-model:value="formState.sync_mode">
-            <a-radio value="realtime">实时同步</a-radio>
-            <a-radio value="batch">批量同步</a-radio>
-            <a-radio value="manual">手动同步</a-radio>
-          </a-radio-group>
-        </a-form-item>
-
-        <a-form-item v-if="formState.sync_mode === 'batch'" label="Cron 表达式" name="cron_expression">
-          <a-input v-model:value="formState.cron_expression" placeholder="如: 0 0 2 * * ? (每天凌晨2点)" />
-          <div class="form-help">格式: 秒 分 时 日 月 周</div>
-        </a-form-item>
+        <div v-if="formState.sourceTypeCode" style="text-align: center; margin: 12px 0;">
+          <a-button @click="handleTestPreSave" :loading="testLoading">
+            测试连接
+          </a-button>
+          <span v-if="testResult" :style="{ marginLeft: '12px', color: testResult.success ? '#52c41a' : '#ff4d4f' }">
+            {{ testResult.success ? `连接成功 (${testResult.latencyMs}ms)` : `失败: ${testResult.message}` }}
+          </span>
+        </div>
       </a-form>
     </a-modal>
   </PageContainer>
@@ -123,147 +79,109 @@ import { PlusOutlined } from '@ant-design/icons-vue'
 import type { FormInstance, Rule } from 'ant-design-vue/es/form'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
-import StatusBadge from '@/components/StatusBadge/index.vue'
+import DynamicFormRenderer from '@/components/DynamicFormRenderer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import {
-  getDataSources,
-  createDataSource,
-  updateDataSource,
-  deleteDataSource,
-  testDataSourceConnection,
-  syncDataSource,
+  getDataSources, createDataSource, updateDataSource, deleteDataSource,
+  getDataSourceTypes, testConnectionPreSave,
 } from '@/api/data'
 import { formatDateTime } from '@/utils/date'
 
 defineOptions({ name: 'DataSourceList' })
-
 const router = useRouter()
 
-// ===== 常量 =====
-const sourceTypeMap: Record<string, string> = {
-  HIS: 'HIS',
-  LIS: 'LIS',
-  PACS: 'PACS',
-  EMR: 'EMR',
-  EXTERNAL: '外部系统',
+const dataSourceTypes = ref<any[]>([])
+const typeMap = computed(() => {
+  const m: Record<string, any> = {}
+  dataSourceTypes.value.forEach(t => m[t.type_code] = t)
+  return m
+})
+function getTypeName(code: string) { return typeMap.value[code]?.type_name }
+function getTypeCategory(code: string) { return typeMap.value[code]?.category }
+const categoryColorMap: Record<string, string> = { DATABASE: 'blue', API: 'green', FILE: 'orange' }
+
+async function loadTypes() {
+  const res = await getDataSourceTypes()
+  dataSourceTypes.value = res.data.data
 }
+const typeOptions = computed(() => dataSourceTypes.value.map(t => ({ label: t.type_name, value: t.type_code })))
 
-const sourceTypeColorMap: Record<string, string> = {
-  HIS: 'blue',
-  LIS: 'green',
-  PACS: 'purple',
-  EMR: 'orange',
-  EXTERNAL: 'cyan',
-}
-
-const sourceTypeOptions = [
-  { label: 'HIS', value: 'HIS' },
-  { label: 'LIS', value: 'LIS' },
-  { label: 'PACS', value: 'PACS' },
-  { label: 'EMR', value: 'EMR' },
-  { label: '外部系统', value: 'EXTERNAL' },
-]
-
-const syncModeMap: Record<string, string> = {
-  realtime: '实时同步',
-  batch: '批量同步',
-  manual: '手动同步',
-}
-
-// ===== 搜索 =====
-const searchFields = [
+const searchFields = computed(() => [
   { name: 'keyword', label: '关键词', type: 'input' as const, placeholder: '数据源名称' },
-  { name: 'type', label: '类型', type: 'select' as const, options: sourceTypeOptions },
-  { name: 'status', label: '连接状态', type: 'select' as const, options: [
-    { label: '已连接', value: 'CONNECTED' },
-    { label: '已断开', value: 'DISCONNECTED' },
-    { label: '连接异常', value: 'ERROR' },
-  ] },
-]
-
+  { name: 'type', label: '类型', type: 'select' as const, options: typeOptions.value },
+])
 let currentSearchParams: Record<string, any> = {}
+function handleSearch(values: Record<string, any>) { currentSearchParams = values; fetchData({ page: 1 }) }
+function handleReset() { currentSearchParams = {}; fetchData({ page: 1 }) }
 
-function handleSearch(values: Record<string, any>) {
-  currentSearchParams = values
-  fetchData({ page: 1 })
-}
-
-function handleReset() {
-  currentSearchParams = {}
-  fetchData({ page: 1 })
-}
-
-// ===== 表格 =====
 const columns = [
-  { title: '数据源名称', dataIndex: 'name', key: 'name', width: 180, ellipsis: true },
-  { title: '类型', key: 'type', width: 100 },
-  { title: '连接状态', key: 'connectionStatus', width: 110 },
-  { title: '同步模式', key: 'syncMode', width: 100 },
+  { title: '数据源名称', dataIndex: 'sourceName', key: 'sourceName', width: 180, ellipsis: true },
+  { title: '类型', key: 'sourceTypeCode', width: 120 },
   { title: '最后同步时间', key: 'lastSyncTime', width: 170 },
-  { title: '操作', key: 'action', width: 260, fixed: 'right' as const },
+  { title: '操作', key: 'action', width: 280, fixed: 'right' as const },
 ]
-
 const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
-  (params) => getDataSources({
-    page: params.page,
-    page_size: params.pageSize,
-    ...currentSearchParams,
-  }),
+  (params) => getDataSources({ page: params.page, page_size: params.pageSize, ...currentSearchParams }),
 )
 
-// ===== 弹窗 =====
 const modalVisible = ref(false)
 const submitLoading = ref(false)
+const testLoading = ref(false)
+const testResult = ref<{ success: boolean; message: string; latencyMs?: number } | null>(null)
 const formRef = ref<FormInstance>()
 const editingId = ref<number | null>(null)
 const isEdit = computed(() => editingId.value !== null)
 
 const formState = reactive({
-  name: '',
-  type: undefined as string | undefined,
-  host: '',
-  port: 3306 as number,
-  database: '',
-  username: '',
-  password: '',
-  sync_mode: 'manual' as string,
-  cron_expression: '',
+  sourceName: '',
+  sourceTypeCode: undefined as string | undefined,
+  description: '',
+  connectionParams: {} as Record<string, any>,
 })
 
 const formRules: Record<string, Rule[]> = {
-  name: [{ required: true, message: '请输入数据源名称' }],
-  type: [{ required: true, message: '请选择数据源类型' }],
-  host: [{ required: true, message: '请输入主机地址' }],
-  port: [{ required: true, message: '请输入端口' }],
-  database: [{ required: true, message: '请输入数据库名称' }],
-  username: [{ required: true, message: '请输入用户名' }],
-  sync_mode: [{ required: true, message: '请选择同步模式' }],
+  sourceName: [{ required: true, message: '请输入数据源名称' }],
+  sourceTypeCode: [{ required: true, message: '请选择数据源类型' }],
+}
+
+const currentSchema = computed(() => {
+  if (!formState.sourceTypeCode) return null
+  const t = typeMap.value[formState.sourceTypeCode]
+  return t?.param_schema || null
+})
+
+function handleTypeChange() {
+  formState.connectionParams = {}
+  testResult.value = null
 }
 
 function handleCreate() {
   editingId.value = null
-  Object.assign(formState, {
-    name: '', type: undefined, host: '', port: 3306,
-    database: '', username: '', password: '',
-    sync_mode: 'manual', cron_expression: '',
-  })
+  Object.assign(formState, { sourceName: '', sourceTypeCode: undefined, description: '', connectionParams: {} })
+  testResult.value = null
   modalVisible.value = true
 }
 
 function handleEdit(record: any) {
   editingId.value = record.id
-  Object.assign(formState, {
-    name: record.name,
-    type: record.type,
-    host: record.config?.host || '',
-    port: record.config?.port || 3306,
-    database: record.config?.database || '',
-    username: record.config?.username || '',
-    password: '',
-    sync_mode: record.sync_mode || 'manual',
-    cron_expression: record.cron_expression || '',
-  })
+  formState.sourceName = record.sourceName
+  formState.sourceTypeCode = record.sourceTypeCode || record.source_type_code
+  formState.description = record.description || ''
+  formState.connectionParams = record.connectionParams ? JSON.parse(JSON.stringify(record.connectionParams)) : {}
+  testResult.value = null
   modalVisible.value = true
+}
+
+async function handleTestPreSave() {
+  if (!formState.sourceTypeCode) return
+  testLoading.value = true
+  try {
+    const res = await testConnectionPreSave({
+      type_code: formState.sourceTypeCode,
+      connection_params: { ...formState.connectionParams },
+    })
+    testResult.value = res.data.data
+  } catch { testResult.value = null } finally { testLoading.value = false }
 }
 
 async function handleSubmit() {
@@ -271,17 +189,10 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     const data = {
-      name: formState.name,
-      type: formState.type,
-      config: {
-        host: formState.host,
-        port: formState.port,
-        database: formState.database,
-        username: formState.username,
-        ...(formState.password ? { password: formState.password } : {}),
-      },
-      sync_mode: formState.sync_mode,
-      ...(formState.sync_mode === 'batch' ? { cron_expression: formState.cron_expression } : {}),
+      sourceName: formState.sourceName,
+      sourceTypeCode: formState.sourceTypeCode,
+      description: formState.description,
+      connectionParams: formState.connectionParams,
     }
     if (isEdit.value) {
       await updateDataSource(editingId.value!, data)
@@ -292,41 +203,27 @@ async function handleSubmit() {
     }
     handleModalCancel()
     fetchData()
-  } finally {
-    submitLoading.value = false
-  }
+  } finally { submitLoading.value = false }
 }
 
 function handleModalCancel() {
   formRef.value?.resetFields()
   modalVisible.value = false
   editingId.value = null
+  testResult.value = null
 }
 
-// ===== 操作 =====
 async function handleTestConnection(record: any) {
   const hide = message.loading('正在测试连接...', 0)
   try {
-    const res = await testDataSourceConnection(record.id)
+    const res = await testConnectionPreSave({
+      type_code: record.sourceTypeCode || record.source_type_code,
+      connection_params: record.connectionParams || {},
+    })
     hide()
-    if (res.data.data.success) {
-      message.success('连接成功')
-    } else {
-      message.error(`连接失败: ${res.data.data.message}`)
-    }
-  } catch {
-    hide()
-  }
-}
-
-async function handleSync(record: any) {
-  try {
-    await syncDataSource(record.id)
-    message.success('同步任务已启动')
-    fetchData()
-  } catch {
-    // error handled by request interceptor
-  }
+    if (res.data.data.success) message.success(`连接成功 (${res.data.data.latencyMs}ms)`)
+    else message.error(`连接失败: ${res.data.data.message}`)
+  } catch { hide() }
 }
 
 async function handleDelete(record: any) {
@@ -335,13 +232,5 @@ async function handleDelete(record: any) {
   fetchData()
 }
 
-onMounted(() => fetchData())
+onMounted(() => { loadTypes(); fetchData() })
 </script>
-
-<style scoped>
-.form-help {
-  margin-top: 4px;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-}
-</style>

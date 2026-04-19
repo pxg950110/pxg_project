@@ -207,6 +207,40 @@ export function deleteDictItem(id: number) {
   return request.delete<ApiResponse<void>>(`/system/dict-items/${id}`)
 }
 
+// ========== Data Source Type APIs ==========
+export function getDataSourceTypes() {
+  return request.get<ApiResponse<any[]>>('/cdr/datasource-types')
+}
+
+export function getDataSourceType(code: string) {
+  return request.get<ApiResponse<any>>(`/cdr/datasource-types/${code}`)
+}
+
+export function createDataSourceType(data: Record<string, any>) {
+  return request.post<ApiResponse<any>>('/cdr/datasource-types', data)
+}
+
+export function updateDataSourceType(code: string, data: Record<string, any>) {
+  return request.put<ApiResponse<any>>(`/cdr/datasource-types/${code}`, data)
+}
+
+export function deleteDataSourceType(code: string) {
+  return request.delete<ApiResponse<void>>(`/cdr/datasource-types/${code}`)
+}
+
+// ========== Data Source Enhanced APIs ==========
+export function testConnectionPreSave(data: { type_code: string; connection_params: Record<string, any> }) {
+  return request.post<ApiResponse<{ success: boolean; message: string; latencyMs?: number; details?: Record<string, any> }>>('/cdr/datasources/test-connection', data)
+}
+
+export function getDataSourceHealth(id: number, limit = 50) {
+  return request.get<ApiResponse<any[]>>(`/cdr/datasources/${id}/health`, { params: { limit } })
+}
+
+export function getDataSourceHealthStats(id: number, days = 30) {
+  return request.get<ApiResponse<{ totalChecks: number; successCount: number; failCount: number; availabilityRate: number; avgLatencyMs: number }>>(`/cdr/datasources/${id}/health/stats`, { params: { days } })
+}
+
 // ETL APIs
 export function getEtlTasks(params: { page?: number; page_size?: number; status?: string }) {
   return request.get<ApiResponse<PageResult<any>>>('/etl/tasks', { params })
