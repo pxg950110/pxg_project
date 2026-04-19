@@ -1,5 +1,5 @@
 <template>
-  <PageContainer title="ETL管道管理">
+  <PageContainer title="管道管理">
     <template #extra>
       <a-button type="primary" @click="handleCreate">
         <template #icon><PlusOutlined /></template>
@@ -233,7 +233,7 @@ function handleReset() {
 
 // ===== 表格 =====
 const columns = [
-  { title: '管道名称', dataIndex: 'name', key: 'name', width: 180, ellipsis: true },
+  { title: '管道名称', dataIndex: 'pipelineName', key: 'name', width: 180, ellipsis: true },
   { title: '引擎', key: 'engineType', width: 100 },
   { title: '状态', key: 'status', width: 90 },
   { title: '步骤数', key: 'stepCount', width: 90, align: 'center' as const },
@@ -308,7 +308,7 @@ function handleCreate() {
 function handleEdit(record: any) {
   editingId.value = record.id
   Object.assign(formState, {
-    name: record.name,
+    name: record.pipelineName || record.name,
     sourceId: record.sourceId,
     engineType: record.engineType || 'EMBULK',
     syncMode: record.syncMode || 'MANUAL',
@@ -323,7 +323,7 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     const data: Record<string, any> = {
-      name: formState.name,
+      pipelineName: formState.name,
       sourceId: formState.sourceId,
       engineType: formState.engineType,
       syncMode: formState.syncMode,

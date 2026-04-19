@@ -62,6 +62,7 @@ public class EtlExecutionService {
 
         // Create pipeline-level execution record
         EtlExecutionEntity execution = new EtlExecutionEntity();
+        execution.setOrgId(pipeline.getOrgId());
         execution.setPipelineId(pipelineId);
         execution.setStatus("RUNNING");
         execution.setStartTime(LocalDateTime.now());
@@ -126,8 +127,13 @@ public class EtlExecutionService {
      * Execute a single step and return the execution record.
      */
     private EtlExecutionEntity executeSingleStep(Long parentExecutionId, Long pipelineId, EtlStepEntity step) {
+        Long orgId = pipelineRepository.findById(pipelineId)
+                .map(EtlPipelineEntity::getOrgId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
         // Create step-level execution record
         EtlExecutionEntity stepExecution = new EtlExecutionEntity();
+        stepExecution.setOrgId(orgId);
         stepExecution.setPipelineId(pipelineId);
         stepExecution.setStepId(step.getId());
         stepExecution.setStatus("RUNNING");
@@ -216,10 +222,15 @@ public class EtlExecutionService {
      * Mark remaining steps (with higher stepOrder) as SKIPPED.
      */
     private void markRemainingStepsSkipped(Long executionId, Long pipelineId, int afterStepOrder) {
+        Long orgId = pipelineRepository.findById(pipelineId)
+                .map(EtlPipelineEntity::getOrgId)
+                .orElse(null);
+
         List<EtlStepEntity> remainingSteps = stepRepository.findByPipelineIdAndIsDeletedFalseOrderByStepOrder(pipelineId);
         for (EtlStepEntity s : remainingSteps) {
             if (s.getStepOrder() > afterStepOrder) {
                 EtlExecutionEntity skipped = new EtlExecutionEntity();
+                skipped.setOrgId(orgId);
                 skipped.setPipelineId(pipelineId);
                 skipped.setStepId(s.getId());
                 skipped.setStatus("SKIPPED");

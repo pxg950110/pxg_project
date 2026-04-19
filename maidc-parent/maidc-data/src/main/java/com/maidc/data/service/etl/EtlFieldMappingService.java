@@ -35,12 +35,16 @@ public class EtlFieldMappingService {
 
     @Transactional
     public List<EtlFieldMappingVO> batchUpdateMappings(Long stepId, List<EtlFieldMappingDTO> dtos) {
+        EtlStepEntity step = stepRepository.findById(stepId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
         fieldMappingRepository.deleteByStepId(stepId);
 
         List<EtlFieldMappingEntity> entities = new ArrayList<>();
         for (int i = 0; i < dtos.size(); i++) {
             EtlFieldMappingDTO dto = dtos.get(i);
             EtlFieldMappingEntity entity = new EtlFieldMappingEntity();
+            entity.setOrgId(step.getOrgId());
             entity.setStepId(stepId);
             entity.setSourceColumn(dto.getSourceColumn());
             entity.setSourceTableAlias(dto.getSourceTableAlias());

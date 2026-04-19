@@ -122,7 +122,7 @@ async function loadPipelineData() {
     const data = res.data?.data
     if (!data) return
     Object.assign(pipelineForm, {
-      name: data.name || '', sourceId: data.sourceId,
+      name: data.pipelineName || data.name || '', sourceId: data.sourceId,
       syncMode: data.syncMode || 'MANUAL', engineType: data.engineType || 'EMBULK',
       description: data.description || '',
     })
@@ -140,7 +140,7 @@ async function handleSave() {
   saveLoading.value = true
   try {
     const pipelineData: Record<string, any> = {
-      name: pipelineForm.name, sourceId: pipelineForm.sourceId,
+      pipelineName: pipelineForm.name, sourceId: pipelineForm.sourceId,
       syncMode: pipelineForm.syncMode, engineType: pipelineForm.engineType,
       description: pipelineForm.description,
     }

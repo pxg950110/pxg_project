@@ -7,9 +7,11 @@ import com.maidc.common.core.exception.BusinessException;
 import com.maidc.data.dto.etl.EtlStepCreateDTO;
 import com.maidc.data.dto.etl.EtlStepUpdateDTO;
 import com.maidc.data.entity.EtlFieldMappingEntity;
+import com.maidc.data.entity.EtlPipelineEntity;
 import com.maidc.data.entity.EtlStepEntity;
 import com.maidc.data.mapper.DataMapper;
 import com.maidc.data.repository.EtlFieldMappingRepository;
+import com.maidc.data.repository.EtlPipelineRepository;
 import com.maidc.data.repository.EtlStepRepository;
 import com.maidc.data.vo.EtlFieldMappingVO;
 import com.maidc.data.vo.EtlStepVO;
@@ -27,6 +29,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EtlStepService {
 
+    private final EtlPipelineRepository pipelineRepository;
     private final EtlStepRepository stepRepository;
     private final EtlFieldMappingRepository fieldMappingRepository;
     private final DataMapper dataMapper;
@@ -35,7 +38,11 @@ public class EtlStepService {
 
     @Transactional
     public EtlStepVO createStep(Long pipelineId, EtlStepCreateDTO dto) {
+        EtlPipelineEntity pipeline = pipelineRepository.findById(pipelineId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
         EtlStepEntity entity = new EtlStepEntity();
+        entity.setOrgId(pipeline.getOrgId());
         entity.setPipelineId(pipelineId);
         entity.setStepName(dto.getStepName());
         entity.setStepOrder(dto.getStepOrder());

@@ -140,6 +140,57 @@ public class CsvCopyImporter {
         }
     }
 
+    /**
+     * Truncate an ODS table to prepare for a clean import.
+     * Skips if table is empty. Uses lock_timeout to avoid blocking.
+     */
+    public void truncateTable(String tableName) {
+        String schema = props.getDbSchema();
+        String qualified = schema + "." + tableName;
+        try (Connection conn = DriverManager.getConnection(
+                props.getDbUrl(), props.getDbUser(), props.getDbPassword());
+             Statement stmt = conn.createStatement()) {
+
+            // Check if table has any rows first
+            ResultSet rs = stmt.executeQuery("SELECT EXISTS(SELECT 1 FROM " + qualified + " LIMIT 1)");
+            if (rs.next() && !rs.getBoolean(1)) {
+                log.debug("Table {} is empty, skipping TRUNCATE", qualified);
+                return;
+            }
+
+            // Set lock timeout (5 seconds) to fail fast instead of blocking indefinitely
+            stmt.execute("SET lock_timeout = '5s'");
+            stmt.execute("TRUNCATE " + qualified);
+            log.info("Truncated {}", qualified);
+
+        } catch (SQLException e) {
+            // If TRUNCATE fails due to locks, try DELETE as fallback
+            if (e.getMessage() != null && e.getMessage().contains("out of shared memory")) {
+                log.warn("TRUNCATE failed (shared memory), falling back to DELETE for {}", qualified);
+                deleteAllRows(tableName);
+            } else {
+                throw new RuntimeException("Failed to truncate " + qualified, e);
+            }
+        }
+    }
+
+    /**
+     * Delete all rows from a table (fallback when TRUNCATE fails due to partition locks).
+     */
+    private void deleteAllRows(String tableName) {
+        String schema = props.getDbSchema();
+        String qualified = schema + "." + tableName;
+        try (Connection conn = DriverManager.getConnection(
+                props.getDbUrl(), props.getDbUser(), props.getDbPassword());
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("SET statement_timeout = '300s'");
+            int deleted = stmt.executeUpdate("DELETE FROM " + qualified);
+            log.info("Deleted {} rows from {} (TRUNCATE fallback)", deleted, qualified);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete rows from " + qualified, e);
+        }
+    }
+
     // -------------------------------------------------------------- counters
 
     /**

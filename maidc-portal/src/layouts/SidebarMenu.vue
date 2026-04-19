@@ -35,6 +35,7 @@ import {
   DashboardOutlined,
   ExperimentOutlined,
   DatabaseOutlined,
+  SwapOutlined,
   EditOutlined,
   ScheduleOutlined,
   AlertOutlined,
@@ -49,6 +50,7 @@ const iconMap: Record<string, any> = {
   DashboardOutlined,
   ExperimentOutlined,
   DatabaseOutlined,
+  SwapOutlined,
   EditOutlined,
   ScheduleOutlined,
   AlertOutlined,
@@ -61,7 +63,6 @@ const route = useRoute()
 const router = useRouter()
 const permissionStore = usePermissionStore()
 
-// Unwrap root "/" route to get top-level menu groups (Dashboard, Model, Data, etc.)
 const menuRoutes = computed(() => {
   const root = permissionStore.routes[0]
   if (root?.path === '/' && root.children?.length) {
@@ -73,7 +74,6 @@ const menuRoutes = computed(() => {
 const selectedKeys = computed(() => [String(route.name)])
 const openKeys = ref<string[]>([])
 
-// Auto-open parent menu based on current route
 watch(
   () => route.name,
   (name) => {
@@ -91,7 +91,6 @@ watch(
 )
 
 function onOpenChange(keys: string[]) {
-  // Accordion mode: keep only the latest opened submenu
   const latest = keys.find(k => !openKeys.value.includes(k))
   openKeys.value = latest ? [latest] : []
 }

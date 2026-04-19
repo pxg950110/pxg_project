@@ -118,6 +118,9 @@ public class OdsImportService {
         log.info("Importing {} from {}", tableName, csvPath);
 
         try {
+            // 0. 清空目标表（确保幂等）
+            csvCopyImporter.truncateTable(tableName);
+
             // 1. 获取 CSV 列名（从数据库元数据）
             List<String> columns = csvCopyImporter.getTableColumns(tableName);
             if (columns.isEmpty()) {
