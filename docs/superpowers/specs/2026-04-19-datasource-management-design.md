@@ -62,7 +62,7 @@ ALTER TABLE cdr.r_data_source ADD COLUMN connection_params JSONB;
 ```
 
 - `source_type_code`：引用 `r_data_source_type.type_code`
-- `connection_params`：存储实际连接参数，结构由对应类型的 `param_schema` 约束
+- `connection_params`：存储实际连接参数，结构由对应类型的 `param_schema` 约束。密码类字段存储时使用 AES 加密，读取时由 Service 层解密返回
 
 ### 1.4 新增 `cdr.r_data_source_health`（健康检查记录）
 
