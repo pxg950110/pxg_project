@@ -259,6 +259,9 @@ public class EtlPipelineService {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> edges = (List<Map<String, Object>>) graphData.getOrDefault("edges", List.of());
 
+        // Map frontend node IDs to backend step IDs
+        Map<String, Long> nodeIdToStepId = new HashMap<>();
+
         // Upsert steps from nodes
         for (Map<String, Object> nodeData : nodes) {
             String nodeIdStr = (String) nodeData.get("id");
@@ -272,13 +275,10 @@ public class EtlPipelineService {
             @SuppressWarnings("unchecked")
             Map<String, Object> config = data != null ? (Map<String, Object>) data.get("config") : null;
 
-            Long stepId = null;
-            if (nodeIdStr != null && nodeIdStr.startsWith("step_")) {
-                try { stepId = Long.valueOf(nodeIdStr.substring(5)); } catch (NumberFormatException ignored) {}
-            }
-
+            Long stepId = extractStepId(nodeIdStr);
             String transformConfigJson = buildTransformConfigJson(nodeType, position, config);
 
+            EtlStepEntity savedStep;
             if (stepId != null) {
                 Optional<EtlStepEntity> existing = stepRepository.findById(stepId);
                 if (existing.isPresent()) {
@@ -286,37 +286,25 @@ public class EtlPipelineService {
                     step.setStepName(stepName);
                     step.setTransformConfig(toJsonNode(transformConfigJson));
                     applyConfigToStep(step, config);
-                    stepRepository.save(step);
+                    savedStep = stepRepository.save(step);
+                } else {
+                    savedStep = createNewStep(pipelineId, stepName, nodeType, transformConfigJson, config, orgId);
                 }
             } else {
-                EtlStepEntity step = new EtlStepEntity();
-                step.setPipelineId(pipelineId);
-                step.setStepName(stepName);
-                step.setStepOrder(0);
-                step.setStepType("ONE_TO_ONE");
-                step.setOnError("ABORT");
-                step.setSyncMode("FULL");
-                step.setSourceTable("");
-                step.setTargetTable("");
-                step.setTransformConfig(toJsonNode(transformConfigJson));
-                step.setOrgId(orgId);
-                step.setCreatedBy("system");
-                step.setCreatedAt(java.time.LocalDateTime.now());
-                step.setIsDeleted(false);
-                applyConfigToStep(step, config);
-                stepRepository.save(step);
+                savedStep = createNewStep(pipelineId, stepName, nodeType, transformConfigJson, config, orgId);
             }
+            nodeIdToStepId.put(nodeIdStr, savedStep.getId());
         }
 
         // Delete old edges and insert new ones
         jdbcTemplate.update("UPDATE cdr.r_etl_edge SET is_deleted = true WHERE pipeline_id = ? AND NOT is_deleted", pipelineId);
         for (Map<String, Object> edgeData : edges) {
-            String sourceId = (String) edgeData.get("source");
-            String targetId = (String) edgeData.get("target");
-            if (sourceId == null || targetId == null) continue;
+            String sourceNodeId = (String) edgeData.get("source");
+            String targetNodeId = (String) edgeData.get("target");
+            if (sourceNodeId == null || targetNodeId == null) continue;
 
-            Long sourceStepId = extractStepId(sourceId);
-            Long targetStepId = extractStepId(targetId);
+            Long sourceStepId = resolveStepId(sourceNodeId, nodeIdToStepId);
+            Long targetStepId = resolveStepId(targetNodeId, nodeIdToStepId);
             if (sourceStepId == null || targetStepId == null) continue;
 
             String sourcePort = (String) edgeData.getOrDefault("sourceHandle", "out_1");
@@ -539,6 +527,34 @@ public class EtlPipelineService {
             try { return Long.valueOf(nodeId.substring(5)); } catch (NumberFormatException ignored) {}
         }
         return null;
+    }
+
+    private Long resolveStepId(String nodeId, Map<String, Long> nodeIdToStepId) {
+        // First try the mapping (for newly created steps with node_* IDs)
+        Long stepId = nodeIdToStepId.get(nodeId);
+        if (stepId != null) return stepId;
+        // Then try extracting from step_* format
+        return extractStepId(nodeId);
+    }
+
+    private EtlStepEntity createNewStep(Long pipelineId, String stepName, String nodeType,
+                                         String transformConfigJson, Map<String, Object> config, Long orgId) {
+        EtlStepEntity step = new EtlStepEntity();
+        step.setPipelineId(pipelineId);
+        step.setStepName(stepName);
+        step.setStepOrder(0);
+        step.setStepType("ONE_TO_ONE");
+        step.setOnError("ABORT");
+        step.setSyncMode("FULL");
+        step.setSourceTable("");
+        step.setTargetTable("");
+        step.setTransformConfig(toJsonNode(transformConfigJson));
+        step.setOrgId(orgId);
+        step.setCreatedBy("system");
+        step.setCreatedAt(java.time.LocalDateTime.now());
+        step.setIsDeleted(false);
+        applyConfigToStep(step, config);
+        return stepRepository.save(step);
     }
 
     private JsonNode toJsonNode(String json) {
