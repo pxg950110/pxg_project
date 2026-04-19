@@ -26,4 +26,13 @@ public interface DataMapper {
 
     // ==================== Project Member ====================
     ProjectDetailVO.ProjectMemberVO toProjectMemberVO(ProjectMemberEntity entity);
+
+    // ==================== ETL Pipeline ====================
+    EtlPipelineVO toEtlPipelineVO(EtlPipelineEntity entity);
+
+    EtlStepVO toEtlStepVO(EtlStepEntity entity);
+
+    EtlFieldMappingVO toEtlFieldMappingVO(EtlFieldMappingEntity entity);
+
+    EtlExecutionVO toEtlExecutionVO(EtlExecutionEntity entity);
 }
