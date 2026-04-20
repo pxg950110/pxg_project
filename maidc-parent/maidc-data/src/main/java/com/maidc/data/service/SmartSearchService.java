@@ -134,93 +134,93 @@ public class SmartSearchService {
                 SELECT 'PATIENT' AS domain, p.id, p.id AS patient_id,
                        p.name AS title, p.gender || ' ' || p.birth_date AS subtitle,
                        ts_rank_cd(p.fts, query) AS score,
-                       ts_headline('zh', coalesce(p.name,''), query) AS headline
-                FROM cdr.c_patient p, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(p.name,''), query) AS headline
+                FROM cdr.c_patient p, plainto_tsquery('simple', :keyword) query
                 WHERE p.fts @@ query AND p.is_deleted = false""" + dateFilter;
             case "ENCOUNTER" -> """
                 SELECT 'ENCOUNTER' AS domain, e.id, e.patient_id,
-                       coalesce(e.diagnosis_name, '-') AS title,
-                       coalesce(e.dept_name,'') || ' ' || coalesce(e.doctor_name,'') AS subtitle,
+                       coalesce(e.diagnosis_summary, '-') AS title,
+                       coalesce(e.department,'') || ' ' || coalesce(e.attending_doctor,'') AS subtitle,
                        ts_rank_cd(e.fts, query) AS score,
-                       ts_headline('zh', coalesce(e.doctor_name,'') || ' ' || coalesce(e.diagnosis_name,'') || ' ' || coalesce(e.dept_name,''), query) AS headline
-                FROM cdr.c_encounter e, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(e.attending_doctor,'') || ' ' || coalesce(e.diagnosis_summary,'') || ' ' || coalesce(e.department,''), query) AS headline
+                FROM cdr.c_encounter e, plainto_tsquery('simple', :keyword) query
                 WHERE e.fts @@ query AND e.is_deleted = false""" + dateFilter;
             case "DIAGNOSIS" -> """
                 SELECT 'DIAGNOSIS' AS domain, d.id, d.patient_id,
-                       d.icd_name AS title, d.icd_code AS subtitle,
+                       d.diagnosis_name AS title, d.diagnosis_code AS subtitle,
                        ts_rank_cd(d.fts, query) AS score,
-                       ts_headline('zh', coalesce(d.icd_name,'') || ' ' || coalesce(d.icd_code,''), query) AS headline
-                FROM cdr.c_diagnosis d, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(d.diagnosis_name,'') || ' ' || coalesce(d.diagnosis_code,''), query) AS headline
+                FROM cdr.c_diagnosis d, plainto_tsquery('simple', :keyword) query
                 WHERE d.fts @@ query AND d.is_deleted = false""" + dateFilter;
             case "LAB" -> """
                 SELECT 'LAB' AS domain, l.id, l.patient_id,
                        l.test_name AS title, coalesce(l.specimen_type,'') || ' ' || coalesce(l.status,'') AS subtitle,
                        ts_rank_cd(l.fts, query) AS score,
-                       ts_headline('zh', coalesce(l.test_name,'') || ' ' || coalesce(l.test_code,'') || ' ' || coalesce(l.ordering_doctor,''), query) AS headline
-                FROM cdr.c_lab_test l, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(l.test_name,'') || ' ' || coalesce(l.test_code,'') || ' ' || coalesce(l.ordering_doctor,''), query) AS headline
+                FROM cdr.c_lab_test l, plainto_tsquery('simple', :keyword) query
                 WHERE l.fts @@ query AND l.is_deleted = false""" + dateFilter;
             case "MEDICATION" -> """
                 SELECT 'MEDICATION' AS domain, m.id, m.patient_id,
                        m.med_name AS title, coalesce(m.dosage,'') || ' ' || coalesce(m.route,'') || ' ' || coalesce(m.frequency,'') AS subtitle,
                        ts_rank_cd(m.fts, query) AS score,
-                       ts_headline('zh', coalesce(m.med_name,'') || ' ' || coalesce(m.med_code,'') || ' ' || coalesce(m.prescriber,''), query) AS headline
-                FROM cdr.c_medication m, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(m.med_name,'') || ' ' || coalesce(m.med_code,'') || ' ' || coalesce(m.prescriber,''), query) AS headline
+                FROM cdr.c_medication m, plainto_tsquery('simple', :keyword) query
                 WHERE m.fts @@ query AND m.is_deleted = false""" + dateFilter;
             case "IMAGING" -> """
                 SELECT 'IMAGING' AS domain, i.id, i.patient_id,
                        i.exam_type AS title, coalesce(i.body_part,'') || ' ' || coalesce(i.modality,'') AS subtitle,
                        ts_rank_cd(i.fts, query) AS score,
-                       ts_headline('zh', coalesce(i.exam_type,'') || ' ' || coalesce(i.body_part,'') || ' ' || coalesce(i.report_text,''), query) AS headline
-                FROM cdr.c_imaging_exam i, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(i.exam_type,'') || ' ' || coalesce(i.body_part,'') || ' ' || coalesce(i.report_text,''), query) AS headline
+                FROM cdr.c_imaging_exam i, plainto_tsquery('simple', :keyword) query
                 WHERE i.fts @@ query AND i.is_deleted = false""" + dateFilter;
             case "SURGERY" -> """
                 SELECT 'SURGERY' AS domain, o.id, o.patient_id,
                        o.operation_name AS title, coalesce(o.surgeon,'') || ' ' || coalesce(o.anesthesia_type,'') AS subtitle,
                        ts_rank_cd(o.fts, query) AS score,
-                       ts_headline('zh', coalesce(o.operation_name,'') || ' ' || coalesce(o.operation_code,'') || ' ' || coalesce(o.surgeon,''), query) AS headline
-                FROM cdr.c_operation o, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(o.operation_name,'') || ' ' || coalesce(o.operation_code,'') || ' ' || coalesce(o.surgeon,''), query) AS headline
+                FROM cdr.c_operation o, plainto_tsquery('simple', :keyword) query
                 WHERE o.fts @@ query AND o.is_deleted = false""" + dateFilter;
             case "PATHOLOGY" -> """
                 SELECT 'PATHOLOGY' AS domain, p.id, p.patient_id,
                        p.diagnosis_desc AS title, coalesce(p.grade,'') || ' ' || coalesce(p.stage,'') AS subtitle,
                        ts_rank_cd(p.fts, query) AS score,
-                       ts_headline('zh', coalesce(p.diagnosis_desc,'') || ' ' || coalesce(p.specimen_type,''), query) AS headline
-                FROM cdr.c_pathology p, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(p.diagnosis_desc,'') || ' ' || coalesce(p.specimen_type,''), query) AS headline
+                FROM cdr.c_pathology p, plainto_tsquery('simple', :keyword) query
                 WHERE p.fts @@ query AND p.is_deleted = false""" + dateFilter;
             case "VITAL" -> """
                 SELECT 'VITAL' AS domain, v.id, v.patient_id,
                        v.sign_type AS title, cast(v.sign_value as text) || ' ' || coalesce(v.unit,'') AS subtitle,
                        ts_rank_cd(v.fts, query) AS score,
-                       ts_headline('zh', coalesce(v.sign_type,''), query) AS headline
-                FROM cdr.c_vital_sign v, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(v.sign_type,''), query) AS headline
+                FROM cdr.c_vital_sign v, plainto_tsquery('simple', :keyword) query
                 WHERE v.fts @@ query AND v.is_deleted = false""" + dateFilter;
             case "ALLERGY" -> """
                 SELECT 'ALLERGY' AS domain, a.id, a.patient_id,
                        a.allergen AS title, coalesce(a.reaction,'') || ' ' || coalesce(a.severity,'') AS subtitle,
                        ts_rank_cd(a.fts, query) AS score,
-                       ts_headline('zh', coalesce(a.allergen,'') || ' ' || coalesce(a.reaction,''), query) AS headline
-                FROM cdr.c_allergy a, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(a.allergen,'') || ' ' || coalesce(a.reaction,''), query) AS headline
+                FROM cdr.c_allergy a, plainto_tsquery('simple', :keyword) query
                 WHERE a.fts @@ query AND a.is_deleted = false""" + dateFilter;
             case "NOTE" -> """
                 SELECT 'NOTE' AS domain, n.id, n.patient_id,
                        n.title AS title, coalesce(n.note_type,'') || ' ' || coalesce(n.author,'') AS subtitle,
                        ts_rank_cd(n.fts, query) AS score,
-                       ts_headline('zh', coalesce(n.title,'') || ' ' || coalesce(n.content,'') || ' ' || coalesce(n.author,''), query) AS headline
-                FROM cdr.c_clinical_note n, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(n.title,'') || ' ' || coalesce(n.content,'') || ' ' || coalesce(n.author,''), query) AS headline
+                FROM cdr.c_clinical_note n, plainto_tsquery('simple', :keyword) query
                 WHERE n.fts @@ query AND n.is_deleted = false""" + dateFilter;
             case "PROJECT" -> """
                 SELECT 'PROJECT' AS domain, p.id, NULL::bigint AS patient_id,
-                       p.project_name AS title, coalesce(p.description,'') AS subtitle,
+                       p.name AS title, coalesce(p.description,'') AS subtitle,
                        ts_rank_cd(p.fts, query) AS score,
-                       ts_headline('zh', coalesce(p.project_name,'') || ' ' || coalesce(p.description,''), query) AS headline
-                FROM rdr.r_study_project p, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(p.name,'') || ' ' || coalesce(p.description,''), query) AS headline
+                FROM rdr.r_study_project p, plainto_tsquery('simple', :keyword) query
                 WHERE p.fts @@ query AND p.is_deleted = false""" + dateFilter;
             case "DATASET" -> """
                 SELECT 'DATASET' AS domain, d.id, NULL::bigint AS patient_id,
-                       d.dataset_name AS title, coalesce(d.description,'') AS subtitle,
+                       d.name AS title, coalesce(d.description,'') AS subtitle,
                        ts_rank_cd(d.fts, query) AS score,
-                       ts_headline('zh', coalesce(d.dataset_name,'') || ' ' || coalesce(d.description,''), query) AS headline
-                FROM rdr.r_dataset d, plainto_tsquery('zh', :keyword) query
+                       ts_headline('simple', coalesce(d.name,'') || ' ' || coalesce(d.description,''), query) AS headline
+                FROM rdr.r_dataset d, plainto_tsquery('simple', :keyword) query
                 WHERE d.fts @@ query AND d.is_deleted = false""" + dateFilter;
             default -> "SELECT NULL::text, NULL::bigint, NULL::bigint, NULL::text, NULL::text, 0::float, NULL::text WHERE false";
         };
@@ -229,19 +229,19 @@ public class SmartSearchService {
     private String domainSubCountSql(String domain) {
         String dateFilter = buildDateFilter();
         return switch (domain) {
-            case "PATIENT" -> "SELECT 1 FROM cdr.c_patient p, plainto_tsquery('zh', :keyword) query WHERE p.fts @@ query AND p.is_deleted = false" + dateFilter;
-            case "ENCOUNTER" -> "SELECT 1 FROM cdr.c_encounter e, plainto_tsquery('zh', :keyword) query WHERE e.fts @@ query AND e.is_deleted = false" + dateFilter;
-            case "DIAGNOSIS" -> "SELECT 1 FROM cdr.c_diagnosis d, plainto_tsquery('zh', :keyword) query WHERE d.fts @@ query AND d.is_deleted = false" + dateFilter;
-            case "LAB" -> "SELECT 1 FROM cdr.c_lab_test l, plainto_tsquery('zh', :keyword) query WHERE l.fts @@ query AND l.is_deleted = false" + dateFilter;
-            case "MEDICATION" -> "SELECT 1 FROM cdr.c_medication m, plainto_tsquery('zh', :keyword) query WHERE m.fts @@ query AND m.is_deleted = false" + dateFilter;
-            case "IMAGING" -> "SELECT 1 FROM cdr.c_imaging_exam i, plainto_tsquery('zh', :keyword) query WHERE i.fts @@ query AND i.is_deleted = false" + dateFilter;
-            case "SURGERY" -> "SELECT 1 FROM cdr.c_operation o, plainto_tsquery('zh', :keyword) query WHERE o.fts @@ query AND o.is_deleted = false" + dateFilter;
-            case "PATHOLOGY" -> "SELECT 1 FROM cdr.c_pathology p, plainto_tsquery('zh', :keyword) query WHERE p.fts @@ query AND p.is_deleted = false" + dateFilter;
-            case "VITAL" -> "SELECT 1 FROM cdr.c_vital_sign v, plainto_tsquery('zh', :keyword) query WHERE v.fts @@ query AND v.is_deleted = false" + dateFilter;
-            case "ALLERGY" -> "SELECT 1 FROM cdr.c_allergy a, plainto_tsquery('zh', :keyword) query WHERE a.fts @@ query AND a.is_deleted = false" + dateFilter;
-            case "NOTE" -> "SELECT 1 FROM cdr.c_clinical_note n, plainto_tsquery('zh', :keyword) query WHERE n.fts @@ query AND n.is_deleted = false" + dateFilter;
-            case "PROJECT" -> "SELECT 1 FROM rdr.r_study_project p, plainto_tsquery('zh', :keyword) query WHERE p.fts @@ query AND p.is_deleted = false" + dateFilter;
-            case "DATASET" -> "SELECT 1 FROM rdr.r_dataset d, plainto_tsquery('zh', :keyword) query WHERE d.fts @@ query AND d.is_deleted = false" + dateFilter;
+            case "PATIENT" -> "SELECT 1 FROM cdr.c_patient p, plainto_tsquery('simple', :keyword) query WHERE p.fts @@ query AND p.is_deleted = false" + dateFilter;
+            case "ENCOUNTER" -> "SELECT 1 FROM cdr.c_encounter e, plainto_tsquery('simple', :keyword) query WHERE e.fts @@ query AND e.is_deleted = false" + dateFilter;
+            case "DIAGNOSIS" -> "SELECT 1 FROM cdr.c_diagnosis d, plainto_tsquery('simple', :keyword) query WHERE d.fts @@ query AND d.is_deleted = false" + dateFilter;
+            case "LAB" -> "SELECT 1 FROM cdr.c_lab_test l, plainto_tsquery('simple', :keyword) query WHERE l.fts @@ query AND l.is_deleted = false" + dateFilter;
+            case "MEDICATION" -> "SELECT 1 FROM cdr.c_medication m, plainto_tsquery('simple', :keyword) query WHERE m.fts @@ query AND m.is_deleted = false" + dateFilter;
+            case "IMAGING" -> "SELECT 1 FROM cdr.c_imaging_exam i, plainto_tsquery('simple', :keyword) query WHERE i.fts @@ query AND i.is_deleted = false" + dateFilter;
+            case "SURGERY" -> "SELECT 1 FROM cdr.c_operation o, plainto_tsquery('simple', :keyword) query WHERE o.fts @@ query AND o.is_deleted = false" + dateFilter;
+            case "PATHOLOGY" -> "SELECT 1 FROM cdr.c_pathology p, plainto_tsquery('simple', :keyword) query WHERE p.fts @@ query AND p.is_deleted = false" + dateFilter;
+            case "VITAL" -> "SELECT 1 FROM cdr.c_vital_sign v, plainto_tsquery('simple', :keyword) query WHERE v.fts @@ query AND v.is_deleted = false" + dateFilter;
+            case "ALLERGY" -> "SELECT 1 FROM cdr.c_allergy a, plainto_tsquery('simple', :keyword) query WHERE a.fts @@ query AND a.is_deleted = false" + dateFilter;
+            case "NOTE" -> "SELECT 1 FROM cdr.c_clinical_note n, plainto_tsquery('simple', :keyword) query WHERE n.fts @@ query AND n.is_deleted = false" + dateFilter;
+            case "PROJECT" -> "SELECT 1 FROM rdr.r_study_project p, plainto_tsquery('simple', :keyword) query WHERE p.fts @@ query AND p.is_deleted = false" + dateFilter;
+            case "DATASET" -> "SELECT 1 FROM rdr.r_dataset d, plainto_tsquery('simple', :keyword) query WHERE d.fts @@ query AND d.is_deleted = false" + dateFilter;
             default -> "SELECT NULL WHERE false";
         };
     }
