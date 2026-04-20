@@ -241,6 +241,16 @@ export function getDataSourceHealthStats(id: number, days = 30) {
   return request.get<ApiResponse<{ totalChecks: number; successCount: number; failCount: number; availabilityRate: number; avgLatencyMs: number }>>(`/cdr/datasources/${id}/health/stats`, { params: { days } })
 }
 
+// ========== Clinical Search API ==========
+export function clinicalSearch(data: Record<string, any>) {
+  return request.post<ApiResponse<any>>('/cdr/search', data)
+}
+
+// Smart Search API
+export function smartSearch(data: { keyword: string; domains?: string[]; dateFrom?: string; dateTo?: string; page?: number; pageSize?: number }) {
+  return request.post<ApiResponse<any>>('/cdr/smart-search', data)
+}
+
 // ETL APIs
 export function getEtlTasks(params: { page?: number; page_size?: number; status?: string }) {
   return request.get<ApiResponse<PageResult<any>>>('/etl/tasks', { params })
