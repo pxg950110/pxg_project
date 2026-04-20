@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,16 +47,14 @@ public class SmartSearchService {
         // Count query
         Query countQuery = entityManager.createNativeQuery(countSql);
         countQuery.setParameter("keyword", req.getKeyword());
-        if (req.getDateFrom() != null) countQuery.setParameter("dateFrom", req.getDateFrom().atStartOfDay());
-        if (req.getDateTo() != null) countQuery.setParameter("dateTo", req.getDateTo().atTime(23, 59, 59));
+        // TODO: dateFrom/dateTo parameters added when buildDateFilter() is implemented
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         // Data query
         int offset = (req.getPage() - 1) * req.getPageSize();
         Query dataQuery = entityManager.createNativeQuery(sql);
         dataQuery.setParameter("keyword", req.getKeyword());
-        if (req.getDateFrom() != null) dataQuery.setParameter("dateFrom", req.getDateFrom().atStartOfDay());
-        if (req.getDateTo() != null) dataQuery.setParameter("dateTo", req.getDateTo().atTime(23, 59, 59));
+        // TODO: dateFrom/dateTo parameters added when buildDateFilter() is implemented
         dataQuery.setParameter("limit", req.getPageSize());
         dataQuery.setParameter("offset", offset);
 
