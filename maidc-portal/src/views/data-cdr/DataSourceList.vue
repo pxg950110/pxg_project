@@ -34,7 +34,7 @@
     </a-table>
 
     <a-modal v-model:open="modalVisible" :title="isEdit ? '编辑数据源' : '新建数据源'"
-      :confirm-loading="submitLoading" :width="720" @ok="handleSubmit" @cancel="handleModalCancel"
+      :width="720" @cancel="handleModalCancel"
       destroy-on-close>
       <a-form ref="formRef" :model="formState" :rules="formRules"
         :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
@@ -58,15 +58,19 @@
           <DynamicFormRenderer :schema="currentSchema" v-model="formState.connectionParams" />
         </template>
 
-        <div v-if="formState.sourceTypeCode" style="text-align: center; margin: 12px 0;">
-          <a-button @click="handleTestPreSave" :loading="testLoading">
-            测试连接
-          </a-button>
-          <span v-if="testResult" :style="{ marginLeft: '12px', color: testResult.success ? '#52c41a' : '#ff4d4f' }">
+      </a-form>
+      <template #footer>
+        <a-space>
+          <span v-if="testResult" :style="{ color: testResult.success ? '#52c41a' : '#ff4d4f', fontSize: '13px' }">
             {{ testResult.success ? `连接成功 (${testResult.latencyMs}ms)` : `失败: ${testResult.message}` }}
           </span>
-        </div>
-      </a-form>
+          <a-button v-if="formState.sourceTypeCode" @click="handleTestPreSave" :loading="testLoading">
+            测试连接
+          </a-button>
+          <a-button @click="handleModalCancel">取消</a-button>
+          <a-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</a-button>
+        </a-space>
+      </template>
     </a-modal>
   </PageContainer>
 </template>

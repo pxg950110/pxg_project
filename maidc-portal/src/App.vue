@@ -1,5 +1,5 @@
 <template>
-  <a-config-provider :theme="themeConfig">
+  <a-config-provider :theme="themeConfig" :locale="zhCN">
     <router-view />
   </a-config-provider>
 </template>
@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import zhCN from 'ant-design-vue/es/locale/zh_CN'
 
 const uiStore = useUiStore()
 

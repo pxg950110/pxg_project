@@ -127,7 +127,7 @@ COMMENT ON TABLE system.s_config IS '系统配置表';
 
 -- 超级管理员 (password: admin123)
 INSERT INTO system.s_user (username, password_hash, real_name, status, created_by, org_id)
-VALUES ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '系统管理员', 'ACTIVE', 'system', 0);
+VALUES ('admin', '$2b$10$LhAZUObGniTkqVU6mii9s.Hk/zOtyR8aLS2cj4WBZSR3oZb4LmaE6', '系统管理员', 'ACTIVE', 'system', 0);
 
 -- 6 个内置角色
 INSERT INTO system.s_role (role_code, role_name, description, is_system, created_by, org_id) VALUES

@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAIDC 专病管理 - Mockup</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+                   'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+      color: rgba(0, 0, 0, 0.88);
+      background: #f5f5f5;
+      line-height: 1.5714;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Layout ===== */
+    .app-wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #001529;
+      color: #ffffffd9;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-logo {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid #ffffff1a;
+      gap: 8px;
+    }
+    .sidebar-logo .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: #1677ff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+    }
+    .sidebar-logo span {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .sidebar-menu { padding: 8px 0; flex: 1; }
+    .sidebar-menu .menu-group-title {
+      padding: 16px 20px 6px;
+      font-size: 11px;
+      color: #ffffff4d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sidebar-menu .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      gap: 10px;
+      font-size: 14px;
+      color: #ffffffa6;
+      margin: 2px 8px;
+      border-radius: 6px;
+    }
+    .sidebar-menu .menu-item:hover { background: #ffffff1a; color: #fff; }
+    .sidebar-menu .menu-item.active { background: #1677ff; color: #fff; }
+    .sidebar-menu .menu-item .icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+
+    /* Main content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .main-header {
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+    .main-header .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: rgba(0,0,0,0.45);
+    }
+    .main-header .breadcrumb a { color: rgba(0,0,0,0.45); text-decoration: none; }
+    .main-header .breadcrumb a:hover { color: #1677ff; }
+    .main-header .breadcrumb .current { color: rgba(0,0,0,0.88); }
+    .main-header .breadcrumb .sep { color: rgba(0,0,0,0.25); }
+    .main-header .header-right { display: flex; align-items: center; gap: 12px; }
+    .avatar-circle {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #1677ff; color: #fff; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; font-weight: 500;
+    }
+
+    .page-body {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    /* ===== Tab Switcher (Mockup Nav) ===== */
+    .mockup-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #f0f0f0;
+      background: #fff;
+      border-radius: 8px 8px 0 0;
+      padding: 0 16px;
+    }
+    .mockup-tab {
+      padding: 12px 20px;
+      font-size: 14px;
+      color: rgba(0,0,0,0.65);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .mockup-tab:hover { color: #1677ff; }
+    .mockup-tab.active { color: #1677ff; border-bottom-color: #1677ff; font-weight: 500; }
+
+    /* ===== Page Views ===== */
+    .page-view { display: none; }
+    .page-view.active { display: block; }
+
+    /* ===== Card ===== */
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+    }
+    .card-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-body { padding: 24px; }
+
+    /* ===== Buttons ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 5px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #d9d9d9;
+      background: #fff;
+      color: rgba(0,0,0,0.88);
+      transition: all 0.2s;
+      line-height: 1.5714;
+      height: 32px;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: #1677ff; color: #1677ff; }
+    .btn-primary {
+      background: #1677ff;
+      border-color: #1677ff;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #4096ff; border-color: #4096ff; }
+    .btn-link {
+      border: none;
+      background: none;
+      color: #1677ff;
+      padding: 0 4px;
+      height: auto;
+    }
+    .btn-link:hover { color: #4096ff; }
+    .btn-link.danger { color: #ff4d4f; }
+    .btn-link.danger:hover { color: #ff7875; }
+    .btn-sm { padding: 2px 8px; font-size: 13px; height: 26px; }
+    .btn-ghost { border-color: transparent; background: transparent; }
+    .btn-ghost:hover { background: #f5f5f5; border-color: #d9d9d9; }
+
+    /* ===== Table ===== */
+    .table-wrapper { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead th {
+      background: #fafafa;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: rgba(0,0,0,0.88);
+      border-bottom: 1px solid #f0f0f0;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      color: rgba(0,0,0,0.88);
+    }
+    tbody tr:hover { background: #fafafa; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* ===== Tags ===== */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 8px;
+      height: 24px;
+      font-size: 12px;
+      border-radius: 4px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .tag-green { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+    .tag-default { background: #fafafa; color: rgba(0,0,0,0.65); border: 1px solid #d9d9d9; }
+    .tag-blue { background: #e6f4ff; color: #1677ff; border: 1px solid #91caff; }
+    .tag-orange { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+
+    /* ===== Inputs ===== */
+    .input,
+    .select-input {
+      padding: 5px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 14px;
+      height: 32px;
+      outline: none;
+      transition: border-color 0.2s;
+      color: rgba(0,0,0,0.88);
+      background: #fff;
+    }
+    .input:focus,
+    .select-input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px #1677ff1a; }
+    .input::placeholder { color: rgba(0,0,0,0.25); }
+    .input-lg { height: 36px; padding: 6px 12px; }
+    textarea.input {
+      height: auto;
+      min-height: 80px;
+      resize: vertical;
+      padding: 8px 12px;
+      line-height: 1.5;
+    }
+
+    /* ===== Search Bar ===== */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .search-bar .input { width: 260px; }
+    .search-bar .select-input { width: 140px; }
+
+    /* ===== Pagination ===== */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 0 0;
+    }
+    .pagination .page-info { color: rgba(0,0,0,0.65); font-size: 14px; margin-right: 8px; }
+    .page-btn {
+      width: 32px; height: 32px; border: 1px solid #d9d9d9; border-radius: 6px;
+      background: #fff; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; color: rgba(0,0,0,0.88);
+      transition: all 0.2s;
+    }
+    .page-btn:hover { border-color: #1677ff; color: #1677ff; }
+    .page-btn.active { background: #1677ff; border-color: #1677ff; color: #fff; }
+
+    /* ===== Stats Cards ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      padding: 20px 24px;
+    }
+    .stat-card .stat-label {
+      font-size: 14px;
+      color: rgba(0,0,0,0.45);
+      margin-bottom: 8px;
+    }
+    .stat-card .stat-value {
+      font-size: 28px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.88);
+      line-height: 1.2;
+    }
+    .stat-card .stat-suffix {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(0,0,0,0.45);
+      margin-left: 2px;
+    }
+    .stat-card .stat-trend {
+      font-size: 12px;
+      color: #52c41a;
+      margin-top: 4px;
+    }
+
+    /* ===== Info Card (Detail) ===== */
+    .info-card {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .info-card .info-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .info-card .info-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.88);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .info-card .info-desc {
+      color: rgba(0,0,0,0.45);
+      font-size: 14px;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .info-card .info-meta {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .info-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+    .info-meta-item .meta-label { color: rgba(0,0,0,0.45); }
+    .info-meta-item .meta-value { color: rgba(0,0,0,0.88); }
+
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 22px;
+      background: #1677ff;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .toggle-switch.off { background: rgba(0,0,0,0.25); }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 24px;
+      transition: left 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+    }
+    .toggle-switch.off::after { left: 2px; }
+
+    /* ===== Action links in table ===== */
+    .action-links {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .action-links .divider {
+      width: 1px;
+      height: 14px;
+      background: #f0f0f0;
+      margin: 0 4px;
+    }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 60px;
+    }
+    .modal-overlay.visible { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 8px;
+      width: 720px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08), 0 3px 6px -4px rgba(0,0,0,0.12), 0 9px 28px 8px rgba(0,0,0,0.05);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.88);
+    }
+    .modal-close {
+      width: 28px; height: 28px; border: none; background: none;
+      cursor: pointer; font-size: 18px; color: rgba(0,0,0,0.45);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { background: #f5f5f5; color: rgba(0,0,0,0.88); }
+    .modal-body { padding: 24px; }
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 12px 24px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    /* ===== Form ===== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      color: rgba(0,0,0,0.88);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .form-label .required { color: #ff4d4f; margin-right: 2px; }
+    .form-group .input,
+    .form-group .select-input,
+    .form-group textarea.input { width: 100%; }
+
+    /* ===== Disease Card Grid ===== */
+    .disease-card-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .disease-card {
+      width: 320px;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: border-color 0.2s;
+      cursor: default;
+    }
+    .disease-card:hover { border-color: #1677ff; }
+    .disease-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .disease-card-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.88);
+    }
+    .disease-card-patients {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1677ff;
+      line-height: 1.2;
+    }
+    .disease-card-patients .patient-suffix {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(0,0,0,0.45);
+      margin-left: 2px;
+    }
+    .disease-card-conditions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .condition-domain-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .condition-domain-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.65);
+      white-space: nowrap;
+      line-height: 22px;
+      flex-shrink: 0;
+    }
+    .condition-domain-label .logic-hint {
+      font-weight: 400;
+      color: #fa8c16;
+    }
+    .condition-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 8px;
+      height: 22px;
+      font-size: 12px;
+      border-radius: 10px;
+      background: #f0f5ff;
+      color: #1677ff;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .condition-pill.pathology {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
+    .condition-pill.lab {
+      background: #f6ffed;
+      color: #52c41a;
+    }
+    .condition-pill.surgery {
+      background: #fff1f0;
+      color: #ff4d4f;
+    }
+    .disease-card-actions {
+      display: flex;
+      gap: 16px;
+      border-top: 1px solid #f5f5f5;
+      padding-top: 12px;
+    }
+    .disease-card-actions .btn-link { font-size: 13px; }
+
+    /* ===== Condition Builder (Grouped) ===== */
+    .condition-builder {
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      padding: 16px;
+      background: #fafafa;
+    }
+    .condition-builder .builder-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.88);
+      margin-bottom: 12px;
+    }
+    .condition-group {
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      margin-bottom: 0;
+    }
+    .condition-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .condition-group-header .select-input { width: 140px; flex-shrink: 0; }
+    .group-logic-label {
+      font-size: 12px;
+      color: rgba(0,0,0,0.45);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+    .condition-group-header .remove-group-btn {
+      width: 28px; height: 28px; border: none; background: none;
+      cursor: pointer; color: rgba(0,0,0,0.25); font-size: 16px;
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .condition-group-header .remove-group-btn:hover { background: #fff1f0; color: #ff4d4f; }
+    .condition-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: nowrap;
+    }
+    .condition-row .select-input { flex: 1; min-width: 0; }
+    .condition-row .input { flex: 1.5; min-width: 0; }
+    .condition-row .remove-btn {
+      width: 28px; height: 28px; border: none; background: none;
+      cursor: pointer; color: rgba(0,0,0,0.25); font-size: 16px;
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .condition-row .remove-btn:hover { background: #fff1f0; color: #ff4d4f; }
+    .logic-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+    .logic-toggle .logic-label { font-size: 13px; color: rgba(0,0,0,0.45); }
+    .logic-btn {
+      padding: 2px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(0,0,0,0.65);
+    }
+    .logic-btn.active-and { background: #1677ff; border-color: #1677ff; color: #fff; }
+    .logic-btn.active-or { background: #fa8c16; border-color: #fa8c16; color: #fff; }
+    .group-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+      gap: 12px;
+    }
+    .group-connector-line {
+      flex: 1;
+      height: 1px;
+      background: #e8e8e8;
+    }
+    .group-connector-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1677ff;
+      background: #f0f5ff;
+      padding: 2px 14px;
+      border-radius: 10px;
+    }
+    .group-connector-label.or { color: #fa8c16; background: #fff7e6; }
+    .add-group-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 16px;
+      border: 1px dashed #d9d9d9;
+      border-radius: 6px;
+      background: #fff;
+      color: rgba(0,0,0,0.65);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 12px;
+    }
+    .add-group-btn:hover { border-color: #1677ff; color: #1677ff; }
+    .add-condition-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border: 1px dashed #d9d9d9;
+      border-radius: 6px;
+      background: #fafafa;
+      color: rgba(0,0,0,0.65);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .add-condition-btn:hover { border-color: #1677ff; color: #1677ff; }
+
+    /* ===== Table Toolbar ===== */
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .table-toolbar .toolbar-left { display: flex; gap: 8px; }
+
+    /* ===== Utility ===== */
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .mb-16 { margin-bottom: 16px; }
+    .mt-16 { margin-top: 16px; }
+    .gap-8 { gap: 8px; }
+    .flex-center { display: flex; align-items: center; }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">M</div>
+      <span>MAIDC</span>
+    </div>
+    <nav class="sidebar-menu">
+      <div class="menu-group-title">数据管理</div>
+      <div class="menu-item">
+        <span class="icon">&#9776;</span>
+        <span>临床检索</span>
+      </div>
+      <div class="menu-item">
+        <span class="icon">&#128202;</span>
+        <span>数据源管理</span>
+      </div>
+      <div class="menu-item active">
+        <span class="icon">&#9829;</span>
+        <span>专病管理</span>
+      </div>
+      <div class="menu-item">
+        <span class="icon">&#128196;</span>
+        <span>ETL 管理</span>
+      </div>
+      <div class="menu-item">
+        <span class="icon">&#9989;</span>
+        <span>数据质量</span>
+      </div>
+      <div class="menu-group-title">AI 模型</div>
+      <div class="menu-item">
+        <span class="icon">&#129302;</span>
+        <span>模型管理</span>
+      </div>
+      <div class="menu-item">
+        <span class="icon">&#128200;</span>
+        <span>评估审批</span>
+      </div>
+      <div class="menu-item">
+        <span class="icon">&#9889;</span>
+        <span>推理部署</span>
+      </div>
+      <div class="menu-group-title">系统</div>
+      <div class="menu-item">
+        <span class="icon">&#128101;</span>
+        <span>用户管理</span>
+      </div>
+      <div class="menu-item">
+        <span class="icon">&#9881;</span>
+        <span>系统设置</span>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="main-header">
+      <div class="breadcrumb">
+        <a href="#">数据管理</a>
+        <span class="sep">/</span>
+        <span class="current" id="breadcrumb-current">专病管理</span>
+      </div>
+      <div class="header-right">
+        <span style="font-size:14px;color:rgba(0,0,0,0.65);">管理员</span>
+        <div class="avatar-circle">A</div>
+      </div>
+    </header>
+
+    <!-- Page Body -->
+    <div class="page-body">
+
+      <!-- Mockup Tab Switcher -->
+      <div class="mockup-tabs">
+        <div class="mockup-tab active" onclick="switchView('list')" id="tab-list">专病库列表</div>
+        <div class="mockup-tab" onclick="switchView('detail')" id="tab-detail">专病详情</div>
+        <div class="mockup-tab" onclick="toggleModal(true, 'new')" id="tab-modal">新建/编辑弹窗</div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 1: Disease Cohort List                -->
+      <!-- ========================================== -->
+      <div class="page-view active" id="view-list">
+        <div class="card">
+          <div class="card-header">
+            <div style="font-size:16px;font-weight:600;">专病管理</div>
+            <button class="btn btn-primary" onclick="toggleModal(true, 'new')">
+              <span>+</span> 新建专病库
+            </button>
+          </div>
+          <div class="card-body">
+            <!-- Search bar -->
+            <div class="search-bar">
+              <input class="input" placeholder="搜索专病名称..." />
+              <select class="select-input">
+                <option value="">全部状态</option>
+                <option value="active">已启用</option>
+                <option value="inactive">未启用</option>
+              </select>
+              <button class="btn btn-primary">查询</button>
+              <button class="btn">重置</button>
+            </div>
+
+            <!-- Disease Card Grid -->
+            <div class="disease-card-grid">
+              <!-- Card 1: 2型糖尿病 -->
+              <div class="disease-card">
+                <div class="disease-card-header">
+                  <span class="disease-card-name">2型糖尿病</span>
+                  <span class="tag tag-green">已启用</span>
+                </div>
+                <div class="disease-card-patients">
+                  1,286<span class="patient-suffix">名患者</span>
+                </div>
+                <div class="disease-card-conditions">
+                  <div class="condition-domain-group">
+                    <span class="condition-domain-label">诊断 <span class="logic-hint">(OR)</span></span>
+                    <span class="condition-pill">E11*</span>
+                    <span class="condition-pill">E10*</span>
+                    <span class="condition-pill">糖尿病</span>
+                  </div>
+                  <div class="condition-domain-group">
+                    <span class="condition-domain-label">检验 <span class="logic-hint">(AND)</span></span>
+                    <span class="condition-pill lab">HBA1C</span>
+                  </div>
+                </div>
+                <div class="disease-card-actions">
+                  <button class="btn-link" onclick="toggleModal(true, 'edit')">编辑</button>
+                  <button class="btn-link" onclick="switchView('detail')">详情</button>
+                  <button class="btn-link">同步</button>
+                </div>
+              </div>
+
+              <!-- Card 2: 冠心病 -->
+              <div class="disease-card">
+                <div class="disease-card-header">
+                  <span class="disease-card-name">冠心病</span>
+                  <span class="tag tag-green">已启用</span>
+                </div>
+                <div class="disease-card-patients">
+                  892<span class="patient-suffix">名患者</span>
+                </div>
+                <div class="disease-card-conditions">
+                  <div class="condition-domain-group">
+                    <span class="condition-domain-label">诊断 <span class="logic-hint">(OR)</span></span>
+                    <span class="condition-pill">I25*</span>
+                    <span class="condition-pill">I20*</span>
+                  </div>
+                  <div class="condition-domain-group">
+                    <span class="condition-domain-label">手术 <span class="logic-hint">(OR)</span></span>
+                    <span class="condition-pill surgery">36.0*</span>
+                    <span class="condition-pill surgery">36.1*</span>
+                  </div>
+                </div>
+                <div class="disease-card-actions">
+                  <button class="btn-link" onclick="toggleModal(true)">编辑</button>
+                  <button class="btn-link" onclick="switchView('detail')">详情</button>
+                  <button class="btn-link">同步</button>
+                </div>
+              </div>
+
+              <!-- Card 3: 脑卒中 -->
+              <div class="disease-card">
+                <div class="disease-card-header">
+                  <span class="disease-card-name">脑卒中</span>
+                  <span class="tag tag-green">已启用</span>
+                </div>
+                <div class="disease-card-patients">
+                  567<span class="patient-suffix">名患者</span>
+                </div>
+                <div class="disease-card-conditions">
+                  <div class="condition-domain-group">
+                    <span class="condition-domain-label">诊断 <span class="logic-hint">(OR)</span></span>
+                    <span class="condition-pill">I63*</span>
+                    <span class="condition-pill">I61*</span>
+                    <span class="condition-pill">I60*</span>
+                  </div>
+                </div>
+                <div class="disease-card-actions">
+                  <button class="btn-link" onclick="toggleModal(true)">编辑</button>
+                  <button class="btn-link" onclick="switchView('detail')">详情</button>
+                  <button class="btn-link">同步</button>
+                </div>
+              </div>
+
+              <!-- Card 4: 肺癌 -->
+              <div class="disease-card">
+                <div class="disease-card-header">
+                  <span class="disease-card-name">肺癌</span>
+                  <span class="tag tag-default">未启用</span>
+                </div>
+                <div class="disease-card-patients">
+                  334<span class="patient-suffix">名患者</span>
+                </div>
+                <div class="disease-card-conditions">
+                  <div class="condition-domain-group">
+                    <span class="condition-domain-label">诊断 <span class="logic-hint">(AND)</span></span>
+                    <span class="condition-pill">C34*</span>
+                  </div>
+                  <div class="condition-domain-group">
+                    <span class="condition-domain-label">病理 <span class="logic-hint">(OR)</span></span>
+                    <span class="condition-pill pathology">肺腺癌</span>
+                    <span class="condition-pill pathology">肺鳞癌</span>
+                  </div>
+                </div>
+                <div class="disease-card-actions">
+                  <button class="btn-link" onclick="toggleModal(true)">编辑</button>
+                  <button class="btn-link" onclick="switchView('detail')">详情</button>
+                  <button class="btn-link">同步</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+              <span class="page-info">共 4 条</span>
+              <button class="page-btn">&#8249;</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">&#8250;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: Disease Detail                     -->
+      <!-- ========================================== -->
+      <div class="page-view" id="view-detail">
+        <!-- Breadcrumb for detail -->
+        <div style="margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="switchView('list')" style="font-size:13px;">&#8592; 返回列表</button>
+        </div>
+
+        <!-- Info Card -->
+        <div class="info-card">
+          <div class="info-header">
+            <div class="info-title">
+              2型糖尿病
+              <span class="tag tag-green">已启用</span>
+            </div>
+            <button class="btn btn-sm" onclick="switchView('list')">关闭</button>
+          </div>
+          <div class="info-desc">
+            基于ICD-10诊断编码E11*及糖化血红蛋白检验结果自动筛选2型糖尿病患者队列，支持定期同步更新。
+          </div>
+          <div class="info-meta">
+            <div class="info-meta-item">
+              <span class="meta-label">自动同步:</span>
+              <div class="toggle-switch" onclick="this.classList.toggle('off')"></div>
+            </div>
+            <div class="info-meta-item">
+              <span class="meta-label">上次同步:</span>
+              <span class="meta-value">2026-04-21 08:30:12</span>
+            </div>
+            <div class="info-meta-item">
+              <span class="meta-label">创建时间:</span>
+              <span class="meta-value">2026-03-15 10:22:00</span>
+            </div>
+            <div class="info-meta-item">
+              <span class="meta-label">纳入规则:</span>
+              <code style="background:#f5f5f5;padding:2px 8px;border-radius:3px;font-size:13px;">诊断: E11* AND 检验: HBA1C</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Row -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">患者总数</div>
+            <div class="stat-value">1,286</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">男性占比</div>
+            <div class="stat-value">58.2<span class="stat-suffix">%</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">平均年龄</div>
+            <div class="stat-value">62.3<span class="stat-suffix">岁</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">近30天新增</div>
+            <div class="stat-value">42</div>
+            <div class="stat-trend">&#8593; 较上月 +12</div>
+          </div>
+        </div>
+
+        <!-- Patient Table -->
+        <div class="card">
+          <div class="card-header">
+            <div style="font-size:15px;font-weight:600;">患者列表</div>
+          </div>
+          <div class="card-body">
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <button class="btn btn-primary btn-sm">+ 手动添加</button>
+                <button class="btn btn-sm">导出</button>
+              </div>
+              <div class="search-bar" style="margin-bottom:0;">
+                <input class="input" placeholder="搜索患者姓名..." style="width:200px;" />
+                <button class="btn btn-sm btn-primary">搜索</button>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:50px;">#</th>
+                    <th>患者姓名</th>
+                    <th style="width:70px;">性别</th>
+                    <th style="width:70px;">年龄</th>
+                    <th>首次诊断</th>
+                    <th style="width:110px;">匹配来源</th>
+                    <th style="width:80px;">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td style="font-weight:500;">张**</td>
+                    <td>男</td>
+                    <td>65</td>
+                    <td>2024-03-12</td>
+                    <td><span class="tag tag-blue">AUTO</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td style="font-weight:500;">李**</td>
+                    <td>女</td>
+                    <td>58</td>
+                    <td>2023-11-05</td>
+                    <td><span class="tag tag-blue">AUTO</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td style="font-weight:500;">王**</td>
+                    <td>男</td>
+                    <td>72</td>
+                    <td>2025-01-20</td>
+                    <td><span class="tag tag-orange">MANUAL</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td style="font-weight:500;">赵**</td>
+                    <td>女</td>
+                    <td>61</td>
+                    <td>2024-08-17</td>
+                    <td><span class="tag tag-blue">AUTO</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td style="font-weight:500;">陈**</td>
+                    <td>男</td>
+                    <td>69</td>
+                    <td>2025-02-28</td>
+                    <td><span class="tag tag-orange">MANUAL</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                  <tr>
+                    <td>6</td>
+                    <td style="font-weight:500;">刘**</td>
+                    <td>男</td>
+                    <td>55</td>
+                    <td>2024-06-09</td>
+                    <td><span class="tag tag-blue">AUTO</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                  <tr>
+                    <td>7</td>
+                    <td style="font-weight:500;">孙**</td>
+                    <td>女</td>
+                    <td>63</td>
+                    <td>2025-04-03</td>
+                    <td><span class="tag tag-blue">AUTO</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                  <tr>
+                    <td>8</td>
+                    <td style="font-weight:500;">周**</td>
+                    <td>男</td>
+                    <td>70</td>
+                    <td>2024-12-11</td>
+                    <td><span class="tag tag-orange">MANUAL</span></td>
+                    <td><button class="btn-link danger">移除</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination">
+              <span class="page-info">共 1,286 条</span>
+              <button class="page-btn">&#8249;</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">...</button>
+              <button class="page-btn">129</button>
+              <button class="page-btn">&#8250;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /app-wrapper -->
+
+<!-- ========================================== -->
+<!-- MODAL: Create / Edit Disease Cohort        -->
+<!-- ========================================== -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)toggleModal(false)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">新建专病库</div>
+      <button class="modal-close" onclick="toggleModal(false)">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Form fields -->
+      <div class="form-group">
+        <label class="form-label"><span class="required">*</span> 专病名称</label>
+        <input class="input" id="modal-name" placeholder="请输入专病名称，如：2型糖尿病" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">描述</label>
+        <textarea class="input" id="modal-desc" placeholder="请输入专病库描述信息..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="required">*</span> 状态</label>
+        <select class="select-input" id="modal-status" style="width:200px;">
+          <option value="active">已启用</option>
+          <option value="inactive">未启用</option>
+        </select>
+      </div>
+
+      <!-- Grouped Condition Builder -->
+      <div class="form-group">
+        <label class="form-label">纳入规则</label>
+        <div class="condition-builder" id="condition-builder">
+
+          <!-- Group 1: 诊断 -->
+          <div class="condition-group" id="group-1">
+            <div class="condition-group-header">
+              <select class="select-input domain-select">
+                <option value="diagnosis" selected>诊断</option>
+                <option value="surgery">手术</option>
+                <option value="lab">检验</option>
+                <option value="medication">用药</option>
+                <option value="imaging">影像</option>
+                <option value="pathology">病理</option>
+              </select>
+              <span class="group-logic-label">组内逻辑:</span>
+              <button class="logic-btn active-or" onclick="setGroupLogic(this,'OR')">OR</button>
+              <button class="logic-btn" onclick="setGroupLogic(this,'AND')">AND</button>
+              <button class="remove-group-btn" title="删除组" onclick="removeGroup(this)">&#10005;</button>
+            </div>
+            <!-- Condition rows for Group 1 -->
+            <div class="condition-rows">
+              <div class="condition-row">
+                <select class="select-input" style="flex:0.8;">
+                  <option value="diagnosis_code" selected>诊断编码</option>
+                  <option value="diagnosis_name">诊断名称</option>
+                </select>
+                <select class="select-input" style="flex:0.6;">
+                  <option>IN</option>
+                  <option selected>LIKE</option>
+                  <option>=</option>
+                  <option>CONTAINS</option>
+                </select>
+                <input class="input" value="E11*" placeholder="输入值" />
+                <button class="remove-btn" title="删除条件" onclick="removeConditionRow(this)">&#10005;</button>
+              </div>
+              <div class="condition-row">
+                <select class="select-input" style="flex:0.8;">
+                  <option value="diagnosis_code" selected>诊断编码</option>
+                  <option value="diagnosis_name">诊断名称</option>
+                </select>
+                <select class="select-input" style="flex:0.6;">
+                  <option>IN</option>
+                  <option selected>LIKE</option>
+                  <option>=</option>
+                  <option>CONTAINS</option>
+                </select>
+                <input class="input" value="E10*" placeholder="输入值" />
+                <button class="remove-btn" title="删除条件" onclick="removeConditionRow(this)">&#10005;</button>
+              </div>
+              <div class="condition-row">
+                <select class="select-input" style="flex:0.8;">
+                  <option value="diagnosis_code">诊断编码</option>
+                  <option value="diagnosis_name" selected>诊断名称</option>
+                </select>
+                <select class="select-input" style="flex:0.6;">
+                  <option>IN</option>
+                  <option>LIKE</option>
+                  <option>=</option>
+                  <option selected>CONTAINS</option>
+                </select>
+                <input class="input" value="糖尿病" placeholder="输入值" />
+                <button class="remove-btn" title="删除条件" onclick="removeConditionRow(this)">&#10005;</button>
+              </div>
+            </div>
+            <button class="add-condition-btn" onclick="addConditionRowToGroup(this)">+ 添加条件</button>
+          </div>
+
+          <!-- Group connector -->
+          <div class="group-connector">
+            <div class="group-connector-line"></div>
+            <span class="group-connector-label" id="group-connector-label">AND</span>
+            <div class="group-connector-line"></div>
+          </div>
+
+          <!-- Group 2: 检验 -->
+          <div class="condition-group" id="group-2">
+            <div class="condition-group-header">
+              <select class="select-input domain-select">
+                <option value="diagnosis">诊断</option>
+                <option value="surgery">手术</option>
+                <option value="lab" selected>检验</option>
+                <option value="medication">用药</option>
+                <option value="imaging">影像</option>
+                <option value="pathology">病理</option>
+              </select>
+              <span class="group-logic-label">组内逻辑:</span>
+              <button class="logic-btn" onclick="setGroupLogic(this,'OR')">OR</button>
+              <button class="logic-btn active-and" onclick="setGroupLogic(this,'AND')">AND</button>
+              <button class="remove-group-btn" title="删除组" onclick="removeGroup(this)">&#10005;</button>
+            </div>
+            <!-- Condition rows for Group 2 -->
+            <div class="condition-rows">
+              <div class="condition-row">
+                <select class="select-input" style="flex:0.8;">
+                  <option value="test_code" selected>检验项目编码</option>
+                  <option value="test_name">检验项目名称</option>
+                  <option value="test_result">检验结果</option>
+                </select>
+                <select class="select-input" style="flex:0.6;">
+                  <option selected>IN</option>
+                  <option>LIKE</option>
+                  <option>=</option>
+                  <option>CONTAINS</option>
+                </select>
+                <input class="input" value="HBA1C" placeholder="输入值" />
+                <button class="remove-btn" title="删除条件" onclick="removeConditionRow(this)">&#10005;</button>
+              </div>
+            </div>
+            <button class="add-condition-btn" onclick="addConditionRowToGroup(this)">+ 添加条件</button>
+          </div>
+
+          <!-- Add group button -->
+          <button class="add-group-btn" onclick="addConditionGroup()">+ 添加条件组</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">测试匹配</button>
+      <button class="btn" onclick="toggleModal(false)">取消</button>
+      <button class="btn btn-primary" onclick="toggleModal(false)">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== JavaScript ===== -->
+<script>
+  // Disease data for modal pre-population
+  var diseaseData = {
+    '2型糖尿病': {
+      name: '2型糖尿病',
+      desc: '基于ICD-10诊断编码E11*及糖化血红蛋白检验结果自动筛选2型糖尿病患者队列。',
+      status: 'active',
+      groups: [
+        {
+          domain: 'diagnosis',
+          logic: 'OR',
+          conditions: [
+            { field: 'diagnosis_code', op: 'LIKE', value: 'E11*' },
+            { field: 'diagnosis_code', op: 'LIKE', value: 'E10*' },
+            { field: 'diagnosis_name', op: 'CONTAINS', value: '糖尿病' }
+          ]
+        },
+        {
+          domain: 'lab',
+          logic: 'AND',
+          conditions: [
+            { field: 'test_code', op: 'IN', value: 'HBA1C' }
+          ]
+        }
+      ]
+    },
+    '冠心病': {
+      name: '冠心病',
+      desc: '基于ICD-10诊断编码I25*、I20*及手术编码36.0*、36.1*筛选冠心病患者队列。',
+      status: 'active',
+      groups: [
+        {
+          domain: 'diagnosis',
+          logic: 'OR',
+          conditions: [
+            { field: 'diagnosis_code', op: 'LIKE', value: 'I25*' },
+            { field: 'diagnosis_code', op: 'LIKE', value: 'I20*' }
+          ]
+        },
+        {
+          domain: 'surgery',
+          logic: 'OR',
+          conditions: [
+            { field: 'surgery_code', op: 'LIKE', value: '36.0*' },
+            { field: 'surgery_code', op: 'LIKE', value: '36.1*' }
+          ]
+        }
+      ]
+    }
+  };
+
+  // Field options per domain
+  var domainFields = {
+    diagnosis: [
+      { value: 'diagnosis_code', label: '诊断编码' },
+      { value: 'diagnosis_name', label: '诊断名称' }
+    ],
+    surgery: [
+      { value: 'surgery_code', label: '手术编码' },
+      { value: 'surgery_name', label: '手术名称' }
+    ],
+    lab: [
+      { value: 'test_code', label: '检验项目编码' },
+      { value: 'test_name', label: '检验项目名称' },
+      { value: 'test_result', label: '检验结果' }
+    ],
+    medication: [
+      { value: 'drug_code', label: '药品编码' },
+      { value: 'drug_name', label: '药品名称' }
+    ],
+    imaging: [
+      { value: 'exam_code', label: '检查编码' },
+      { value: 'exam_name', label: '检查名称' }
+    ],
+    pathology: [
+      { value: 'pathology_code', label: '病理编码' },
+      { value: 'pathology_name', label: '病理名称' }
+    ]
+  };
+
+  function switchView(view) {
+    document.querySelectorAll('.page-view').forEach(function(el) {
+      el.classList.remove('active');
+    });
+    document.querySelectorAll('.mockup-tab').forEach(function(el) {
+      el.classList.remove('active');
+    });
+
+    if (view === 'list') {
+      document.getElementById('view-list').classList.add('active');
+      document.getElementById('tab-list').classList.add('active');
+      document.getElementById('breadcrumb-current').textContent = '专病管理';
+    } else if (view === 'detail') {
+      document.getElementById('view-detail').classList.add('active');
+      document.getElementById('tab-detail').classList.add('active');
+      document.getElementById('breadcrumb-current').innerHTML =
+        '<a href="#" onclick="switchView(\'list\');return false;">专病管理</a> / 2型糖尿病';
+    }
+  }
+
+  function toggleModal(show, mode) {
+    var overlay = document.getElementById('modal-overlay');
+    var title = document.querySelector('.modal-title');
+    if (show) {
+      overlay.classList.add('visible');
+      if (mode === 'edit' || mode === 'new') {
+        loadModalData(mode === 'edit' ? '2型糖尿病' : null);
+      }
+    } else {
+      overlay.classList.remove('visible');
+    }
+  }
+
+  function loadModalData(diseaseName) {
+    var title = document.querySelector('.modal-title');
+    var nameInput = document.getElementById('modal-name');
+    var descInput = document.getElementById('modal-desc');
+    var statusSelect = document.getElementById('modal-status');
+    var builder = document.getElementById('condition-builder');
+
+    if (diseaseName && diseaseData[diseaseName]) {
+      var data = diseaseData[diseaseName];
+      title.textContent = '编辑专病库';
+      nameInput.value = data.name;
+      descInput.value = data.desc;
+      statusSelect.value = data.status;
+      renderConditionGroups(data.groups);
+    } else {
+      title.textContent = '新建专病库';
+      nameInput.value = '';
+      descInput.value = '';
+      statusSelect.value = 'inactive';
+      // Default: one DIAGNOSIS group with one empty row
+      renderConditionGroups([
+        { domain: 'diagnosis', logic: 'OR', conditions: [{ field: '', op: '', value: '' }] }
+      ]);
+    }
+  }
+
+  function renderConditionGroups(groups) {
+    var builder = document.getElementById('condition-builder');
+    // Remove old groups, connectors, and add-group button
+    builder.querySelectorAll('.condition-group, .group-connector, .add-group-btn').forEach(function(el) {
+      el.remove();
+    });
+
+    var addGroupBtn = document.createElement('button');
+    addGroupBtn.className = 'add-group-btn';
+    addGroupBtn.textContent = '+ 添加条件组';
+    addGroupBtn.onclick = function() { addConditionGroup(); };
+
+    groups.forEach(function(group, idx) {
+      if (idx > 0) {
+        var connector = document.createElement('div');
+        connector.className = 'group-connector';
+        connector.innerHTML =
+          '<div class="group-connector-line"></div>' +
+          '<span class="group-connector-label">AND</span>' +
+          '<div class="group-connector-line"></div>';
+        builder.insertBefore(connector, addGroupBtn);
+      }
+      var groupEl = createGroupElement(group);
+      builder.insertBefore(groupEl, addGroupBtn);
+    });
+
+    builder.appendChild(addGroupBtn);
+  }
+
+  function createGroupElement(group) {
+    var groupEl = document.createElement('div');
+    groupEl.className = 'condition-group';
+
+    // Header
+    var header = document.createElement('div');
+    header.className = 'condition-group-header';
+    header.innerHTML =
+      '<select class="select-input domain-select">' +
+        '<option value="diagnosis"' + (group.domain === 'diagnosis' ? ' selected' : '') + '>诊断</option>' +
+        '<option value="surgery"' + (group.domain === 'surgery' ? ' selected' : '') + '>手术</option>' +
+        '<option value="lab"' + (group.domain === 'lab' ? ' selected' : '') + '>检验</option>' +
+        '<option value="medication"' + (group.domain === 'medication' ? ' selected' : '') + '>用药</option>' +
+        '<option value="imaging"' + (group.domain === 'imaging' ? ' selected' : '') + '>影像</option>' +
+        '<option value="pathology"' + (group.domain === 'pathology' ? ' selected' : '') + '>病理</option>' +
+      '</select>' +
+      '<span class="group-logic-label">组内逻辑:</span>' +
+      '<button class="logic-btn' + (group.logic === 'OR' ? ' active-or' : '') + '" onclick="setGroupLogic(this,\'OR\')">OR</button>' +
+      '<button class="logic-btn' + (group.logic === 'AND' ? ' active-and' : '') + '" onclick="setGroupLogic(this,\'AND\')">AND</button>' +
+      '<button class="remove-group-btn" title="删除组" onclick="removeGroup(this)">&#10005;</button>';
+    groupEl.appendChild(header);
+
+    // Condition rows container
+    var rowsContainer = document.createElement('div');
+    rowsContainer.className = 'condition-rows';
+    groupEl.appendChild(rowsContainer);
+
+    // Add condition rows
+    if (group.conditions && group.conditions.length > 0) {
+      group.conditions.forEach(function(cond) {
+        var row = createConditionRow(group.domain, cond);
+        rowsContainer.appendChild(row);
+      });
+    }
+
+    // Add condition button
+    var addBtn = document.createElement('button');
+    addBtn.className = 'add-condition-btn';
+    addBtn.textContent = '+ 添加条件';
+    addBtn.onclick = function() { addConditionRowToGroup(this); };
+    groupEl.appendChild(addBtn);
+
+    return groupEl;
+  }
+
+  function createConditionRow(domain, cond) {
+    var row = document.createElement('div');
+    row.className = 'condition-row';
+
+    var fields = domainFields[domain] || [{ value: '', label: '请选择字段' }];
+    var fieldOptions = fields.map(function(f) {
+      return '<option value="' + f.value + '"' + (cond && cond.field === f.value ? ' selected' : '') + '>' + f.label + '</option>';
+    }).join('');
+
+    var opSelected = function(op) { return cond && cond.op === op ? ' selected' : ''; };
+
+    row.innerHTML =
+      '<select class="select-input" style="flex:0.8;">' + fieldOptions + '</select>' +
+      '<select class="select-input" style="flex:0.6;">' +
+        '<option' + opSelected('IN') + '>IN</option>' +
+        '<option' + opSelected('LIKE') + '>LIKE</option>' +
+        '<option' + opSelected('=') + '>=</option>' +
+        '<option' + opSelected('CONTAINS') + '>CONTAINS</option>' +
+      '</select>' +
+      '<input class="input" value="' + (cond && cond.value ? cond.value : '') + '" placeholder="输入值" />' +
+      '<button class="remove-btn" title="删除条件" onclick="removeConditionRow(this)">&#10005;</button>';
+
+    return row;
+  }
+
+  function setGroupLogic(btn, logic) {
+    var container = btn.parentElement;
+    var btns = container.querySelectorAll('.logic-btn');
+    btns.forEach(function(b) { b.className = 'logic-btn'; });
+    if (logic === 'AND') {
+      btn.className = 'logic-btn active-and';
+    } else {
+      btn.className = 'logic-btn active-or';
+    }
+  }
+
+  function removeConditionRow(btn) {
+    var row = btn.parentElement;
+    var rowsContainer = row.parentElement;
+    if (rowsContainer.children.length > 1) {
+      row.remove();
+    }
+  }
+
+  function removeGroup(btn) {
+    var group = btn.closest('.condition-group');
+    var builder = document.getElementById('condition-builder');
+
+    // Find the connector before or after this group and remove it
+    var allChildren = Array.from(builder.children);
+    var groupIdx = allChildren.indexOf(group);
+
+    // Remove preceding connector if exists
+    if (groupIdx > 0 && allChildren[groupIdx - 1].classList.contains('group-connector')) {
+      allChildren[groupIdx - 1].remove();
+    } else if (groupIdx + 1 < allChildren.length && allChildren[groupIdx + 1].classList.contains('group-connector')) {
+      allChildren[groupIdx + 1].remove();
+    }
+
+    group.remove();
+  }
+
+  function addConditionRowToGroup(btn) {
+    var group = btn.closest('.condition-group');
+    var domain = group.querySelector('.domain-select').value;
+    var rowsContainer = group.querySelector('.condition-rows');
+    var row = createConditionRow(domain, { field: '', op: '', value: '' });
+    rowsContainer.appendChild(row);
+  }
+
+  function addConditionGroup() {
+    var builder = document.getElementById('condition-builder');
+    var addGroupBtn = builder.querySelector('.add-group-btn');
+
+    // Check if there are existing groups; if so, add a connector
+    var existingGroups = builder.querySelectorAll('.condition-group');
+    if (existingGroups.length > 0) {
+      var connector = document.createElement('div');
+      connector.className = 'group-connector';
+      connector.innerHTML =
+        '<div class="group-connector-line"></div>' +
+        '<span class="group-connector-label">AND</span>' +
+        '<div class="group-connector-line"></div>';
+      builder.insertBefore(connector, addGroupBtn);
+    }
+
+    var newGroup = createGroupElement({
+      domain: 'diagnosis',
+      logic: 'OR',
+      conditions: [{ field: '', op: '', value: '' }]
+    });
+    builder.insertBefore(newGroup, addGroupBtn);
+  }
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      toggleModal(false);
+    }
+  });
+</script>
+
+</body>
+</html>

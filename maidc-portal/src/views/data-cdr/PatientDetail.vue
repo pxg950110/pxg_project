@@ -7,7 +7,7 @@
       </a-button>
     </template>
 
-    <!-- Profile Header Card -->
+    <!-- Profile Header Card (with inline metrics) -->
     <a-card :bordered="false" class="profile-card">
       <div class="profile-layout">
         <div class="profile-avatar">
@@ -34,67 +34,53 @@
             <a-tag v-for="(item, idx) in patient.allergies" :key="idx" color="red">{{ item }}</a-tag>
           </div>
         </div>
+        <div class="profile-metrics">
+          <div class="metric-item">
+            <div class="metric-value">{{ metrics.encounters }}<span class="metric-suffix">次</span></div>
+            <div class="metric-title">就诊次数</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">{{ metrics.diagnoses }}<span class="metric-suffix">个</span></div>
+            <div class="metric-title">诊断数</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">{{ metrics.medications }}<span class="metric-suffix">条</span></div>
+            <div class="metric-title">用药记录</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">{{ metrics.labReports }}<span class="metric-suffix">份</span></div>
+            <div class="metric-title">检验报告</div>
+          </div>
+        </div>
       </div>
     </a-card>
 
-    <!-- 4 Metric Stat Cards -->
-    <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="6">
-        <MetricCard
-          title="就诊次数"
-          :value="metrics.encounters"
-          suffix="次"
-          :trend="{ value: 8, type: 'up' }"
-        />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard
-          title="诊断数"
-          :value="metrics.diagnoses"
-          suffix="个"
-          :trend="{ value: 5, type: 'up' }"
-        />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard
-          title="用药记录"
-          :value="metrics.medications"
-          suffix="条"
-          :trend="{ value: 12, type: 'up' }"
-        />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard
-          title="检验报告"
-          :value="metrics.labReports"
-          suffix="份"
-          :trend="{ value: 6, type: 'up' }"
-        />
-      </a-col>
-    </a-row>
-
-    <!-- Medical Timeline -->
+    <!-- Medical Timeline (horizontal) -->
     <a-card :bordered="false" title="就医时间线" style="margin-top: 16px">
       <template #extra>
         <span class="timeline-hint">最近5条记录</span>
       </template>
-      <a-timeline class="medical-timeline">
-        <a-timeline-item
+      <div class="timeline-horizontal">
+        <div
           v-for="(event, idx) in timelineEvents"
           :key="idx"
-          :color="event.color"
+          class="timeline-card"
         >
-          <div class="timeline-event">
+          <div class="timeline-connector">
+            <div class="timeline-dot" :class="'dot-' + event.color"></div>
+            <div v-if="idx < timelineEvents.length - 1" class="timeline-line"></div>
+          </div>
+          <div class="timeline-content">
             <div class="timeline-date">{{ event.date }}</div>
             <div class="timeline-body">
               <a-tag :color="event.tagColor" class="timeline-type-tag">{{ event.type }}</a-tag>
-              <span class="timeline-title">{{ event.title }}</span>
               <span class="timeline-dept">{{ event.department }}</span>
             </div>
+            <div class="timeline-title">{{ event.title }}</div>
             <div v-if="event.detail" class="timeline-detail">{{ event.detail }}</div>
           </div>
-        </a-timeline-item>
-      </a-timeline>
+        </div>
+      </div>
     </a-card>
 
     <!-- 5 Tabs -->
@@ -202,8 +188,6 @@ import {
   ArrowLeftOutlined,
 } from '@ant-design/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
-import MetricCard from '@/components/MetricCard/index.vue'
-
 const router = useRouter()
 const activeTab = ref('outpatient')
 
@@ -436,18 +420,88 @@ const medicationData = [
   flex-shrink: 0;
 }
 
-/* Timeline */
+/* Profile Metrics (merged into header) */
+.profile-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+  padding: 4px 0 4px 24px;
+  border-left: 1px solid #f0f0f0;
+  margin-left: 8px;
+  flex-shrink: 0;
+  width: 220px;
+  align-self: center;
+}
+.metric-item {
+  text-align: center;
+  padding: 4px 0;
+}
+.metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1677ff;
+  line-height: 1.2;
+}
+.metric-suffix {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.45);
+  margin-left: 2px;
+}
+.metric-title {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: 2px;
+}
+
+/* Timeline - Horizontal */
 .timeline-hint {
   font-size: 13px;
   color: rgba(0, 0, 0, 0.35);
 }
-.medical-timeline {
-  padding-top: 4px;
+.timeline-horizontal {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding: 8px 0 4px;
 }
-.timeline-event {
+.timeline-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 180px;
+}
+.timeline-connector {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 4px;
+  margin-bottom: 10px;
+}
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.timeline-dot.dot-blue { background: #1677ff; }
+.timeline-dot.dot-red { background: #ff4d4f; }
+.timeline-dot.dot-green { background: #52c41a; }
+.timeline-dot.dot-orange { background: #fa8c16; }
+.timeline-line {
+  flex: 1;
+  height: 2px;
+  background: #e8e8e8;
+  margin: 0 2px;
+}
+.timeline-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 4px;
+  padding: 0 8px;
 }
 .timeline-date {
   font-size: 13px;
@@ -457,28 +511,27 @@ const medicationData = [
 .timeline-body {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
 }
 .timeline-type-tag {
   flex-shrink: 0;
   border-radius: 4px;
   font-size: 12px;
 }
-.timeline-title {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.85);
-  font-weight: 500;
-}
 .timeline-dept {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.35);
-  margin-left: auto;
-  flex-shrink: 0;
+}
+.timeline-title {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
 }
 .timeline-detail {
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.55);
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
   line-height: 1.6;
-  padding-left: 2px;
+  max-width: 200px;
 }
 </style>
