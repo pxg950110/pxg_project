@@ -85,7 +85,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
-import PageContainer from '@/components/PageContainer.vue'
+import PageContainer from '@/components/PageContainer/index.vue'
 import DiseaseCard from '@/components/DiseaseCard/index.vue'
 import ConditionBuilder from '@/components/ConditionBuilder/index.vue'
 import {

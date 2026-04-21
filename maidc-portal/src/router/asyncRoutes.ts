@@ -8,8 +8,9 @@ export const asyncRoutes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'Dashboard',
         meta: { title: '仪表盘', icon: 'DashboardOutlined', sort: 1 },
-        redirect: '/dashboard/overview',
+        redirect: '/dashboard/workspace',
         children: [
+          { path: 'workspace', name: 'DashboardWorkspace', meta: { title: '个人工作台' }, component: () => import('@/views/dashboard/workspace/WorkspaceView.vue') },
           { path: 'overview', name: 'DashboardOverview', meta: { title: '系统总览' }, component: () => import('@/views/dashboard/Overview.vue') },
           { path: 'model', name: 'ModelDashboard', meta: { title: '模型看板' }, component: () => import('@/views/dashboard/ModelDashboard.vue') },
           { path: 'data', name: 'DataDashboard', meta: { title: '数据看板' }, component: () => import('@/views/dashboard/DataDashboard.vue') },

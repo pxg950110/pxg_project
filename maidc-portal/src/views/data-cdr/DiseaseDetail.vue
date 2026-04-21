@@ -94,7 +94,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import PageContainer from '@/components/PageContainer.vue'
+import PageContainer from '@/components/PageContainer/index.vue'
 import {
   getDiseaseCohort, syncDiseaseCohort, getDiseaseCohortPatients,
   removeDiseaseCohortPatient, addDiseaseCohortPatient, getDiseaseCohortStatistics,

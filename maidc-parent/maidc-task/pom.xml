@@ -41,6 +41,11 @@
             <artifactId>common-security</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>common-mq</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Spring Boot Starters -->
         <dependency>
