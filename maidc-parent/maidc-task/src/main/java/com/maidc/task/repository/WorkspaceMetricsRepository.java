@@ -13,38 +13,43 @@ public class WorkspaceMetricsRepository {
     private EntityManager em;
 
     public long countModelByOrgId(long orgId) {
-        return ((Number) em.createNativeQuery(
-                "SELECT COUNT(*) FROM model.m_model WHERE org_id = :orgId AND is_deleted = false")
-                .setParameter("orgId", orgId).getSingleResult()).longValue();
+        return safeQuery("SELECT COUNT(*) FROM model.m_model WHERE org_id = :orgId AND is_deleted = false", orgId);
     }
 
     public long countActiveDeploymentsByOrgId(long orgId) {
-        return ((Number) em.createNativeQuery(
-                "SELECT COUNT(*) FROM model.m_deployment WHERE org_id = :orgId AND status = 'RUNNING' AND is_deleted = false")
-                .setParameter("orgId", orgId).getSingleResult()).longValue();
+        return safeQuery("SELECT COUNT(*) FROM model.m_deployment WHERE org_id = :orgId AND status = 'RUNNING' AND is_deleted = false", orgId);
     }
 
     public long countTodayInferencesByOrgId(long orgId) {
-        return ((Number) em.createNativeQuery(
-                "SELECT COALESCE(SUM(invocation_count), 0) FROM model.m_model_daily_stats WHERE org_id = :orgId AND stat_date = CURRENT_DATE")
-                .setParameter("orgId", orgId).getSingleResult()).longValue();
+        return safeQuery("SELECT COALESCE(SUM(invocation_count), 0) FROM model.m_model_daily_stats WHERE org_id = :orgId AND stat_date = CURRENT_DATE", orgId);
     }
 
     public long countPendingApprovalsByOrgId(long orgId) {
-        return ((Number) em.createNativeQuery(
-                "SELECT COUNT(*) FROM model.m_approval WHERE org_id = :orgId AND status = 'PENDING' AND is_deleted = false")
-                .setParameter("orgId", orgId).getSingleResult()).longValue();
+        return safeQuery("SELECT COUNT(*) FROM model.m_approval WHERE org_id = :orgId AND status = 'PENDING' AND is_deleted = false", orgId);
     }
 
     @SuppressWarnings("unchecked")
     public List<Object[]> findRecentMessagesByUserId(Long userId, int limit) {
-        return em.createNativeQuery(
-                "SELECT id, type, title, content, is_read, created_at " +
-                "FROM model.m_message " +
-                "WHERE user_id = :userId AND is_deleted = false " +
-                "ORDER BY is_read ASC, created_at DESC")
-                .setParameter("userId", userId)
-                .setMaxResults(limit)
-                .getResultList();
+        try {
+            return em.createNativeQuery(
+                    "SELECT id, type, title, content, is_read, created_at " +
+                    "FROM model.m_message " +
+                    "WHERE user_id = :userId AND is_deleted = false " +
+                    "ORDER BY is_read ASC, created_at DESC")
+                    .setParameter("userId", userId)
+                    .setMaxResults(limit)
+                    .getResultList();
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private long safeQuery(String sql, long orgId) {
+        try {
+            return ((Number) em.createNativeQuery(sql)
+                    .setParameter("orgId", orgId).getSingleResult()).longValue();
+        } catch (Exception e) {
+            return 0L;
+        }
     }
 }
