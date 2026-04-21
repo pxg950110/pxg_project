@@ -87,6 +87,7 @@ public class DiseaseCohortService {
     public DiseaseCohortEntity createCohort(DiseaseCohortEntity entity) {
         entity.setPatientCount(0);
         entity.setStatus("ACTIVE");
+        if (entity.getOrgId() == null) entity.setOrgId(0L);
         DiseaseCohortEntity saved = cohortRepository.save(entity);
         log.info("专病库创建成功: id={}, name={}", saved.getId(), saved.getName());
         // async match - run in background
