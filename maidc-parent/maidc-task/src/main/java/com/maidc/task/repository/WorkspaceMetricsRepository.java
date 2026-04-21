@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public class WorkspaceMetricsRepository {
 
@@ -32,5 +34,17 @@ public class WorkspaceMetricsRepository {
         return ((Number) em.createNativeQuery(
                 "SELECT COUNT(*) FROM model.m_approval WHERE org_id = :orgId AND status = 'PENDING' AND is_deleted = false")
                 .setParameter("orgId", orgId).getSingleResult()).longValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Object[]> findRecentMessagesByUserId(Long userId, int limit) {
+        return em.createNativeQuery(
+                "SELECT id, type, title, content, is_read, created_at " +
+                "FROM model.m_message " +
+                "WHERE user_id = :userId AND is_deleted = false " +
+                "ORDER BY is_read ASC, created_at DESC")
+                .setParameter("userId", userId)
+                .setMaxResults(limit)
+                .getResultList();
     }
 }

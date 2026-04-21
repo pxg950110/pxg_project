@@ -40,6 +40,8 @@ public class WorkspaceDashboardVO {
         private String content;
         private boolean isRead;
         private String createdAt;
+        private Long bizId;
+        private String bizType;
     }
 
     @Data

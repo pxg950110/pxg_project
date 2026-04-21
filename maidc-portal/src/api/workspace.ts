@@ -35,6 +35,8 @@ export interface NotificationItem {
   content: string
   isRead: boolean
   createdAt: string
+  bizId?: number
+  bizType?: string
 }
 
 export interface QuickAction {

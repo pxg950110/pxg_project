@@ -38,6 +38,7 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
 import PageContainer from '@/components/PageContainer/index.vue'
@@ -50,6 +51,7 @@ import type { NotificationItem } from '@/api/workspace'
 
 const store = useWorkspaceStore()
 const authStore = useAuthStore()
+const router = useRouter()
 
 const userName = computed(() => authStore.userInfo?.realName ?? '')
 
@@ -62,10 +64,21 @@ function handleComplete(id: number) {
 }
 
 function handleMarkAllRead() {
-  // Wire to message API in follow-up
+  store.markAllNotificationsRead()
 }
 
-function handleNotifyClick(_item: NotificationItem) {
-  // Wire to notification navigation in follow-up
+function handleNotifyClick(item: NotificationItem) {
+  if (!item.isRead) {
+    store.markNotificationRead(item.id)
+  }
+  if (item.bizType && item.bizId) {
+    const routeMap: Record<string, string> = {
+      APPROVAL: `/model/approvals/${item.bizId}`,
+      MODEL: `/model/list`,
+      ALERT: `/alert/active`,
+    }
+    const route = routeMap[item.bizType]
+    if (route) router.push(route)
+  }
 }
 </script>

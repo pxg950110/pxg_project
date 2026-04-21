@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -24,7 +25,7 @@ public class WorkspaceService {
                 .welcome(buildWelcome(userId))
                 .metrics(buildMetrics(orgId))
                 .todos(personalTaskService.getPendingTasks(userId))
-                .notifications(List.of())
+                .notifications(buildNotifications(userId))
                 .quickActions(buildQuickActions())
                 .build();
     }
@@ -54,5 +55,22 @@ public class WorkspaceService {
                 WorkspaceDashboardVO.QuickAction.builder().key("new_evaluation").label("新建评估").icon("experiment-outlined").route("/model/evaluations").build(),
                 WorkspaceDashboardVO.QuickAction.builder().key("etl_task").label("ETL任务").icon("thunderbolt-outlined").route("/data/etl/pipelines").build()
         );
+    }
+
+    private List<WorkspaceDashboardVO.NotificationItem> buildNotifications(Long userId) {
+        List<Object[]> rows = metricsRepository.findRecentMessagesByUserId(userId, 5);
+        return rows.stream().map(row -> {
+            Timestamp ts = (Timestamp) row[5];
+            String createdAt = ts != null ? ts.toLocalDateTime().format(
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : "";
+            return WorkspaceDashboardVO.NotificationItem.builder()
+                    .id(((Number) row[0]).longValue())
+                    .type((String) row[1])
+                    .title((String) row[2])
+                    .content((String) row[3])
+                    .isRead(Boolean.TRUE.equals(row[4]))
+                    .createdAt(createdAt)
+                    .build();
+        }).toList();
     }
 }
