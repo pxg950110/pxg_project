@@ -259,3 +259,60 @@ export function getEtlTasks(params: { page?: number; page_size?: number; status?
 export function createEtlTask(data: Record<string, any>) {
   return request.post<ApiResponse<any>>('/etl/tasks', data)
 }
+
+// ========== Disease Cohort APIs ==========
+export function getDiseaseCohorts(params: { page?: number; page_size?: number; keyword?: string; status?: string }) {
+  return request.get<ApiResponse<PageResult<any>>>('/cdr/disease-cohorts', { params })
+}
+
+export function getDiseaseCohort(id: number) {
+  return request.get<ApiResponse<any>>(`/cdr/disease-cohorts/${id}`)
+}
+
+export function createDiseaseCohort(data: Record<string, any>) {
+  return request.post<ApiResponse<any>>('/cdr/disease-cohorts', data)
+}
+
+export function updateDiseaseCohort(id: number, data: Record<string, any>) {
+  return request.put<ApiResponse<any>>(`/cdr/disease-cohorts/${id}`, data)
+}
+
+export function deleteDiseaseCohort(id: number) {
+  return request.delete<ApiResponse<void>>(`/cdr/disease-cohorts/${id}`)
+}
+
+export function syncDiseaseCohort(id: number) {
+  return request.post<ApiResponse<void>>(`/cdr/disease-cohorts/${id}/sync`)
+}
+
+export function previewDiseaseCohort(id: number) {
+  return request.get<ApiResponse<{ patientCount: number }>>(`/cdr/disease-cohorts/${id}/match-preview`)
+}
+
+export function getDiseaseCohortPatients(id: number, params: { page?: number; page_size?: number }) {
+  return request.get<ApiResponse<any>>(`/cdr/disease-cohorts/${id}/patients`, { params })
+}
+
+export function addDiseaseCohortPatient(id: number, patientId: number) {
+  return request.post<ApiResponse<void>>(`/cdr/disease-cohorts/${id}/patients/${patientId}`)
+}
+
+export function removeDiseaseCohortPatient(id: number, patientId: number) {
+  return request.delete<ApiResponse<void>>(`/cdr/disease-cohorts/${id}/patients/${patientId}`)
+}
+
+export function getDiseaseCohortStatistics(id: number) {
+  return request.get<ApiResponse<any>>(`/cdr/disease-cohorts/${id}/statistics`)
+}
+
+export function exportDiseaseCohort(id: number) {
+  return request.get(`/cdr/disease-cohorts/${id}/export`, { responseType: 'blob' })
+}
+
+export function searchDiseaseTemplates(q: string) {
+  return request.get<ApiResponse<any[]>>('/dict/disease-templates', { params: { q } })
+}
+
+export function aiSuggestDiseaseRules(diseaseName: string) {
+  return request.post<ApiResponse<{ groups: any[]; confidence: number; source: string }>>('/cdr/disease-cohorts/ai-suggest', { disease_name: diseaseName })
+}
