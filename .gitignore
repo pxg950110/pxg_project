@@ -29,3 +29,6 @@ __pycache__/
 
 # Log
 *.log
+
+# Synthetic data
+data/
