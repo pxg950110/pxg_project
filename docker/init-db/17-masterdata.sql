@@ -57,6 +57,51 @@ CREATE INDEX idx_concept_system_code ON masterdata.m_concept(code_system_id, con
 CREATE INDEX idx_concept_domain ON masterdata.m_concept(domain) WHERE status = 'ACTIVE' AND is_deleted = false;
 CREATE INDEX idx_concept_properties ON masterdata.m_concept USING gin(properties);
 
+-- 3. 概念关系
+CREATE TABLE masterdata.m_concept_relationship (
+    id                  BIGSERIAL    PRIMARY KEY,
+    concept_id_1        BIGINT       NOT NULL,
+    concept_id_2        BIGINT       NOT NULL,
+    relationship_type   VARCHAR(64)  NOT NULL,
+    is_hierarchical     BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_by          VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
+    is_deleted          BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id              BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_concept_rel UNIQUE (concept_id_1, concept_id_2, relationship_type)
+);
+COMMENT ON TABLE masterdata.m_concept_relationship IS '概念关系';
+
+-- 4. 祖先闭包
+CREATE TABLE masterdata.m_concept_ancestor (
+    id                          BIGSERIAL PRIMARY KEY,
+    ancestor_concept_id         BIGINT    NOT NULL,
+    descendant_concept_id       BIGINT    NOT NULL,
+    min_levels_of_separation    INT       NOT NULL DEFAULT 0,
+    max_levels_of_separation    INT       NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE masterdata.m_concept_ancestor IS '概念祖先闭包表';
+
+-- 5. 概念同义词
+CREATE TABLE masterdata.m_concept_synonym (
+    id              BIGSERIAL    PRIMARY KEY,
+    concept_id      BIGINT       NOT NULL,
+    synonym         VARCHAR(512) NOT NULL,
+    language_code   VARCHAR(8)   NOT NULL DEFAULT 'zh',
+    is_preferred    BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE masterdata.m_concept_synonym IS '概念同义词';
+
+CREATE INDEX idx_rel_type ON masterdata.m_concept_relationship(concept_id_1, relationship_type);
+CREATE INDEX idx_rel_reverse ON masterdata.m_concept_relationship(concept_id_2, relationship_type);
+CREATE INDEX idx_ancestor_desc ON masterdata.m_concept_ancestor(descendant_concept_id);
+CREATE INDEX idx_ancestor_asc ON masterdata.m_concept_ancestor(ancestor_concept_id);
+CREATE INDEX idx_synonym_concept ON masterdata.m_concept_synonym(concept_id);
+
 -- ==================== 种子数据: 5 条编码体系 ====================
 
 INSERT INTO masterdata.m_code_system (code, name, version, description, hierarchy_support, status) VALUES
