@@ -102,6 +102,52 @@ CREATE INDEX idx_ancestor_desc ON masterdata.m_concept_ancestor(descendant_conce
 CREATE INDEX idx_ancestor_asc ON masterdata.m_concept_ancestor(ancestor_concept_id);
 CREATE INDEX idx_synonym_concept ON masterdata.m_concept_synonym(concept_id);
 
+-- 6. 参考范围
+CREATE TABLE masterdata.m_reference_range (
+    id              BIGSERIAL    PRIMARY KEY,
+    concept_id      BIGINT       NOT NULL,
+    gender          VARCHAR(8)   NOT NULL DEFAULT 'ALL',
+    age_min         DECIMAL,
+    age_max         DECIMAL,
+    range_low       DECIMAL,
+    range_high      DECIMAL,
+    unit            VARCHAR(32),
+    critical_low    DECIMAL,
+    critical_high   DECIMAL,
+    source          VARCHAR(128),
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by      VARCHAR(64),
+    updated_at      TIMESTAMP,
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE masterdata.m_reference_range IS '参考范围';
+
+-- 7. 药物相互作用
+CREATE TABLE masterdata.m_drug_interaction (
+    id                    BIGSERIAL    PRIMARY KEY,
+    drug_concept_id_1     BIGINT       NOT NULL,
+    drug_concept_id_2     BIGINT       NOT NULL,
+    severity              VARCHAR(16)  NOT NULL,
+    interaction_type      VARCHAR(32),
+    description           TEXT,
+    evidence_level        VARCHAR(16),
+    clinical_action       TEXT,
+    created_by            VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at            TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by            VARCHAR(64),
+    updated_at            TIMESTAMP,
+    is_deleted            BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id                BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_drug_pair UNIQUE (drug_concept_id_1, drug_concept_id_2)
+);
+COMMENT ON TABLE masterdata.m_drug_interaction IS '药物相互作用';
+
+CREATE INDEX idx_refrange_concept ON masterdata.m_reference_range(concept_id, gender);
+CREATE INDEX idx_drug_int_pair ON masterdata.m_drug_interaction(drug_concept_id_1, drug_concept_id_2);
+CREATE INDEX idx_drug_int_reverse ON masterdata.m_drug_interaction(drug_concept_id_2, drug_concept_id_1);
+
 -- ==================== 种子数据: 5 条编码体系 ====================
 
 INSERT INTO masterdata.m_code_system (code, name, version, description, hierarchy_support, status) VALUES
