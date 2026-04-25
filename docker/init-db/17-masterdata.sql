@@ -192,6 +192,26 @@ CREATE INDEX idx_local_translate ON masterdata.m_local_concept(institution_id, c
 CREATE INDEX idx_local_status ON masterdata.m_local_concept(mapping_status);
 CREATE INDEX idx_local_standard ON masterdata.m_local_concept(standard_concept_id);
 
+-- 导入任务
+CREATE TABLE masterdata.m_import_task (
+    id              BIGSERIAL    PRIMARY KEY,
+    code_system_id  BIGINT       NOT NULL,
+    file_name       VARCHAR(256) NOT NULL,
+    file_path       VARCHAR(512),
+    total_rows      INT          DEFAULT 0,
+    processed_rows  INT          DEFAULT 0,
+    failed_rows     INT          DEFAULT 0,
+    status          VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    error_message   TEXT,
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by      VARCHAR(64),
+    updated_at      TIMESTAMP,
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE masterdata.m_import_task IS '主数据导入任务';
+
 -- ==================== 种子数据: 5 条编码体系 ====================
 
 INSERT INTO masterdata.m_code_system (code, name, version, description, hierarchy_support, status) VALUES
