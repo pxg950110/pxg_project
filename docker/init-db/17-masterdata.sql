@@ -148,6 +148,50 @@ CREATE INDEX idx_refrange_concept ON masterdata.m_reference_range(concept_id, ge
 CREATE INDEX idx_drug_int_pair ON masterdata.m_drug_interaction(drug_concept_id_1, drug_concept_id_2);
 CREATE INDEX idx_drug_int_reverse ON masterdata.m_drug_interaction(drug_concept_id_2, drug_concept_id_1);
 
+-- 8. 医疗机构注册
+CREATE TABLE masterdata.m_institution (
+    id              BIGSERIAL    PRIMARY KEY,
+    inst_code       VARCHAR(32)  NOT NULL,
+    name            VARCHAR(128) NOT NULL,
+    short_name      VARCHAR(64),
+    status          VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by      VARCHAR(64),
+    updated_at      TIMESTAMP,
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_inst_code UNIQUE (inst_code)
+);
+COMMENT ON TABLE masterdata.m_institution IS '医疗机构注册';
+
+-- 9. 院内本地编码
+CREATE TABLE masterdata.m_local_concept (
+    id                    BIGSERIAL    PRIMARY KEY,
+    institution_id        BIGINT       NOT NULL,
+    code_system_id        BIGINT       NOT NULL,
+    local_code            VARCHAR(64)  NOT NULL,
+    local_name            VARCHAR(512) NOT NULL,
+    standard_concept_id   BIGINT,
+    mapping_confidence    DECIMAL(3,2),
+    mapping_status        VARCHAR(16)  NOT NULL DEFAULT 'UNMAPPED',
+    mapped_by             VARCHAR(64),
+    mapped_at             TIMESTAMP,
+    created_by            VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at            TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by            VARCHAR(64),
+    updated_at            TIMESTAMP,
+    is_deleted            BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id                BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_local_concept UNIQUE (institution_id, code_system_id, local_code)
+);
+COMMENT ON TABLE masterdata.m_local_concept IS '院内本地编码映射';
+
+CREATE INDEX idx_local_inst ON masterdata.m_local_concept(institution_id, code_system_id);
+CREATE INDEX idx_local_translate ON masterdata.m_local_concept(institution_id, code_system_id, local_code);
+CREATE INDEX idx_local_status ON masterdata.m_local_concept(mapping_status);
+CREATE INDEX idx_local_standard ON masterdata.m_local_concept(standard_concept_id);
+
 -- ==================== 种子数据: 5 条编码体系 ====================
 
 INSERT INTO masterdata.m_code_system (code, name, version, description, hierarchy_support, status) VALUES
