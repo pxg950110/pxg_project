@@ -53,11 +53,11 @@ public class ConceptService {
         if (keyword == null || keyword.isBlank()) {
             throw new BusinessException(400, "搜索关键词不能为空");
         }
-        Page<ConceptEntity> result = conceptRepository.searchByKeyword(keyword, PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         if (codeSystemId != null) {
-            result = result.filter(c -> c.getCodeSystemId().equals(codeSystemId));
+            return conceptRepository.searchByKeywordAndSystem(keyword, codeSystemId, pageable);
         }
-        return result;
+        return conceptRepository.searchByKeyword(keyword, pageable);
     }
 
     @Transactional

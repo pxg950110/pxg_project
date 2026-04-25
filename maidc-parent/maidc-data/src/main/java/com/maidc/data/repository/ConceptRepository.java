@@ -23,4 +23,7 @@ public interface ConceptRepository extends JpaRepository<ConceptEntity, Long>, J
 
     @Query("SELECT c FROM ConceptEntity c WHERE c.isDeleted = false AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.nameEn) LIKE LOWER(CONCAT('%', :keyword, '%')) OR c.conceptCode LIKE CONCAT('%', :keyword, '%'))")
     Page<ConceptEntity> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT c FROM ConceptEntity c WHERE c.isDeleted = false AND c.codeSystemId = :systemId AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.nameEn) LIKE LOWER(CONCAT('%', :keyword, '%')) OR c.conceptCode LIKE CONCAT('%', :keyword, '%'))")
+    Page<ConceptEntity> searchByKeywordAndSystem(@Param("keyword") String keyword, @Param("systemId") Long systemId, Pageable pageable);
 }
