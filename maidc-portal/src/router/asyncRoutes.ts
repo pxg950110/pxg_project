@@ -79,9 +79,22 @@ export const asyncRoutes: RouteRecordRaw[] = [
         ],
       },
       {
+        path: 'masterdata',
+        name: 'MasterData',
+        meta: { title: '医疗主数据', icon: 'DatabaseOutlined', sort: 6, permission: 'masterdata' },
+        redirect: '/masterdata/code-systems',
+        children: [
+          { path: 'code-systems', name: 'CodeSystems', meta: { title: '编码体系' }, component: () => import('@/views/masterdata/CodeSystems.vue') },
+          { path: 'concepts', name: 'ConceptBrowser', meta: { title: '概念浏览' }, component: () => import('@/views/masterdata/ConceptBrowser.vue') },
+          { path: 'mappings', name: 'MappingManager', meta: { title: '编码映射' }, component: () => import('@/views/masterdata/MappingManager.vue') },
+          { path: 'clinical-rules', name: 'ClinicalRules', meta: { title: '临床规则' }, component: () => import('@/views/masterdata/ClinicalRules.vue') },
+          { path: 'local-concepts', name: 'LocalConceptMapping', meta: { title: '本地编码映射' }, component: () => import('@/views/masterdata/LocalConceptMapping.vue') },
+        ],
+      },
+      {
         path: 'alert',
         name: 'Alert',
-        meta: { title: '告警中心', icon: 'AlertOutlined', sort: 6 },
+        meta: { title: '告警中心', icon: 'AlertOutlined', sort: 7 },
         children: [
           { path: 'active', name: 'AlertList', meta: { title: '活跃告警' }, component: () => import('@/views/alert/AlertList.vue') },
           { path: 'rules', name: 'AlertRuleList', meta: { title: '告警规则' }, component: () => import('@/views/alert/AlertRuleList.vue') },
@@ -91,7 +104,7 @@ export const asyncRoutes: RouteRecordRaw[] = [
       {
         path: 'audit',
         name: 'Audit',
-        meta: { title: '审计日志', icon: 'FileSearchOutlined', sort: 7, permission: 'audit' },
+        meta: { title: '审计日志', icon: 'FileSearchOutlined', sort: 8, permission: 'audit' },
         children: [
           { path: 'operations', name: 'OperationLog', meta: { title: '操作审计' }, component: () => import('@/views/audit/OperationLog.vue') },
           { path: 'data-access', name: 'DataAccessLog', meta: { title: '数据访问' }, component: () => import('@/views/audit/DataAccessLog.vue') },
@@ -102,7 +115,7 @@ export const asyncRoutes: RouteRecordRaw[] = [
       {
         path: 'message',
         name: 'Message',
-        meta: { title: '消息中心', icon: 'BellOutlined', sort: 8 },
+        meta: { title: '消息中心', icon: 'BellOutlined', sort: 9 },
         children: [
           { path: 'list', name: 'MessageList', meta: { title: '我的消息' }, component: () => import('@/views/message/MessageList.vue') },
           { path: 'detail/:id', name: 'MessageDetail', meta: { title: '消息详情', hidden: true }, component: () => import('@/views/message/MessageDetail.vue') },
@@ -113,7 +126,7 @@ export const asyncRoutes: RouteRecordRaw[] = [
       {
         path: 'system',
         name: 'System',
-        meta: { title: '系统设置', icon: 'SettingOutlined', sort: 9, permission: 'system' },
+        meta: { title: '系统设置', icon: 'SettingOutlined', sort: 10, permission: 'system' },
         redirect: '/system/users',
         children: [
           { path: 'users', name: 'UserList', meta: { title: '用户管理' }, component: () => import('@/views/system/UserList.vue') },
