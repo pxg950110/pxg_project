@@ -37,6 +37,12 @@ export const checkDrugInteraction = (drug1: number, drug2: number) => request.ge
 export const checkDrugList = (drugIds: number[]) => request.post<ApiResponse<any[]>>('/masterdata/drug-interactions/check-list', drugIds)
 export const createDrugInteraction = (data: any) => request.post<ApiResponse<any>>('/masterdata/drug-interactions', data)
 
+// Terminology Domains
+export const getDomains = () => request.get<ApiResponse<any[]>>('/masterdata/domains')
+export const createDomain = (data: any) => request.post<ApiResponse<any>>('/masterdata/domains', data)
+export const updateDomain = (id: number, data: any) => request.put<ApiResponse<any>>(`/masterdata/domains/${id}`, data)
+export const deleteDomain = (id: number) => request.delete(`/masterdata/domains/${id}`)
+
 // Institutions
 export const getInstitutions = () => request.get<ApiResponse<any[]>>('/masterdata/institutions')
 export const createInstitution = (data: any) => request.post<ApiResponse<any>>('/masterdata/institutions', data)
@@ -58,3 +64,34 @@ export const uploadMasterData = (file: File, codeSystemId: number) => {
   return request.post<ApiResponse<any>>(`/masterdata/import/upload?codeSystemId=${codeSystemId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
 }
 export const getImportTaskStatus = (taskId: number) => request.get<ApiResponse<any>>(`/masterdata/import/tasks/${taskId}`)
+
+// Knowledge
+export const getKnowledgeCategories = () => request.get<ApiResponse<any[]>>('/masterdata/knowledge/categories')
+export const createKnowledgeCategory = (data: any) => request.post<ApiResponse<any>>('/masterdata/knowledge/categories', data)
+export const updateKnowledgeCategory = (id: number, data: any) => request.put<ApiResponse<any>>(`/masterdata/knowledge/categories/${id}`, data)
+export const deleteKnowledgeCategory = (id: number) => request.delete(`/masterdata/knowledge/categories/${id}`)
+export const getKnowledgeItems = (params: any) => request.get<ApiResponse<any>>('/masterdata/knowledge', { params })
+export const getKnowledgeItem = (id: number) => request.get<ApiResponse<any>>(`/masterdata/knowledge/${id}`)
+export const createKnowledgeItem = (data: any) => request.post<ApiResponse<any>>('/masterdata/knowledge', data)
+export const updateKnowledgeItem = (id: number, data: any) => request.put<ApiResponse<any>>(`/masterdata/knowledge/${id}`, data)
+export const deleteKnowledgeItem = (id: number) => request.delete(`/masterdata/knowledge/${id}`)
+export const getKnowledgeConcepts = (id: number) => request.get<ApiResponse<any[]>>(`/masterdata/knowledge/${id}/concepts`)
+export const getKnowledgeByConcept = (conceptId: number) => request.get<ApiResponse<any[]>>(`/masterdata/knowledge/by-concept/${conceptId}`)
+export const associateConcept = (id: number, data: { conceptId: number; relevance?: string }) => request.post(`/masterdata/knowledge/${id}/concepts`, data)
+export const removeAssociation = (id: number) => request.delete(`/masterdata/knowledge/associations/${id}`)
+
+// Data Elements
+export const getDataElements = (params: any) => request.get<ApiResponse<PageResult<any>>>('/masterdata/data-elements', { params })
+export const getDataElement = (id: number) => request.get<ApiResponse<any>>(`/masterdata/data-elements/${id}`)
+export const createDataElement = (data: any) => request.post<ApiResponse<any>>('/masterdata/data-elements', data)
+export const updateDataElement = (id: number, data: any) => request.put<ApiResponse<any>>(`/masterdata/data-elements/${id}`, data)
+export const deleteDataElement = (id: number) => request.delete(`/masterdata/data-elements/${id}`)
+export const getDataElementCategories = () => request.get<ApiResponse<string[]>>('/masterdata/data-elements/categories')
+export const getDataElementStats = () => request.get<ApiResponse<Record<string, number>>>('/masterdata/data-elements/stats')
+export const getDataElementValues = (id: number) => request.get<ApiResponse<any[]>>(`/masterdata/data-elements/${id}/values`)
+export const updateDataElementValues = (id: number, data: any[]) => request.put<ApiResponse<any[]>>(`/masterdata/data-elements/${id}/values`, data)
+export const getDataElementMappings = (id: number) => request.get<ApiResponse<any[]>>(`/masterdata/data-elements/${id}/mappings`)
+export const addDataElementMapping = (id: number, data: any) => request.post<ApiResponse<any>>(`/masterdata/data-elements/${id}/mappings`, data)
+export const updateDataElementMapping = (mappingId: number, mappingStatus: string) => request.put<ApiResponse<any>>(`/masterdata/data-elements/mappings/${mappingId}?mappingStatus=${mappingStatus}`)
+export const deleteDataElementMapping = (mappingId: number) => request.delete(`/masterdata/data-elements/mappings/${mappingId}`)
+export const getUnmappedDataElements = () => request.get<ApiResponse<any[]>>('/masterdata/data-elements/mappings/unmapped')
