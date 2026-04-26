@@ -195,6 +195,18 @@ public class DataElementService {
         mappingRepository.deleteById(mappingId);
     }
 
+    public List<DataElementMappingEntity> getUnmapped() {
+        return dataElementRepository.findAll().stream()
+                .filter(e -> !mappingRepository.findByDataElementIdAndIsDeletedFalse(e.getId()).stream()
+                        .anyMatch(m -> "CONFIRMED".equals(m.getMappingStatus())))
+                .map(e -> {
+                    List<DataElementMappingEntity> mappings = mappingRepository.findByDataElementIdAndIsDeletedFalse(e.getId());
+                    return mappings.isEmpty() ? null : mappings.get(0);
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
     // ── 分类与统计 ──
 
     public List<String> getCategories() {
