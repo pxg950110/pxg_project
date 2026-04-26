@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS masterdata.m_code_system (
     version           VARCHAR(32),
     description       TEXT,
     hierarchy_support BOOLEAN      NOT NULL DEFAULT FALSE,
+    category          VARCHAR(32)  DEFAULT 'STANDARD',
     status            VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
     created_by        VARCHAR(64)  NOT NULL DEFAULT 'system',
     created_at        TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -212,11 +213,184 @@ CREATE TABLE masterdata.m_import_task (
 );
 COMMENT ON TABLE masterdata.m_import_task IS '主数据导入任务';
 
--- ==================== 种子数据: 5 条编码体系 ====================
+-- ==================== 知识体系管理 ====================
 
-INSERT INTO masterdata.m_code_system (code, name, version, description, hierarchy_support, status) VALUES
-('ICD10', 'ICD-10 国际疾病分类', '2024', 'WHO国际疾病分类第10次修订本中文版', true, 'ACTIVE'),
-('ICD9CM', 'ICD-9-CM-3 手术编码', '2011', '国际疾病分类临床修订本第3卷手术与操作', true, 'ACTIVE'),
-('LOINC', 'LOINC 检验观察编码', '2.78', 'Logical Observation Identifiers Names and Codes', false, 'ACTIVE'),
-('SNOMEDCT', 'SNOMED CT 临床术语', '2024-01', 'Systematized Nomenclature of Medicine Clinical Terms', true, 'ACTIVE'),
-('ATC', 'ATC 药品分类', '2024', 'Anatomical Therapeutic Chemical classification', true, 'ACTIVE');
+-- 知识库分类
+CREATE TABLE IF NOT EXISTS masterdata.m_knowledge_category (
+    id              BIGSERIAL    PRIMARY KEY,
+    name            VARCHAR(128) NOT NULL,
+    parent_id       BIGINT,
+    sort_order      INT          NOT NULL DEFAULT 0,
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by      VARCHAR(64),
+    updated_at      TIMESTAMP,
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE masterdata.m_knowledge_category IS '知识库分类（临床指南/文献/共识等）';
+
+-- 知识条目
+CREATE TABLE IF NOT EXISTS masterdata.m_knowledge_item (
+    id              BIGSERIAL    PRIMARY KEY,
+    title           VARCHAR(512) NOT NULL,
+    category_id     BIGINT,
+    item_type       VARCHAR(32)  NOT NULL DEFAULT 'GUIDELINE',
+    summary         TEXT,
+    content         TEXT,
+    source          VARCHAR(256),
+    authors         VARCHAR(512),
+    publish_date    DATE,
+    tags            JSONB,
+    file_url        VARCHAR(512),
+    file_name       VARCHAR(256),
+    status          VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by      VARCHAR(64),
+    updated_at      TIMESTAMP,
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE masterdata.m_knowledge_item IS '知识条目（临床指南/文献/专家共识等）';
+
+-- 知识-概念关联
+CREATE TABLE IF NOT EXISTS masterdata.m_knowledge_concept (
+    id              BIGSERIAL    PRIMARY KEY,
+    knowledge_id    BIGINT       NOT NULL,
+    concept_id      BIGINT       NOT NULL,
+    relevance       VARCHAR(16)  NOT NULL DEFAULT 'RELATED',
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_knowledge_concept UNIQUE (knowledge_id, concept_id)
+);
+COMMENT ON TABLE masterdata.m_knowledge_concept IS '知识条目-概念关联';
+
+CREATE INDEX idx_knowledge_category ON masterdata.m_knowledge_item(category_id);
+CREATE INDEX idx_knowledge_type ON masterdata.m_knowledge_item(item_type, status);
+CREATE INDEX idx_knowledge_tags ON masterdata.m_knowledge_item USING gin(tags);
+CREATE INDEX idx_knowledge_title ON masterdata.m_knowledge_item USING gin(to_tsvector('simple', title));
+CREATE INDEX idx_kc_knowledge ON masterdata.m_knowledge_concept(knowledge_id);
+CREATE INDEX idx_kc_concept ON masterdata.m_knowledge_concept(concept_id);
+
+INSERT INTO masterdata.m_code_system (code, name, version, description, hierarchy_support, category, status) VALUES
+('ICD10', 'ICD-10 国际疾病分类', '2024', 'WHO国际疾病分类第10次修订本中文版', true, 'STANDARD', 'ACTIVE'),
+('ICD9CM', 'ICD-9-CM-3 手术编码', '2011', '国际疾病分类临床修订本第3卷手术与操作', true, 'STANDARD', 'ACTIVE'),
+('LOINC', 'LOINC 检验观察编码', '2.78', 'Logical Observation Identifiers Names and Codes', false, 'STANDARD', 'ACTIVE'),
+('SNOMEDCT', 'SNOMED CT 临床术语', '2024-01', 'Systematized Nomenclature of Medicine Clinical Terms', true, 'STANDARD', 'ACTIVE'),
+('ATC', 'ATC 药品分类', '2024', 'Anatomical Therapeutic Chemical classification', true, 'STANDARD', 'ACTIVE');
+
+-- 10. 术语领域配置
+CREATE TABLE IF NOT EXISTS masterdata.m_terminology_domain (
+    id              BIGSERIAL    PRIMARY KEY,
+    code            VARCHAR(64)  NOT NULL,
+    name            VARCHAR(128) NOT NULL,
+    name_en         VARCHAR(128),
+    description     TEXT,
+    icon            VARCHAR(64),
+    sort_order      INT          NOT NULL DEFAULT 0,
+    status          VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
+    created_by      VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by      VARCHAR(64),
+    updated_at      TIMESTAMP,
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id          BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_terminology_domain_code UNIQUE (code)
+);
+COMMENT ON TABLE masterdata.m_terminology_domain IS '术语领域配置（诊断/手术/检验/药品等）';
+
+CREATE INDEX idx_term_domain_status ON masterdata.m_terminology_domain(status) WHERE is_deleted = false;
+
+INSERT INTO masterdata.m_terminology_domain (code, name, name_en, description, icon, sort_order, status) VALUES
+('Diagnosis',   '诊断',   'Diagnosis',   '疾病诊断领域（ICD编码等）',           'HeartOutlined',      1, 'ACTIVE'),
+('Procedure',   '手术操作', 'Procedure',   '手术与操作领域',                      'ScissorOutlined',    2, 'ACTIVE'),
+('Laboratory',  '检验',   'Laboratory',  '临床检验领域（LOINC编码等）',          'ExperimentOutlined',  3, 'ACTIVE'),
+('Medication',  '药品',   'Medication',  '药品领域（ATC编码等）',               'MedicineBoxOutlined', 4, 'ACTIVE'),
+('Observation', '观察',   'Observation', '临床观察领域',                         'EyeOutlined',        5, 'ACTIVE'),
+('BodySite',    '身体部位', 'BodySite',    '身体部位领域',                         'UserOutlined',       6, 'ACTIVE'),
+('Specimen',    '标本',   'Specimen',    '标本领域',                             'AimOutlined',        7, 'ACTIVE'),
+('Other',       '其他',   'Other',       '其他领域',                             'AppstoreOutlined',   8, 'ACTIVE');
+
+-- ==================== 数据元管理 ====================
+
+CREATE TABLE masterdata.m_data_element (
+    id                    BIGSERIAL    PRIMARY KEY,
+    element_code          VARCHAR(64)  NOT NULL,
+    name                  VARCHAR(256) NOT NULL,
+    name_en               VARCHAR(256),
+    definition            TEXT         NOT NULL,
+    object_class_name     VARCHAR(128),
+    object_class_id       VARCHAR(64),
+    property_name         VARCHAR(128),
+    property_id           VARCHAR(64),
+    data_type             VARCHAR(32)  NOT NULL,
+    representation_class  VARCHAR(32),
+    value_domain_name     VARCHAR(128),
+    value_domain_id       VARCHAR(64),
+    min_length            INT,
+    max_length            INT,
+    format                VARCHAR(64),
+    unit_of_measure       VARCHAR(32),
+    category              VARCHAR(64),
+    standard_source       VARCHAR(128),
+    registration_status   VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    version               VARCHAR(16)  NOT NULL DEFAULT '1.0',
+    synonyms              TEXT[],
+    keywords              TEXT[],
+    extra_attrs           JSONB,
+    status                VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
+    created_by            VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at            TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by            VARCHAR(64),
+    updated_at            TIMESTAMP,
+    is_deleted            BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id                BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_data_element_code UNIQUE (element_code)
+);
+COMMENT ON TABLE masterdata.m_data_element IS '数据元';
+CREATE INDEX idx_de_category ON masterdata.m_data_element(category) WHERE status = 'ACTIVE' AND is_deleted = false;
+CREATE INDEX idx_de_status ON masterdata.m_data_element(registration_status) WHERE is_deleted = false;
+CREATE INDEX idx_de_name ON masterdata.m_data_element USING gin(to_tsvector('simple', name));
+
+CREATE TABLE masterdata.m_data_element_value (
+    id                BIGSERIAL    PRIMARY KEY,
+    data_element_id   BIGINT       NOT NULL,
+    value_code        VARCHAR(64)  NOT NULL,
+    value_meaning     VARCHAR(256) NOT NULL,
+    sort_order        INT          NOT NULL DEFAULT 0,
+    created_by        VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at        TIMESTAMP    NOT NULL DEFAULT NOW(),
+    is_deleted        BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id            BIGINT       NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE masterdata.m_data_element_value IS '数据元允许值';
+CREATE INDEX idx_dev_element ON masterdata.m_data_element_value(data_element_id);
+CREATE UNIQUE INDEX uk_dev_element_code ON masterdata.m_data_element_value(data_element_id, value_code) WHERE is_deleted = false;
+
+CREATE TABLE masterdata.m_data_element_mapping (
+    id                BIGSERIAL    PRIMARY KEY,
+    data_element_id   BIGINT       NOT NULL,
+    schema_name       VARCHAR(64)  NOT NULL,
+    table_name        VARCHAR(128) NOT NULL,
+    column_name       VARCHAR(128) NOT NULL,
+    mapping_type      VARCHAR(16)  NOT NULL DEFAULT 'MANUAL',
+    confidence        DECIMAL(3,2),
+    mapping_status    VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    transform_rule    TEXT,
+    mapped_by         VARCHAR(64),
+    mapped_at         TIMESTAMP,
+    created_by        VARCHAR(64)  NOT NULL DEFAULT 'system',
+    created_at        TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_by        VARCHAR(64),
+    updated_at        TIMESTAMP,
+    is_deleted        BOOLEAN      NOT NULL DEFAULT FALSE,
+    org_id            BIGINT       NOT NULL DEFAULT 0,
+    CONSTRAINT uk_de_mapping UNIQUE (data_element_id, schema_name, table_name, column_name) WHERE is_deleted = false
+);
+COMMENT ON TABLE masterdata.m_data_element_mapping IS '数据元字段映射';
+CREATE INDEX idx_dem_element ON masterdata.m_data_element_mapping(data_element_id);
+CREATE INDEX idx_dem_status ON masterdata.m_data_element_mapping(mapping_status);
+CREATE INDEX idx_dem_table ON masterdata.m_data_element_mapping(schema_name, table_name);
