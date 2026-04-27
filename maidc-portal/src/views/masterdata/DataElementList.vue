@@ -1,10 +1,16 @@
 <template>
   <PageContainer title="数据元管理">
     <template #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
-        新增数据元
-      </a-button>
+      <a-space>
+        <a-button @click="importModalRef?.open()">
+          <template #icon><UploadOutlined /></template>
+          导入
+        </a-button>
+        <a-button type="primary" @click="handleCreate">
+          <template #icon><PlusOutlined /></template>
+          新增数据元
+        </a-button>
+      </a-space>
     </template>
 
     <div style="display: flex; gap: 16px; height: calc(100vh - 180px)">
@@ -372,13 +378,15 @@
         </a-form-item>
       </a-form>
     </a-modal>
+    <!-- Import modal -->
+    <DataElementImportModal ref="importModalRef" @success="onImportSuccess" />
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import type { FormInstance, Rule } from 'ant-design-vue/es/form'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
@@ -396,6 +404,7 @@ import {
   updateDataElementMapping,
   deleteDataElementMapping,
 } from '@/api/masterdata'
+import DataElementImportModal from './DataElementImportModal.vue'
 
 defineOptions({ name: 'DataElementList' })
 
@@ -820,6 +829,15 @@ async function handleDeleteMapping(mappingId: number) {
   } catch {
     message.error('删除失败')
   }
+}
+
+// ── Import ──
+const importModalRef = ref<InstanceType<typeof DataElementImportModal>>()
+
+function onImportSuccess() {
+  fetchList()
+  fetchStats()
+  fetchCategories()
 }
 
 // ── Init ──
