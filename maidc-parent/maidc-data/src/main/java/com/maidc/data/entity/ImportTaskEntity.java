@@ -20,6 +20,9 @@ public class ImportTaskEntity extends BaseEntity {
     @Column(name = "code_system_id", nullable = false)
     private Long codeSystemId;
 
+    @Column(name = "task_type", nullable = false, length = 32)
+    private String taskType = "CONCEPT";
+
     @Column(name = "file_name", nullable = false, length = 256)
     private String fileName;
 
