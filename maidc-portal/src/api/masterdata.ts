@@ -95,3 +95,18 @@ export const addDataElementMapping = (id: number, data: any) => request.post<Api
 export const updateDataElementMapping = (mappingId: number, mappingStatus: string) => request.put<ApiResponse<any>>(`/masterdata/data-elements/mappings/${mappingId}?mappingStatus=${mappingStatus}`)
 export const deleteDataElementMapping = (mappingId: number) => request.delete(`/masterdata/data-elements/mappings/${mappingId}`)
 export const getUnmappedDataElements = () => request.get<ApiResponse<any[]>>('/masterdata/data-elements/mappings/unmapped')
+
+// Data Element Import
+export const importDataElements = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<ApiResponse<any>>('/masterdata/data-elements/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+export const getDataElementImportStatus = (taskId: number) =>
+  request.get<ApiResponse<any>>(`/masterdata/data-elements/import/tasks/${taskId}`)
+
+export const downloadDataElementTemplate = () =>
+  request.get('/masterdata/data-elements/import/template', { responseType: 'blob' })
