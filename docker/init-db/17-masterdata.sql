@@ -198,6 +198,7 @@ CREATE TABLE masterdata.m_import_task (
     id              BIGSERIAL    PRIMARY KEY,
     code_system_id  BIGINT       NOT NULL,
     file_name       VARCHAR(256) NOT NULL,
+    task_type       VARCHAR(32)  NOT NULL DEFAULT 'CONCEPT',
     file_path       VARCHAR(512),
     total_rows      INT          DEFAULT 0,
     processed_rows  INT          DEFAULT 0,
@@ -212,6 +213,7 @@ CREATE TABLE masterdata.m_import_task (
     org_id          BIGINT       NOT NULL DEFAULT 0
 );
 COMMENT ON TABLE masterdata.m_import_task IS '主数据导入任务';
+COMMENT ON COLUMN masterdata.m_import_task.task_type IS '导入类型: CONCEPT, DATA_ELEMENT';
 
 -- ==================== 知识体系管理 ====================
 
