@@ -6,11 +6,17 @@ import com.maidc.data.dto.DataElementMappingDTO;
 import com.maidc.data.entity.DataElementEntity;
 import com.maidc.data.entity.DataElementMappingEntity;
 import com.maidc.data.entity.DataElementValueEntity;
+import com.maidc.data.entity.ImportTaskEntity;
+import com.maidc.data.service.DataElementImportService;
 import com.maidc.data.service.DataElementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +27,7 @@ import java.util.Map;
 public class DataElementController {
 
     private final DataElementService service;
+    private final DataElementImportService importService;
 
     @PreAuthorize("hasPermission('masterdata:read')")
     @GetMapping
@@ -121,5 +128,30 @@ public class DataElementController {
     @GetMapping("/stats")
     public R<Map<String, Object>> getStats() {
         return R.ok(service.getStats());
+    }
+
+    // ── 导入 ──
+
+    @PreAuthorize("hasPermission('masterdata:create')")
+    @PostMapping(value = "/import", consumes = "multipart/form-data")
+    public R<ImportTaskEntity> importExcel(@RequestParam("file") MultipartFile file) {
+        return R.ok(importService.uploadAndStart(file));
+    }
+
+    @PreAuthorize("hasPermission('masterdata:read')")
+    @GetMapping("/import/tasks/{taskId}")
+    public R<ImportTaskEntity> getImportTaskStatus(@PathVariable Long taskId) {
+        return R.ok(importService.getTaskStatus(taskId));
+    }
+
+    @PreAuthorize("hasPermission('masterdata:read')")
+    @GetMapping("/import/template")
+    public ResponseEntity<byte[]> downloadTemplate() {
+        byte[] data = importService.generateTemplate();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=data-element-template.xlsx")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(data);
     }
 }
