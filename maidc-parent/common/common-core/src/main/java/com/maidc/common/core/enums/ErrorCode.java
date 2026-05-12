@@ -47,6 +47,7 @@ public enum ErrorCode {
 
     // ==================== 数据中心 50xx ====================
     PATIENT_NOT_FOUND(5001, "患者不存在"),
+    ENCOUNTER_NOT_FOUND(5002, "就诊记录不存在"),
     DATASET_NOT_FOUND(5011, "数据集不存在"),
     ETL_TASK_FAILED(5021, "ETL任务执行失败");
 
