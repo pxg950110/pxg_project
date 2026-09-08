@@ -2,6 +2,8 @@ package com.maidc.audit.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 public class SystemEventEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // 对应 DDL BIGSERIAL，消费侧首次写表
     @Column(name = "id")
     private Long id;
 
