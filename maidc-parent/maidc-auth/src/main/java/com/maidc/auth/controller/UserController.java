@@ -3,12 +3,15 @@ package com.maidc.auth.controller;
 import com.maidc.auth.dto.ResetPwdDTO;
 import com.maidc.auth.dto.UserCreateDTO;
 import com.maidc.auth.dto.UserUpdateDTO;
+import com.maidc.auth.service.PermissionCacheService;
 import com.maidc.auth.service.UserService;
+import com.maidc.auth.vo.RoleVO;
 import com.maidc.auth.vo.UserDetailVO;
 import com.maidc.auth.vo.UserVO;
 import com.maidc.common.core.result.PageResult;
 import com.maidc.common.core.result.R;
 import com.maidc.common.log.annotation.OperLog;
+import com.maidc.common.security.context.PermissionContext;
 import com.maidc.common.security.util.JwtUtils;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -20,6 +23,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -28,19 +32,23 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtils jwtUtils;
+    private final PermissionCacheService permissionCacheService;
 
     @GetMapping("/me")
     public R<CurrentUserVO> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.replace("Bearer ", "");
         Long userId = jwtUtils.getUserIdFromToken(token);
         UserDetailVO user = userService.getUser(userId);
+        // F5 刷新场景：前端路由守卫以 /me 重建 userInfo，权限集必须与登录响应同源（缓存服务构建）
+        PermissionContext permCtx = permissionCacheService.build(userId);
         CurrentUserVO vo = CurrentUserVO.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .realName(user.getRealName())
-                .roles(user.getRoles().stream().map(r -> r.getCode()).toList())
+                .roles(user.getRoles().stream().map(RoleVO::getCode).toList())
                 .orgId(user.getOrgId())
-                .permissions(List.of())
+                .permissions(permCtx != null ? permCtx.getPermissions() : Set.of())
+                .dataScope(permCtx != null ? permCtx.getDataScope().name() : "SELF")
                 .build();
         return R.ok(vo);
     }
@@ -93,6 +101,9 @@ public class UserController {
         private String realName;
         private List<String> roles;
         private Long orgId;
-        private List<String> permissions;
+        /** 权限码集合（与 LoginVO.UserInfo 对齐） */
+        private Set<String> permissions;
+        /** 数据范围 ALL/DEPT/SELF/PROJECT */
+        private String dataScope;
     }
 }
