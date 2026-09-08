@@ -176,6 +176,7 @@ import {
   deleteQualityRule,
   toggleQualityRule,
 } from '@/api/data'
+import { getEtlTables, getEtlColumns } from '@/api/etl'
 
 defineOptions({ name: 'QualityRuleList' })
 
@@ -201,29 +202,38 @@ const ruleTypeOptions = [
   { value: 'timeliness', label: '及时性', description: '检查数据更新是否及时' },
 ]
 
-// 模拟表/字段选项（实际从后端获取）
-const tableOptions = [
-  { value: 'cdr_patient', label: '患者信息表' },
-  { value: 'cdr_encounter', label: '就诊记录表' },
-  { value: 'cdr_diagnosis', label: '诊断信息表' },
-  { value: 'cdr_lab_result', label: '检验结果表' },
-  { value: 'cdr_medication', label: '用药记录表' },
-  { value: 'cdr_imaging', label: '影像检查表' },
-  { value: 'cdr_vital_sign', label: '生命体征表' },
-]
+// 表/字段选项 - 从后端获取
+const tableOptions = ref<{ value: string; label: string }[]>([])
+const fieldOptions = ref<{ value: string; label: string }[]>([])
 
-const fieldOptions = [
-  { value: 'id_card', label: '身份证号' },
-  { value: 'name', label: '姓名' },
-  { value: 'phone', label: '联系电话' },
-  { value: 'gender', label: '性别' },
-  { value: 'birth_date', label: '出生日期' },
-  { value: 'diagnosis_code', label: '诊断编码' },
-  { value: 'lab_value', label: '检验值' },
-  { value: 'medication_code', label: '药品编码' },
-  { value: 'created_at', label: '创建时间' },
-  { value: 'updated_at', label: '更新时间' },
-]
+async function loadTableOptions() {
+  try {
+    const res = await getEtlTables('cdr')
+    tableOptions.value = (res.data.data || []).map((t: any) => ({ value: t.tableName || t.name, label: t.tableComment || t.tableName || t.name }))
+  } catch {
+    // fallback to common CDR tables
+    tableOptions.value = [
+      { value: 'cdr_patient', label: '患者信息表' },
+      { value: 'cdr_encounter', label: '就诊记录表' },
+      { value: 'cdr_diagnosis', label: '诊断信息表' },
+      { value: 'cdr_lab_result', label: '检验结果表' },
+      { value: 'cdr_medication', label: '用药记录表' },
+      { value: 'cdr_imaging', label: '影像检查表' },
+      { value: 'cdr_vital_sign', label: '生命体征表' },
+    ]
+  }
+}
+
+async function loadFieldOptions(tableName: string) {
+  try {
+    const res = await getEtlColumns('cdr', tableName)
+    fieldOptions.value = (res.data.data || []).map((c: any) => ({ value: c.columnName || c.name, label: c.columnComment || c.columnName || c.name }))
+  } catch {
+    fieldOptions.value = []
+  }
+}
+
+onMounted(() => { loadTableOptions(); fetchData() })
 
 function filterOption(input: string, option: any) {
   return option.label?.toLowerCase().includes(input.toLowerCase())
@@ -407,5 +417,4 @@ async function handleDelete(record: any) {
   fetchData()
 }
 
-onMounted(() => fetchData())
 </script>

@@ -462,6 +462,90 @@ VITAL_TYPES = [
     ('WEIGHT', 'kg', 68, 12, 35, 120),
 ]
 
+# ── Microbiology organisms ────────────────────────────────────────────
+# (cn_name, en_name, gram_type, is_mdr)
+MICRO_ORGANISMS = [
+    # Gram-negative
+    ('大肠埃希菌', 'ESCHERICHIA COLI', 'GN', False),
+    ('肺炎克雷伯菌', 'KLEBSIELLA PNEUMONIAE', 'GN', False),
+    ('铜绿假单胞菌', 'PSEUDOMONAS AERUGINOSA', 'GN', False),
+    ('鲍曼不动杆菌', 'ACINETOBACTER BAUMANNII', 'GN', True),
+    ('阴沟肠杆菌', 'ENTEROBACTER CLOACAE', 'GN', False),
+    ('奇异变形杆菌', 'PROTEUS MIRABILIS', 'GN', False),
+    ('流感嗜血杆菌', 'HAEMOPHILUS INFLUENZAE', 'GN', False),
+    ('嗜麦芽窄食单胞菌', 'STENOTROPHOMONAS MALTOPHILIA', 'GN', True),
+    # Gram-positive
+    ('金黄色葡萄球菌', 'STAPHYLOCOCCUS AUREUS', 'GP', False),
+    ('表皮葡萄球菌', 'STAPHYLOCOCCUS EPIDERMIDIS', 'GP', False),
+    ('粪肠球菌', 'ENTEROCOCCUS FAECALIS', 'GP', False),
+    ('屎肠球菌', 'ENTEROCOCCUS FAECIUM', 'GP', False),
+    ('肺炎链球菌', 'STREPTOCOCCUS PNEUMONIAE', 'GP', False),
+    ('化脓性链球菌', 'STREPTOCOCCUS PYOGENES', 'GP', False),
+    # Fungal
+    ('白色念珠菌', 'CANDIDA ALBICANS', 'FUNGUS', False),
+    ('光滑念珠菌', 'CANDIDA GLABRATA', 'FUNGUS', False),
+    ('热带念珠菌', 'CANDIDA TROPICALIS', 'FUNGUS', False),
+    ('曲霉菌', 'ASPERGILLUS SPP', 'FUNGUS', False),
+]
+
+# Antibiotic panels by organism type
+# (cn_name, en_name, dilution_values, s_weight, r_weight, i_weight)
+MICRO_AB_GRAM_NEG = [
+    ('头孢曲松', 'Ceftriaxone', ['<=1', '2', '4', '8', '16', '32', '>=64'], 55, 30, 15),
+    ('头孢他啶', 'Ceftazidime', ['<=1', '2', '4', '8', '16', '32', '>=64'], 50, 35, 15),
+    ('头孢吡肟', 'Cefepime', ['<=1', '2', '4', '8', '16', '32', '>=64'], 55, 30, 15),
+    ('美罗培南', 'Meropenem', ['<=0.25', '0.5', '1', '2', '4', '8', '>=16'], 70, 20, 10),
+    ('亚胺培南', 'Imipenem', ['<=0.25', '0.5', '1', '2', '4', '8', '>=16'], 70, 20, 10),
+    ('哌拉西林他唑巴坦', 'Piperacillin/Tazobactam', ['<=4', '8', '16', '32', '64', '128', '>=256'], 55, 30, 15),
+    ('阿米卡星', 'Amikacin', ['<=4', '8', '16', '32', '>=64'], 65, 25, 10),
+    ('庆大霉素', 'Gentamicin', ['<=2', '4', '8', '>=16'], 55, 30, 15),
+    ('环丙沙星', 'Ciprofloxacin', ['<=0.25', '0.5', '1', '2', '>=4'], 45, 40, 15),
+    ('左氧氟沙星', 'Levofloxacin', ['<=0.5', '1', '2', '4', '8', '>=16'], 50, 35, 15),
+    ('氨曲南', 'Aztreonam', ['<=1', '2', '4', '8', '>=16'], 50, 35, 15),
+    ('复方新诺明', 'Trimethoprim/Sulfamethoxazole', ['<=0.5', '1', '2', '4', '>=8'], 45, 40, 15),
+    ('氨苄西林', 'Ampicillin', ['<=1', '2', '4', '8', '>=16'], 30, 55, 15),
+    ('阿莫西林克拉维酸', 'Amoxicillin/Clavulanate', ['<=2', '4', '8', '>=16'], 55, 30, 15),
+    ('头孢唑林', 'Cefazolin', ['<=2', '4', '8', '16', '>=32'], 40, 45, 15),
+]
+
+MICRO_AB_GRAM_POS = [
+    ('万古霉素', 'Vancomycin', ['<=0.5', '1', '2', '4', '8', '16', '>=32'], 80, 10, 10),
+    ('苯唑西林', 'Oxacillin', ['<=0.25', '0.5', '1', '2', '>=4'], 50, 40, 10),
+    ('青霉素', 'Penicillin', ['<=0.03', '0.06', '0.12', '0.25', '0.5', '1', '2', '>=4'], 40, 45, 15),
+    ('红霉素', 'Erythromycin', ['<=0.25', '0.5', '1', '2', '4', '>=8'], 35, 50, 15),
+    ('克林霉素', 'Clindamycin', ['<=0.5', '1', '2', '4', '>=8'], 45, 40, 15),
+    ('利奈唑胺', 'Linezolid', ['<=1', '2', '4', '8', '>=16'], 90, 5, 5),
+    ('达托霉素', 'Daptomycin', ['<=0.5', '1', '2', '>=4'], 85, 10, 5),
+    ('左氧氟沙星', 'Levofloxacin', ['<=0.5', '1', '2', '4', '8', '>=16'], 50, 35, 15),
+    ('复方新诺明', 'Trimethoprim/Sulfamethoxazole', ['<=0.5', '1', '2', '4', '>=8'], 50, 35, 15),
+    ('利福平', 'Rifampin', ['<=0.5', '1', '2', '4', '>=8'], 70, 20, 10),
+    ('庆大霉素', 'Gentamicin', ['<=2', '4', '8', '>=16'], 55, 30, 15),
+    ('四环素', 'Tetracycline', ['<=1', '2', '4', '8', '>=16'], 45, 40, 15),
+]
+
+MICRO_AB_FUNGAL = [
+    ('氟康唑', 'Fluconazole', ['<=2', '4', '8', '16', '32', '64', '>=128'], 55, 30, 15),
+    ('伏立康唑', 'Voriconazole', ['<=0.12', '0.25', '0.5', '1', '2', '4', '>=8'], 65, 25, 10),
+    ('卡泊芬净', 'Caspofungin', ['<=0.25', '0.5', '1', '2', '4', '>=8'], 75, 15, 10),
+    ('两性霉素B', 'Amphotericin B', ['<=0.5', '1', '2', '4', '>=8'], 70, 20, 10),
+    ('氟胞嘧啶', 'Flucytosine', ['<=4', '8', '16', '32', '>=64'], 65, 25, 10),
+    ('伊曲康唑', 'Itraconazole', ['<=0.12', '0.25', '0.5', '1', '2', '4', '>=8'], 60, 25, 15),
+    ('米卡芬净', 'Micafungin', ['<=0.25', '0.5', '1', '2', '4', '>=8'], 75, 15, 10),
+]
+
+# Specimen types with typical organisms and ICD codes that trigger them
+# (spec_type, related_icds, typical_organisms_gram, probability)
+MICRO_SPECIMENS = [
+    ('血培养', ['A09', 'J18.9', 'I21.9', 'I50.9', 'J44.1', 'K35.9'], 'all', 0.15),
+    ('痰培养', ['J18.9', 'J45.9', 'J44.1', 'J06.9', 'J20.9'], 'GN', 0.25),
+    ('尿培养', ['N39.0', 'N20.0'], 'GN', 0.35),
+    ('伤口分泌物培养', ['K35.9', 'S72.0', 'S82.8'], 'GP', 0.20),
+    ('引流液培养', ['K35.9', 'K80.2'], 'GN', 0.12),
+    ('脑脊液培养', ['G40.9'], 'GP', 0.05),
+    ('胸水培养', ['J18.9', 'J44.1'], 'GN', 0.08),
+    ('腹水培养', ['K70.3'], 'GN', 0.10),
+]
+
 # ── Ward / Building info ──────────────────────────────────────────────
 BUILDINGS = ['1号楼', '2号楼', '3号楼', '急诊楼', '门诊楼']
 FLOORS = ['1层', '2层', '3层', '4层', '5层', '6层', '7层', '8层']

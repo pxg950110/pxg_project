@@ -14,14 +14,14 @@ public class AuditLogSpecification {
         // utility class
     }
 
-    public static Specification<AuditLogEntity> buildSearchSpec(String module, String operation,
+    public static Specification<AuditLogEntity> buildSearchSpec(String serviceName, String operation,
                                                                  String username, LocalDateTime startTime,
-                                                                 LocalDateTime endTime, Short status) {
+                                                                 LocalDateTime endTime, String status) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (module != null && !module.isBlank()) {
-                predicates.add(cb.equal(root.get("module"), module));
+            if (serviceName != null && !serviceName.isBlank()) {
+                predicates.add(cb.equal(root.get("serviceName"), serviceName));
             }
             if (operation != null && !operation.isBlank()) {
                 predicates.add(cb.like(root.get("operation"), "%" + operation + "%"));
@@ -35,7 +35,7 @@ public class AuditLogSpecification {
             if (endTime != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), endTime));
             }
-            if (status != null) {
+            if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), status));
             }
 

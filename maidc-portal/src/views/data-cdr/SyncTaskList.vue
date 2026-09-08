@@ -150,7 +150,7 @@ const { tableData, loading, pagination, fetchData, handleTableChange } = useTabl
 )
 
 const hasRunningTasks = computed(() =>
-  tableData.value.some((item: any) => item.status === 'RUNNING'),
+  (tableData.value || []).some((item: any) => item.status === 'RUNNING'),
 )
 
 // ===== 自动刷新 =====

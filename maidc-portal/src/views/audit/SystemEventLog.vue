@@ -67,7 +67,7 @@ import { DownloadOutlined } from '@ant-design/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
-import { getSystemEvents } from '@/api/audit'
+import { getSystemEvents, exportSystemEvents } from '@/api/audit'
 
 // --- Columns ---
 const columns = [
@@ -94,19 +94,33 @@ function handleDetail(record: any) {
 }
 
 // --- Export ---
-function handleExport() {
-  // TODO: implement export logic
+async function handleExport() {
+  try {
+    const res = await exportSystemEvents({
+      eventType: filters.eventType,
+      severity: filters.level,
+      startTime: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
+      endTime: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined,
+    })
+    const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'system_events.csv'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch { message.error('导出失败') }
 }
 
 // --- API integration ---
 const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
   (params) => getSystemEvents({
     page: params.page,
-    page_size: params.pageSize,
-    event_type: filters.eventType,
+    pageSize: params.pageSize,
+    eventType: filters.eventType,
     severity: filters.level,
-    start_time: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
-    end_time: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
+    startTime: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
+    endTime: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
   })
 )
 

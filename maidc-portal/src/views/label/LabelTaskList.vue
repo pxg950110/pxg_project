@@ -64,7 +64,7 @@
       <a-col :span="6">
         <MetricCard
           title="标注任务"
-          :value="18"
+          :value="summary.totalTasks"
           suffix="个"
         >
           <template #icon><FileTextOutlined /></template>
@@ -73,7 +73,7 @@
       <a-col :span="6">
         <MetricCard
           title="进行中"
-          :value="7"
+          :value="summary.inProgress"
           suffix="个"
           :trend="{ value: 3, type: 'up' }"
         >
@@ -83,7 +83,7 @@
       <a-col :span="6">
         <MetricCard
           title="已标注数据"
-          :value="23456"
+          :value="summary.labeledData"
           suffix="条"
           :trend="{ value: 12, type: 'up' }"
         >
@@ -93,7 +93,7 @@
       <a-col :span="6">
         <MetricCard
           title="平均一致性"
-          :value="0.92"
+          :value="summary.avgConsistency"
           :trend="{ value: 3, type: 'up' }"
         >
           <template #icon><SafetyCertificateOutlined /></template>
@@ -103,7 +103,7 @@
 
     <!-- Card Grid -->
     <a-row :gutter="[16, 16]" class="task-card-grid">
-      <a-col v-for="task in filteredTasks" :key="task.id" :span="8">
+      <a-col v-for="task in tableData" :key="task.id" :span="8">
         <div class="task-card" @click="router.push(`/label/detail/${task.id}`)">
           <div class="task-card-header">
             <span class="task-name">{{ task.name }}</span>
@@ -150,14 +150,15 @@
 
     <!-- Pagination -->
     <div class="pagination-bar">
-      <span class="pagination-total">共 {{ filteredTasks.length }} 个任务</span>
+      <span class="pagination-total">共 {{ pagination.total }} 个任务</span>
       <a-pagination
         v-model:current="pagination.current"
         v-model:page-size="pagination.pageSize"
-        :total="filteredTasks.length"
+        :total="pagination.total"
         :page-size-options="['6', '12', '18']"
         show-size-changer
         size="small"
+        @change="onPageChange"
       />
     </div>
 
@@ -233,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   PlusOutlined,
@@ -252,7 +253,7 @@ import DatasetSelect from '@/components/DatasetSelect/index.vue'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { useModal } from '@/hooks/useModal'
-import { getLabelTasks, createLabelTask } from '@/api/label'
+import { getLabelTasks, createLabelTask, getLabelTaskSummary } from '@/api/label'
 
 const router = useRouter()
 const taskModal = useModal()
@@ -271,29 +272,26 @@ const typeColorMap: Record<string, string> = {
   TEXT: 'green',
 }
 
-// ============ Mock Data ============
-interface LabelTask {
-  id: number
-  name: string
-  task_type: 'IMAGE' | 'TEXT'
-  format: string
-  dataset_name: string
-  assignees: string[]
-  progress: number
-  total: number
-  completed: number
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED'
-  deadline: string
-}
+// ============ Summary Stats ============
+const summary = reactive({
+  totalTasks: 0,
+  inProgress: 0,
+  labeledData: 0,
+  avgConsistency: 0,
+})
 
-const mockTasks = ref<LabelTask[]>([
-  { id: 1, name: '肺结节CT标注', task_type: 'IMAGE', format: '矩形框标注', dataset_name: 'CT肺结节数据集v2', assignees: ['李医生', '王技师'], progress: 75, total: 600, completed: 450, status: 'IN_PROGRESS', deadline: '2026-04-20' },
-  { id: 2, name: '病理切片多边形标注', task_type: 'IMAGE', format: '多边形标注', dataset_name: '病理切片数据集v1', assignees: ['张主任'], progress: 30, total: 200, completed: 60, status: 'IN_PROGRESS', deadline: '2026-05-01' },
-  { id: 3, name: '病理报告NER标注', task_type: 'TEXT', format: 'NER标注', dataset_name: '电子病历数据集', assignees: ['李医生', '赵实习生'], progress: 90, total: 450, completed: 405, status: 'IN_PROGRESS', deadline: '2026-04-15' },
-  { id: 4, name: 'DR胸片标注', task_type: 'IMAGE', format: '矩形框标注', dataset_name: 'DR胸片数据集', assignees: ['王技师'], progress: 100, total: 300, completed: 300, status: 'COMPLETED', deadline: '2026-04-10' },
-  { id: 5, name: '心电图异常检测标注', task_type: 'IMAGE', format: '矩形框标注', dataset_name: '心电图数据集v1', assignees: [], progress: 0, total: 500, completed: 0, status: 'PENDING', deadline: '2026-05-15' },
-  { id: 6, name: '检验报告实体标注', task_type: 'TEXT', format: 'NER标注', dataset_name: '检验报告数据集', assignees: ['赵实习生'], progress: 45, total: 380, completed: 171, status: 'IN_PROGRESS', deadline: '2026-04-25' },
-])
+async function fetchSummary() {
+  try {
+    const res = await getLabelTaskSummary()
+    const data = res.data.data
+    summary.totalTasks = data.totalTasks
+    summary.inProgress = data.inProgress
+    summary.labeledData = data.labeledData
+    summary.avgConsistency = data.avgConsistency
+  } catch {
+    // Summary fetch failure should not block the page
+  }
+}
 
 // ============ Filters ============
 const filters = reactive({
@@ -303,50 +301,23 @@ const filters = reactive({
   keyword: undefined as string | undefined,
 })
 
-const filteredTasks = computed(() => {
-  return mockTasks.value.filter((task) => {
-    if (filters.task_type && task.task_type !== filters.task_type) return false
-    if (filters.format && task.format !== filters.format) return false
-    if (filters.status && task.status !== filters.status) return false
-    if (filters.keyword && !task.name.includes(filters.keyword)) return false
-    return true
-  })
-})
+// ============ Table hook ============
+const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+  (params) => getLabelTasks({
+    page: params.page,
+    page_size: params.pageSize,
+    status: filters.status || undefined,
+    task_type: filters.task_type || undefined,
+  } as any)
+)
 
 function applyFilters() {
-  // Filtering is reactive via computed; this function triggers reactivity
+  fetchData()
 }
 
-// ============ Pagination (local) ============
-const pagination = reactive({
-  current: 1,
-  pageSize: 6,
-})
-
-// ============ Table hook (kept for future API integration) ============
-const searchFields = [
-  { name: 'task_type', label: '标注类型', type: 'select' as const, options: [
-    { label: '影像标注', value: 'IMAGE' }, { label: '文本标注', value: 'TEXT' },
-  ]},
-  { name: 'status', label: '状态', type: 'select' as const, options: [
-    { label: '待标注', value: 'PENDING' }, { label: '标注中', value: 'IN_PROGRESS' },
-    { label: '已完成', value: 'COMPLETED' },
-  ]},
-]
-
-const columns = [
-  { title: '任务名称', dataIndex: 'name', key: 'name' },
-  { title: '类型', dataIndex: 'task_type', key: 'task_type', width: 100 },
-  { title: '数据集', dataIndex: 'dataset_name', key: 'dataset_name' },
-  { title: '标注人', dataIndex: 'assignee_name', key: 'assignee_name', width: 100 },
-  { title: '进度', dataIndex: 'progress', key: 'progress', width: 100 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
-  { title: '操作', key: 'action', width: 130 },
-]
-
-const { tableData, loading, fetchData, handleTableChange } = useTable<any>(
-  (params) => getLabelTasks({ page: params.page, page_size: params.pageSize })
-)
+function onPageChange(page: number, pageSize: number) {
+  fetchData({ page, pageSize })
+}
 
 // ============ Task Form ============
 const taskForm = reactive({
@@ -363,9 +334,6 @@ const taskForm = reactive({
   ai_preannotate: false,
 })
 
-function handleSearch() { fetchData() }
-function handleReset() { fetchData() }
-
 async function handleCreate() {
   submitting.value = true
   try {
@@ -373,17 +341,15 @@ async function handleCreate() {
     message.success('标注任务创建成功')
     taskModal.close()
     fetchData()
+    fetchSummary()
   } finally {
     submitting.value = false
   }
 }
 
-function viewStats(record: any) {
-  message.info('标注统计: ' + record.name)
-}
-
 onMounted(() => {
-  // fetchData() // Using mock data for now; uncomment when API is ready
+  fetchSummary()
+  fetchData()
 })
 </script>
 

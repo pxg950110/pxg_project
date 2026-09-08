@@ -54,7 +54,7 @@ public class DiseaseCohortService {
 
     // field alias: template field name -> actual DB column name
     private static final Map<String, Map<String, String>> DOMAIN_FIELD_MAP = Map.of(
-            "DIAGNOSIS", Map.of("diagnosis_code", "icd_code", "diagnosis_name", "icd_name"),
+            "DIAGNOSIS", Map.of("diagnosis_code", "diagnosis_code", "diagnosis_name", "diagnosis_name"),
             "LAB", Map.of("test_code", "test_code", "test_name", "test_name"),
             "SURGERY", Map.of("operation_name", "operation_name", "operation_code", "operation_code"),
             "PATHOLOGY", Map.of("diagnosis_desc", "diagnosis_desc"),

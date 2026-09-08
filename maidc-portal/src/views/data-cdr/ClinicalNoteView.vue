@@ -90,6 +90,19 @@ const searchKeyword = ref('')
 const activeKeys = ref<string[]>([])
 
 const noteTypeColorMap: Record<string, string> = {
+  ADMISSION: 'blue',
+  INITIAL_PROGRESS: 'green',
+  DAILY_PROGRESS: 'green',
+  DISCHARGE: 'purple',
+  OPERATION: 'red',
+  CONSULTATION: 'orange',
+  SHIFT_HANDOVER: 'cyan',
+  RESCUE: 'magenta',
+  NURSING: 'cyan',
+  RADIOLOGY: 'geekblue',
+  PATHOLOGY: 'volcano',
+  ADMISSION_ASSESSMENT: 'gold',
+  OTHER: 'default',
   admission: 'blue',
   progress: 'green',
   discharge: 'purple',
@@ -100,6 +113,19 @@ const noteTypeColorMap: Record<string, string> = {
 }
 
 const noteTypeLabelMap: Record<string, string> = {
+  ADMISSION: '入院记录',
+  INITIAL_PROGRESS: '首次病程',
+  DAILY_PROGRESS: '日常病程',
+  DISCHARGE: '出院记录',
+  OPERATION: '手术记录',
+  CONSULTATION: '会诊记录',
+  SHIFT_HANDOVER: '交接班记录',
+  RESCUE: '抢救记录',
+  NURSING: '护理记录',
+  RADIOLOGY: '影像报告',
+  PATHOLOGY: '病理报告',
+  ADMISSION_ASSESSMENT: '入院评估',
+  OTHER: '其他',
   admission: '入院记录',
   progress: '病程记录',
   discharge: '出院小结',
@@ -107,6 +133,18 @@ const noteTypeLabelMap: Record<string, string> = {
   consultation: '会诊记录',
   nursing: '护理记录',
   radiology: '影像报告',
+}
+
+const signStatusLabelMap: Record<string, { color: string; text: string }> = {
+  UNSIGNED: { color: 'default', text: '未签' },
+  SIGNED: { color: 'green', text: '已签' },
+  COUNTERSIGNED: { color: 'blue', text: '双签' },
+}
+
+const urgencyLabelMap: Record<string, { color: string; text: string }> = {
+  NORMAL: { color: 'default', text: '' },
+  URGENT: { color: 'orange', text: '紧急' },
+  CRITICAL: { color: 'red', text: '危重' },
 }
 
 const filteredNotes = computed(() => {

@@ -4,9 +4,13 @@ import com.maidc.common.core.result.R;
 import com.maidc.data.entity.ConceptRelationshipEntity;
 import com.maidc.data.service.ConceptMappingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +20,31 @@ import java.util.Map;
 public class MappingController {
 
     private final ConceptMappingService service;
+
+    @PreAuthorize("hasPermission('masterdata:read')")
+    @GetMapping
+    public R<Page<ConceptRelationshipEntity>> listMappings(
+            @RequestParam(required = false) Long conceptId,
+            @RequestParam(required = false) String relationshipType,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Specification<ConceptRelationshipEntity> spec = (root, query, cb) -> {
+            var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
+            predicates.add(cb.isFalse(root.get("isDeleted")));
+            if (conceptId != null) {
+                predicates.add(cb.or(
+                        cb.equal(root.get("conceptId1"), conceptId),
+                        cb.equal(root.get("conceptId2"), conceptId)
+                ));
+            }
+            if (relationshipType != null && !relationshipType.isBlank()) {
+                predicates.add(cb.equal(root.get("relationshipType"), relationshipType));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        Page<ConceptRelationshipEntity> result = service.listMappings(spec, PageRequest.of(page - 1, size));
+        return R.ok(result);
+    }
 
     @PreAuthorize("hasPermission('masterdata:create')")
     @PostMapping

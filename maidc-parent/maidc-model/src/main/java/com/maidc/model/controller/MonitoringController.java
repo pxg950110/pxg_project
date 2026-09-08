@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Map;
 
 @RestController
@@ -20,13 +21,15 @@ public class MonitoringController {
     private final MonitoringService monitoringService;
 
     @PreAuthorize("hasPermission('model:read')")
-    @GetMapping("/metrics")
+    @GetMapping("/metrics/overview")
     public R<Map<String, Object>> getMetricsOverview() {
         return R.ok(Map.of(
-                "totalDeployments", 0,
+                "totalModels", 0,
                 "activeDeployments", 0,
                 "totalInferences", 0,
-                "avgLatency", 0.0
+                "avgLatency", 0.0,
+                "errorRate", 0.0,
+                "models", Collections.emptyList()
         ));
     }
 
@@ -51,5 +54,14 @@ public class MonitoringController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end_time,
             @RequestParam(defaultValue = "5m") String interval) {
         return R.ok(monitoringService.getMetrics(id, metric_name, start_time, end_time, interval));
+    }
+
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping("/inference-logs")
+    public R<PageResult<Map<String, Object>>> getAllInferenceLogs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int page_size,
+            @RequestParam(required = false) String status) {
+        return R.ok(monitoringService.getAllInferenceLogs(page, page_size, status));
     }
 }

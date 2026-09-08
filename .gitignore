@@ -31,4 +31,5 @@ __pycache__/
 *.log
 
 # Synthetic data
-data/
+/data/
+.gstack/

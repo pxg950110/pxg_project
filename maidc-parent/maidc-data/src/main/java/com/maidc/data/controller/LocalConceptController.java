@@ -22,11 +22,13 @@ public class LocalConceptController {
     @GetMapping
     public R<Page<LocalConceptEntity>> list(
             @RequestParam Long institutionId,
-            @RequestParam Long codeSystemId,
+            @RequestParam(required = false) Long codeSystemId,
             @RequestParam(required = false) String mappingStatus,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int page_size) {
-        return R.ok(service.list(institutionId, codeSystemId, mappingStatus, page, page_size));
+            @RequestParam(defaultValue = "20") int page_size,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+        int effectiveSize = size != 20 ? size : page_size;
+        return R.ok(service.list(institutionId, codeSystemId, mappingStatus, page, effectiveSize));
     }
 
     @PreAuthorize("hasPermission('masterdata:read')")

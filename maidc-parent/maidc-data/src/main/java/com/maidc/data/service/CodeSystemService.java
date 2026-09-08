@@ -58,6 +58,7 @@ public class CodeSystemService {
         if (updates.getVersion() != null) entity.setVersion(updates.getVersion());
         if (updates.getDescription() != null) entity.setDescription(updates.getDescription());
         if (updates.getHierarchySupport() != null) entity.setHierarchySupport(updates.getHierarchySupport());
+        if (updates.getCategory() != null) entity.setCategory(updates.getCategory());
         if (updates.getStatus() != null) entity.setStatus(updates.getStatus());
         return codeSystemRepository.save(entity);
     }

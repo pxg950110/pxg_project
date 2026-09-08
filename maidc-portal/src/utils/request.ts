@@ -11,11 +11,19 @@ export interface ApiResponse<T = any> {
 }
 
 export interface PageResult<T = any> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
+  content: T[]
+  totalElements: number
   totalPages: number
+  number: number
+  size: number
+  first: boolean
+  last: boolean
+  empty: boolean
+  // Legacy fields for backward compatibility
+  items?: T[]
+  total?: number
+  page?: number
+  pageSize?: number
 }
 
 const service: AxiosInstance = axios.create({
@@ -45,6 +53,10 @@ let refreshSubscribers: Array<(token: string) => void> = []
 
 service.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
+    // Blob responses (file downloads) bypass JSON code checking
+    if (response.config.responseType === 'blob') {
+      return response
+    }
     const res = response.data
     if (res.code !== 200 && res.code !== 201) {
       message.error(res.message || '请求失败')

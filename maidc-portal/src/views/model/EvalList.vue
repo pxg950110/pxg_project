@@ -280,11 +280,32 @@ const versionOptions = ref<any[]>([])
 const datasetOptions = ref<any[]>([])
 
 function viewReport(item: Evaluation) {
-  message.info(`查看报告: ${item.title}`)
+  selectedId.value = item.id
 }
 
 function exportReport(item: Evaluation) {
-  message.info(`导出报告: ${item.title}`)
+  const rows = [
+    ['指标', '值'],
+    ['AUC', item.auc?.toFixed(4) ?? ''],
+    ['F1 Score', item.f1?.toFixed(4) ?? ''],
+    ['Precision', item.precision?.toFixed(4) ?? ''],
+    ['Recall', item.recall?.toFixed(4) ?? ''],
+    ['Sensitivity', item.sensitivity?.toFixed(4) ?? ''],
+    ['Specificity', item.specificity?.toFixed(4) ?? ''],
+  ]
+  if (item.tp != null) {
+    rows.push([], ['混淆矩阵', ''], ['标签\\预测', '阳性(P)', '阴性(N)'])
+    rows.push(['阳性(P)', `TP: ${item.tp}`, `FP: ${item.fp}`])
+    rows.push(['阴性(N)', `FN: ${item.fn}`, `TN: ${item.tn}`])
+  }
+  const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${item.title}_report.csv`
+  a.click()
+  window.URL.revokeObjectURL(url)
 }
 
 async function handleCreateEval() {

@@ -38,10 +38,22 @@ export const usePatientEncounterStore = defineStore('patientEncounter', () => {
       const data = res.data.data
 
       // Extract patient info and encounter list from response
+      // Backend returns PatientEncounterListDTO with patient info at top level and encounters array
       if (data) {
-        patientInfo.value = data.patientInfo || null
-        encounters.value = data.list || []
-        total.value = data.total || 0
+        // Patient info fields are at the top level of the response
+        patientInfo.value = {
+          patientId: data.patientId,
+          patientName: data.patientName,
+          gender: data.gender,
+          age: data.age,
+          patientNo: data.patientNo,
+          idCard: data.idCard,
+          phone: data.phone,
+          allergyHistory: data.allergyHistory,
+          familyHistory: data.familyHistory
+        }
+        encounters.value = data.encounters || []
+        total.value = data.encounters?.length || 0
       }
 
       return data

@@ -87,7 +87,7 @@ import DynamicFormRenderer from '@/components/DynamicFormRenderer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import {
   getDataSources, createDataSource, updateDataSource, deleteDataSource,
-  getDataSourceTypes, testConnectionPreSave,
+  getDataSourceTypes, testConnectionPreSave, testDataSourceConnection as testConnection,
 } from '@/api/data'
 import { formatDateTime } from '@/utils/date'
 
@@ -224,10 +224,7 @@ function handleModalCancel() {
 async function handleTestConnection(record: any) {
   const hide = message.loading('正在测试连接...', 0)
   try {
-    const res = await testConnectionPreSave({
-      type_code: record.sourceTypeCode || record.source_type_code,
-      connection_params: record.connectionParams || {},
-    })
+    const res = await testConnection(record.id)
     hide()
     if (res.data.data.success) message.success(`连接成功 (${res.data.data.latencyMs}ms)`)
     else message.error(`连接失败: ${res.data.data.message}`)

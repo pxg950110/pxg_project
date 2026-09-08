@@ -187,6 +187,7 @@ import {
   toggleDesensitizeRule,
   previewDesensitize,
 } from '@/api/data'
+import { getEtlTables, getEtlColumns } from '@/api/etl'
 
 defineOptions({ name: 'DesensitizeRule' })
 
@@ -215,7 +216,8 @@ const strategyOptions = [
   { value: 'pseudonymize', label: '伪匿名', description: '替换为伪标识符，保留映射关系' },
 ]
 
-const fieldOptions = [
+// 脱敏字段选项 - 从后端获取
+const fieldOptions = ref<{ value: string; label: string }[]>([
   { value: 'name', label: '姓名' },
   { value: 'id_card', label: '身份证号' },
   { value: 'phone', label: '联系电话' },
@@ -224,7 +226,32 @@ const fieldOptions = [
   { value: 'birth_date', label: '出生日期' },
   { value: 'medical_record_no', label: '病历号' },
   { value: 'insurance_no', label: '医保卡号' },
-]
+])
+
+async function loadFieldOptions() {
+  try {
+    // Load sensitive fields from CDR patient table
+    const res = await getEtlColumns('cdr', 'cdr_patient')
+    const sensitiveFields = ['name', 'id_card', 'phone', 'address', 'email', 'birth_date', 'medical_record_no', 'insurance_no']
+    const columns = res.data.data || []
+    fieldOptions.value = columns
+      .filter((c: any) => sensitiveFields.includes(c.columnName || c.name))
+      .map((c: any) => ({ value: c.columnName || c.name, label: c.columnComment || c.columnName || c.name }))
+    if (fieldOptions.value.length === 0) {
+      // Fallback to defaults
+      fieldOptions.value = [
+        { value: 'name', label: '姓名' },
+        { value: 'id_card', label: '身份证号' },
+        { value: 'phone', label: '联系电话' },
+        { value: 'address', label: '家庭住址' },
+        { value: 'email', label: '电子邮箱' },
+        { value: 'birth_date', label: '出生日期' },
+        { value: 'medical_record_no', label: '病历号' },
+        { value: 'insurance_no', label: '医保卡号' },
+      ]
+    }
+  } catch { /* keep defaults */ }
+}
 
 function filterOption(input: string, option: any) {
   return option.label?.toLowerCase().includes(input.toLowerCase())
@@ -425,7 +452,7 @@ async function handlePreview(record: any) {
   }
 }
 
-onMounted(() => fetchData())
+onMounted(() => { loadFieldOptions(); fetchData() })
 </script>
 
 <style scoped>

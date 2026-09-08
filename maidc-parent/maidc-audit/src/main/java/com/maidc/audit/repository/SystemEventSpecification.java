@@ -14,7 +14,7 @@ public class SystemEventSpecification {
         // utility class
     }
 
-    public static Specification<SystemEventEntity> buildSearchSpec(String eventType, String severity,
+    public static Specification<SystemEventEntity> buildSearchSpec(String eventType, String eventLevel,
                                                                     LocalDateTime startTime, LocalDateTime endTime) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -22,8 +22,8 @@ public class SystemEventSpecification {
             if (eventType != null && !eventType.isBlank()) {
                 predicates.add(cb.equal(root.get("eventType"), eventType));
             }
-            if (severity != null && !severity.isBlank()) {
-                predicates.add(cb.equal(root.get("severity"), severity));
+            if (eventLevel != null && !eventLevel.isBlank()) {
+                predicates.add(cb.equal(root.get("eventLevel"), eventLevel));
             }
             if (startTime != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startTime));

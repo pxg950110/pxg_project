@@ -64,10 +64,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
+import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
-import { getDataAccessLogs } from '@/api/audit'
+import { getDataAccessLogs, exportDataAccessLogs } from '@/api/audit'
 
 // --- Columns ---
 const columns = [
@@ -100,20 +101,35 @@ const actionColors: Record<string, string> = {
 }
 
 // --- Export ---
-function handleExport() {
-  // TODO: implement export logic
+async function handleExport() {
+  try {
+    const res = await exportDataAccessLogs({
+      dataType: filters.dataType,
+      userId: filters.keyword || undefined,
+      patientId: filters.patientId,
+      startTime: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
+      endTime: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined,
+    })
+    const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'data_access_logs.csv'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch { message.error('导出失败') }
 }
 
 // --- API integration ---
 const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
   (params) => getDataAccessLogs({
     page: params.page,
-    page_size: params.pageSize,
-    data_type: filters.dataType,
-    user_id: filters.keyword,
-    patient_id: filters.patientId,
-    start_time: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
-    end_time: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
+    pageSize: params.pageSize,
+    dataType: filters.dataType,
+    userId: filters.keyword,
+    patientId: filters.patientId,
+    startTime: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
+    endTime: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
   })
 )
 

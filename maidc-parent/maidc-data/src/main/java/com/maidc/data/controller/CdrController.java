@@ -51,6 +51,7 @@ public class CdrController {
     private final CheckupSummaryService checkupSummaryService;
     private final CheckupComparisonService checkupComparisonService;
     private final OrgService orgService;
+    private final DocumentTemplateService documentTemplateService;
 
     // ==================== Patient ====================
 
@@ -418,6 +419,33 @@ public class CdrController {
     // ==================== ClinicalNote ====================
 
     @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/clinical-notes/search")
+    public R<Page<ClinicalNoteEntity>> searchClinicalNotes(
+            @RequestParam(required = false) Long encounterId,
+            @RequestParam(required = false) Long patientId,
+            @RequestParam(required = false) String noteType,
+            @RequestParam(required = false) String noteCategory,
+            @RequestParam(required = false) String signStatus,
+            @RequestParam(required = false) String urgency,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(clinicalNoteService.searchNotes(
+                encounterId, patientId, noteType, noteCategory,
+                signStatus, urgency, source, keyword, page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/clinical-notes/by-encounter")
+    public R<Page<ClinicalNoteEntity>> listClinicalNotesByEncounter(
+            @RequestParam Long encounterId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(clinicalNoteService.listByEncounter(encounterId, page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
     @GetMapping("/clinical-notes")
     public R<Page<ClinicalNoteEntity>> listClinicalNotes(
             @RequestParam(defaultValue = "1") int page,
@@ -438,11 +466,73 @@ public class CdrController {
         return R.ok(clinicalNoteService.createClinicalNote(entity));
     }
 
+    @OperLog(module = "cdr", operation = "updateClinicalNote")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PutMapping("/clinical-notes/{id}")
+    public R<ClinicalNoteEntity> updateClinicalNote(@PathVariable Long id,
+                                                     @RequestBody ClinicalNoteEntity entity) {
+        return R.ok(clinicalNoteService.updateClinicalNote(id, entity));
+    }
+
+    @OperLog(module = "cdr", operation = "signClinicalNote")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/clinical-notes/{id}/sign")
+    public R<ClinicalNoteEntity> signClinicalNote(@PathVariable Long id, @RequestParam String signedBy) {
+        return R.ok(clinicalNoteService.signNote(id, signedBy));
+    }
+
+    @OperLog(module = "cdr", operation = "countersignClinicalNote")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/clinical-notes/{id}/countersign")
+    public R<ClinicalNoteEntity> countersignClinicalNote(@PathVariable Long id, @RequestParam String signedBy) {
+        return R.ok(clinicalNoteService.countersignNote(id, signedBy));
+    }
+
     @OperLog(module = "cdr", operation = "deleteClinicalNote")
     @PreAuthorize("hasPermission('cdr:create')")
     @DeleteMapping("/clinical-notes/{id}")
     public R<Void> deleteClinicalNote(@PathVariable Long id) {
         clinicalNoteService.deleteClinicalNote(id);
+        return R.ok();
+    }
+
+    // ==================== DocumentTemplate ====================
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/document-templates")
+    public R<Page<DocumentTemplateEntity>> listDocumentTemplates(
+            @RequestParam(required = false) String noteType,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(documentTemplateService.listTemplates(noteType, page, size));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/document-templates/{id}")
+    public R<DocumentTemplateEntity> getDocumentTemplate(@PathVariable Long id) {
+        return R.ok(documentTemplateService.getTemplate(id));
+    }
+
+    @OperLog(module = "cdr", operation = "createDocumentTemplate")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PostMapping("/document-templates")
+    public R<DocumentTemplateEntity> createDocumentTemplate(@RequestBody DocumentTemplateEntity entity) {
+        return R.ok(documentTemplateService.createTemplate(entity));
+    }
+
+    @OperLog(module = "cdr", operation = "updateDocumentTemplate")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @PutMapping("/document-templates/{id}")
+    public R<DocumentTemplateEntity> updateDocumentTemplate(@PathVariable Long id,
+                                                              @RequestBody DocumentTemplateEntity entity) {
+        return R.ok(documentTemplateService.updateTemplate(id, entity));
+    }
+
+    @OperLog(module = "cdr", operation = "deleteDocumentTemplate")
+    @PreAuthorize("hasPermission('cdr:create')")
+    @DeleteMapping("/document-templates/{id}")
+    public R<Void> deleteDocumentTemplate(@PathVariable Long id) {
+        documentTemplateService.deleteTemplate(id);
         return R.ok();
     }
 

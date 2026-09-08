@@ -1,5 +1,5 @@
 <template>
-  <PageContainer title="患者360视图" subtitle="患者全生命周期健康档案">
+  <PageContainer title="患者360视图" subtitle="患者全生命周期健康档案" :loading="loading">
     <template #extra>
       <a-button @click="router.back()">
         <template #icon><ArrowLeftOutlined /></template>
@@ -7,85 +7,54 @@
       </a-button>
     </template>
 
-    <!-- Profile Header Card (with inline metrics) -->
-    <a-card :bordered="false" class="profile-card">
-      <div class="profile-layout">
-        <div class="profile-avatar">
-          <div class="avatar-circle">
-            <UserOutlined style="font-size: 36px; color: #1677ff" />
-          </div>
+    <template v-if="patient">
+
+    <!-- Compact Profile Header -->
+    <div class="profile-compact">
+      <div class="profile-left">
+        <div class="avatar-mini">
+          <UserOutlined style="font-size: 18px; color: #1677ff" />
         </div>
-        <div class="profile-info">
-          <div class="profile-name-row">
-            <h2 class="profile-name">{{ patient.name }}</h2>
-            <a-tag :color="patient.gender === '男' ? 'blue' : 'pink'" class="gender-tag">
-              {{ patient.gender }}
-            </a-tag>
-            <span class="profile-age">{{ patient.age }}岁</span>
-          </div>
-          <a-descriptions :column="3" size="small" :colon="true" class="profile-desc">
-            <a-descriptions-item label="身份证号">{{ patient.idCard }}</a-descriptions-item>
-            <a-descriptions-item label="血型">{{ patient.bloodType }}</a-descriptions-item>
-            <a-descriptions-item label="联系电话">{{ patient.phone }}</a-descriptions-item>
-            <a-descriptions-item label="家庭住址" :span="3">{{ patient.address }}</a-descriptions-item>
-          </a-descriptions>
-          <div class="allergy-row">
-            <span class="allergy-label">过敏史：</span>
-            <a-tag v-for="(item, idx) in patient.allergies" :key="idx" color="red">{{ item }}</a-tag>
-          </div>
-        </div>
-        <div class="profile-metrics">
-          <div class="metric-item">
-            <div class="metric-value">{{ metrics.encounters }}<span class="metric-suffix">次</span></div>
-            <div class="metric-title">就诊次数</div>
-          </div>
-          <div class="metric-item">
-            <div class="metric-value">{{ metrics.diagnoses }}<span class="metric-suffix">个</span></div>
-            <div class="metric-title">诊断数</div>
-          </div>
-          <div class="metric-item">
-            <div class="metric-value">{{ metrics.medications }}<span class="metric-suffix">条</span></div>
-            <div class="metric-title">用药记录</div>
-          </div>
-          <div class="metric-item">
-            <div class="metric-value">{{ metrics.labReports }}<span class="metric-suffix">份</span></div>
-            <div class="metric-title">检验报告</div>
-          </div>
+        <div class="profile-basic">
+          <span class="name">{{ patient.name }}</span>
+          <a-tag :color="patient.gender === 'M' ? 'blue' : 'pink'" size="small">
+            {{ patient.gender === 'M' ? '男' : patient.gender === 'F' ? '女' : '未知' }}
+          </a-tag>
+          <span class="age">{{ age }}岁</span>
+          <span class="divider">|</span>
+          <span class="birth">{{ patient.birthDate }}</span>
+          <span class="divider">|</span>
+          <span class="org">组织: {{ patient.orgId }}</span>
+          <template v-if="allergies.length">
+            <span class="divider">|</span>
+            <a-tag v-for="item in allergies.slice(0, 2)" :key="item.id" color="red" size="small">{{ item.allergen }}</a-tag>
+            <a-tag v-if="allergies.length > 2" size="small">+{{ allergies.length - 2 }}</a-tag>
+          </template>
         </div>
       </div>
-    </a-card>
-
-    <!-- Medical Timeline (horizontal) -->
-    <a-card :bordered="false" title="就医时间线" style="margin-top: 16px">
-      <template #extra>
-        <span class="timeline-hint">最近5条记录</span>
-      </template>
-      <div class="timeline-horizontal">
-        <div
-          v-for="(event, idx) in timelineEvents"
-          :key="idx"
-          class="timeline-card"
-        >
-          <div class="timeline-connector">
-            <div class="timeline-dot" :class="'dot-' + event.color"></div>
-            <div v-if="idx < timelineEvents.length - 1" class="timeline-line"></div>
-          </div>
-          <div class="timeline-content">
-            <div class="timeline-date">{{ event.date }}</div>
-            <div class="timeline-body">
-              <a-tag :color="event.tagColor" class="timeline-type-tag">{{ event.type }}</a-tag>
-              <span class="timeline-dept">{{ event.department }}</span>
-            </div>
-            <div class="timeline-title">{{ event.title }}</div>
-            <div v-if="event.detail" class="timeline-detail">{{ event.detail }}</div>
-          </div>
-        </div>
+      <div class="profile-metrics-mini">
+        <div class="metric"><span class="val">{{ metrics.encounterCount }}</span><span class="lbl">就诊</span></div>
+        <div class="metric"><span class="val">{{ metrics.diagnosisCount }}</span><span class="lbl">诊断</span></div>
+        <div class="metric"><span class="val">{{ metrics.medicationCount }}</span><span class="lbl">用药</span></div>
+        <div class="metric"><span class="val">{{ metrics.labTestCount }}</span><span class="lbl">检验</span></div>
       </div>
-    </a-card>
+    </div>
 
-    <!-- 5 Tabs -->
-    <a-card :bordered="false" style="margin-top: 16px">
+    <!-- Main Content: Tabs with Timeline in Extra -->
+    <a-card :bordered="false" style="margin-top: 12px">
       <a-tabs v-model:activeKey="activeTab">
+        <template #rightExtras>
+          <div class="timeline-mini" v-if="timelineEvents.length">
+            <span class="timeline-label">最近就诊:</span>
+            <a-tooltip v-for="(event, idx) in timelineEvents.slice(0, 3)" :key="idx">
+              <template #title>{{ event.date }} - {{ event.title }}</template>
+              <a-tag :color="event.tagColor" class="timeline-tag">
+                {{ event.type }} {{ event.date }}
+              </a-tag>
+            </a-tooltip>
+          </div>
+        </template>
+
         <a-tab-pane key="outpatient" tab="门诊记录">
           <a-table
             :columns="outpatientColumns"
@@ -95,14 +64,12 @@
             :pagination="{ pageSize: 5 }"
           >
             <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <a-badge
-                  :status="record.status === '已完成' ? 'success' : 'processing'"
-                  :text="record.status"
-                />
+              <template v-if="column.key === 'encounterType'">
+                <a-badge status="success" text="已完成" />
               </template>
             </template>
           </a-table>
+          <a-empty v-if="!outpatientData.length" description="暂无门诊记录" />
         </a-tab-pane>
 
         <a-tab-pane key="inpatient" tab="住院记录">
@@ -114,32 +81,83 @@
             :pagination="{ pageSize: 5 }"
           >
             <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <a-badge
-                  :status="record.status === '已出院' ? 'success' : record.status === '住院中' ? 'processing' : 'default'"
-                  :text="record.status"
-                />
+              <template v-if="column.key === 'dischargeTime'">
+                {{ record.dischargeTime ? record.dischargeTime : '住院中' }}
+              </template>
+              <template v-if="column.key === 'los'">
+                {{ record.dischargeTime ? calcLos(record.admissionTime, record.dischargeTime) + '天' : '-' }}
               </template>
             </template>
           </a-table>
+          <a-empty v-if="!inpatientData.length" description="暂无住院记录" />
         </a-tab-pane>
 
         <a-tab-pane key="lab" tab="检验报告">
-          <a-table
-            :columns="labColumns"
-            :data-source="labData"
-            size="small"
-            row-key="id"
-            :pagination="{ pageSize: 5 }"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'abnormal'">
-                <a-tag :color="record.abnormal ? 'red' : 'green'">
-                  {{ record.abnormal ? '异常' : '正常' }}
-                </a-tag>
-              </template>
-            </template>
-          </a-table>
+          <a-segmented v-model:value="labSubTab" :options="[{ value: 'regular', label: '常规检验' }, { value: 'micro', label: '微生物报告' }]" style="margin-bottom: 16px" />
+
+          <!-- Regular Lab Reports -->
+          <template v-if="labSubTab === 'regular'">
+            <div v-for="report in labTests" :key="report.id" class="report-card">
+              <div class="report-header" @click="toggleReport('lab', report.id)">
+                <div class="report-title-row">
+                  <span class="report-title">{{ report.testName }}</span>
+                  <a-tag v-if="report.items?.filter((i: any) => i.abnormalFlag).length" color="red">
+                    {{ report.items.filter((i: any) => i.abnormalFlag).length }}项异常
+                  </a-tag>
+                  <a-tag v-else color="green">正常</a-tag>
+                  <a-tag>{{ report.specimenType || '-' }}</a-tag>
+                </div>
+                <div class="report-meta">
+                  报告时间：{{ fmtDateTime(report.reportedAt) }} &nbsp;|&nbsp; 申请医生：{{ report.orderingDoctor || '-' }}
+                </div>
+              </div>
+              <div v-show="expandedReports['lab-' + report.id]" class="report-body">
+                <a-table :columns="labItemColumns" :data-source="report.items || []" size="small" row-key="id" :pagination="false">
+                  <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'abnormalFlag'">
+                      <span :style="{ color: record.abnormalFlag ? '#ff4d4f' : 'inherit', fontWeight: record.abnormalFlag ? '600' : 'normal' }">
+                        {{ record.resultValue }}
+                      </span>
+                    </template>
+                    <template v-if="column.key === 'flag'">
+                      <a-tag v-if="record.abnormalFlag" color="red" size="small">H</a-tag>
+                    </template>
+                  </template>
+                </a-table>
+              </div>
+            </div>
+            <a-empty v-if="!labTests.length" description="暂无常规检验报告" />
+          </template>
+
+          <!-- Microbiology Reports -->
+          <template v-if="labSubTab === 'micro'">
+            <div v-for="(report, ridx) in microReports" :key="ridx" class="report-card">
+              <div class="report-header" @click="toggleReport('micro', ridx)">
+                <div class="report-title-row">
+                  <span class="report-title">{{ report.specTypeDesc }}</span>
+                  <a-tag color="purple">{{ report.chartDate }}</a-tag>
+                </div>
+              </div>
+              <div v-show="expandedReports['micro-' + ridx]" class="report-body">
+                <div v-for="(org, oidx) in report.organisms" :key="oidx" class="micro-organism">
+                  <div class="organism-header">
+                    <span class="organism-name">{{ org.orgName }}</span>
+                    <a-tag v-if="org.quantity" color="orange">菌量 {{ org.quantity }}</a-tag>
+                  </div>
+                  <a-table :columns="microColumns" :data-source="org.antibiotics" size="small" row-key="id" :pagination="false">
+                    <template #bodyCell="{ column, record }">
+                      <template v-if="column.key === 'interpretation'">
+                        <a-tag :color="record.interpretation === 'S' ? 'green' : record.interpretation === 'R' ? 'red' : 'orange'">
+                          {{ record.interpretation === 'S' ? '敏感(S)' : record.interpretation === 'R' ? '耐药(R)' : '中介(I)' }}
+                        </a-tag>
+                      </template>
+                    </template>
+                  </a-table>
+                </div>
+              </div>
+            </div>
+            <a-empty v-if="!microReports.length" description="暂无微生物报告" />
+          </template>
         </a-tab-pane>
 
         <a-tab-pane key="imaging" tab="影像检查">
@@ -156,6 +174,7 @@
               </template>
             </template>
           </a-table>
+          <a-empty v-if="!imagingData.length" description="暂无影像检查" />
         </a-tab-pane>
 
         <a-tab-pane key="medication" tab="用药记录">
@@ -168,370 +187,352 @@
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
-                <a-tag :color="record.status === '使用中' ? 'blue' : 'default'">
-                  {{ record.status }}
+                <a-tag :color="record.status === 'ACTIVE' ? 'blue' : record.status === 'COMPLETED' ? 'green' : 'default'">
+                  {{ record.status === 'ACTIVE' ? '使用中' : record.status === 'COMPLETED' ? '已完成' : record.status }}
                 </a-tag>
               </template>
             </template>
           </a-table>
+          <a-empty v-if="!medicationData.length" description="暂无用药记录" />
         </a-tab-pane>
       </a-tabs>
     </a-card>
+
+    </template>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import {
   UserOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
+import { getPatient360 } from '@/api/data'
+
 const router = useRouter()
+const route = useRoute()
 const activeTab = ref('outpatient')
+const loading = ref(false)
 
-// ============ Patient Profile ============
-const patient = {
-  name: '张三',
-  gender: '男',
-  age: 65,
-  idCard: '310***********1234',
-  bloodType: 'A型',
-  phone: '138****5678',
-  address: '上海市浦东新区张江高科技园区碧波路690号',
-  allergies: ['青霉素', '磺胺类'],
+interface LabPanelItem { id: number; itemCode: string; itemName: string; resultValue: string; resultUnit: string; referenceRange: string; abnormalFlag: boolean }
+interface LabTest { id: number; testName: string; specimenType: string; reportedAt: string; orderingDoctor: string; items: LabPanelItem[] }
+interface Encounter { id: number; encounterType: string; department: string; admissionTime: string; dischargeTime: string | null; attendingDoctor: string; diagnosisSummary: string }
+interface ImagingExam { id: number; modality: string; bodyPart: string; studyDate: string; reportText: string }
+interface Medication { id: number; medName: string; dosage: string; route: string; frequency: string; startTime: string; endTime: string | null; prescriber: string; status: string }
+interface Allergy { id: number; allergen: string; severity: string }
+interface Diagnosis { id: number; diagnosisCode: string; diagnosisName: string; diagnosisType: string }
+interface MicroRow { id: number; chartDate: string; specTypeDesc: string; testName: string; orgName: string; isolateNum: number; abName: string; dilutionText: string; interpretation: string; quantity: string }
+
+const patient = ref<any>(null)
+const encounters = ref<Encounter[]>([])
+const diagnoses = ref<Diagnosis[]>([])
+const allergies = ref<Allergy[]>([])
+const labTests = ref<LabTest[]>([])
+const medications = ref<Medication[]>([])
+const imagingExams = ref<ImagingExam[]>([])
+const microbiology = ref<MicroRow[]>([])
+const metrics = ref({ encounterCount: 0, diagnosisCount: 0, medicationCount: 0, labTestCount: 0 })
+const labSubTab = ref<string>('regular')
+const expandedReports = ref<Record<string, boolean>>({})
+
+const age = computed(() => {
+  if (!patient.value?.birthDate) return '-'
+  const birth = new Date(patient.value.birthDate)
+  const today = new Date()
+  let a = today.getFullYear() - birth.getFullYear()
+  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) a--
+  return a
+})
+
+// Split encounters by type
+const outpatientData = computed(() =>
+  encounters.value.filter(e => e.encounterType === 'OUTPATIENT')
+    .map(e => ({ ...e, date: fmtDateTime(e.admissionTime) }))
+)
+const inpatientData = computed(() =>
+  encounters.value.filter(e => e.encounterType === 'INPATIENT' || e.encounterType === 'EMERGENCY')
+)
+
+// Microbiology reports grouped by specimen+date, then by organism
+const microReports = computed(() => {
+  const groupMap = new Map<string, { specTypeDesc: string; chartDate: string; organismsMap: Map<string, { orgName: string; quantity: string; antibiotics: any[] }> }>()
+  for (const row of microbiology.value) {
+    const dateStr = fmtDate(row.chartDate)
+    const gKey = `${row.specTypeDesc}|${dateStr}`
+    if (!groupMap.has(gKey)) {
+      groupMap.set(gKey, { specTypeDesc: row.specTypeDesc, chartDate: dateStr, organismsMap: new Map() })
+    }
+    const report = groupMap.get(gKey)!
+    if (!report.organismsMap.has(row.orgName)) {
+      report.organismsMap.set(row.orgName, { orgName: row.orgName, quantity: row.quantity, antibiotics: [] })
+    }
+    if (row.abName) {
+      report.organismsMap.get(row.orgName)!.antibiotics.push(row)
+    }
+  }
+  return Array.from(groupMap.values()).map(r => ({
+    ...r,
+    organisms: Array.from(r.organismsMap.values()),
+  }))
+})
+
+const imagingData = computed(() => imagingExams.value)
+const medicationData = computed(() => medications.value)
+
+// Timeline from recent encounters
+const timelineEvents = computed(() => {
+  const typeColor: Record<string, string> = { OUTPATIENT: 'blue', INPATIENT: 'red', EMERGENCY: 'orange' }
+  const typeLabel: Record<string, string> = { OUTPATIENT: '门诊', INPATIENT: '住院', EMERGENCY: '急诊' }
+  return encounters.value.slice(0, 5).map(e => ({
+    date: fmtDate(e.admissionTime),
+    type: typeLabel[e.encounterType] || e.encounterType,
+    title: e.diagnosisSummary || '-',
+    department: e.department,
+    detail: e.attendingDoctor ? `${e.attendingDoctor}` : '',
+    color: typeColor[e.encounterType] || 'blue',
+    tagColor: typeColor[e.encounterType] || 'blue',
+  }))
+})
+
+function fmtDateTime(dt: string | null | undefined) {
+  if (!dt) return '-'
+  return dt.replace('T', ' ').substring(0, 16)
 }
 
-// ============ Metric Stats ============
-const metrics = {
-  encounters: 28,
-  diagnoses: 15,
-  medications: 42,
-  labReports: 36,
+function fmtDate(dt: string | null | undefined) {
+  if (!dt) return '-'
+  return dt.substring(0, 10)
 }
 
-// ============ Timeline Events ============
-const timelineEvents = [
-  {
-    date: '2025-03-15',
-    type: '门诊',
-    title: '心内科门诊随访，血压控制良好',
-    department: '心内科',
-    detail: '血压 128/82mmHg，心率 72次/分，继续当前方案治疗',
-    color: 'blue',
-    tagColor: 'blue',
-  },
-  {
-    date: '2025-01-20',
-    type: '住院',
-    title: '急性心肌梗死，行PCI术',
-    department: '心内科',
-    detail: '冠脉造影示前降支近段狭窄90%，植入支架1枚，术后恢复良好',
-    color: 'red',
-    tagColor: 'red',
-  },
-  {
-    date: '2024-09-08',
-    type: '检验',
-    title: '血常规+肝肾功能检查',
-    department: '检验科',
-    detail: '空腹血糖 7.2mmol/L（偏高），糖化血红蛋白 6.8%，血脂正常',
-    color: 'green',
-    tagColor: 'green',
-  },
-  {
-    date: '2024-06-12',
-    type: '影像',
-    title: '胸部CT平扫',
-    department: '影像科',
-    detail: '双肺纹理增多，右下肺陈旧灶，心影增大，主动脉结钙化',
-    color: 'orange',
-    tagColor: 'orange',
-  },
-  {
-    date: '2024-02-03',
-    type: '门诊',
-    title: '内分泌科门诊，2型糖尿病复诊',
-    department: '内分泌科',
-    detail: '调整二甲双胍剂量至500mg tid，加强饮食控制',
-    color: 'blue',
-    tagColor: 'blue',
-  },
-]
+function calcLos(admit: string, discharge: string) {
+  const a = new Date(admit), b = new Date(discharge)
+  return Math.max(1, Math.round((b.getTime() - a.getTime()) / 86400000))
+}
 
-// ============ Tab: Outpatient ============
+// Table column definitions
 const outpatientColumns = [
-  { title: '就诊日期', dataIndex: 'date', key: 'date', width: 120 },
+  { title: '就诊日期', dataIndex: 'admissionTime', key: 'admissionTime', width: 120, customRender: ({ text }: any) => fmtDate(text) },
   { title: '科室', dataIndex: 'department', key: 'department', width: 100 },
-  { title: '医生', dataIndex: 'doctor', key: 'doctor', width: 90 },
-  { title: '诊断', dataIndex: 'diagnosis', key: 'diagnosis' },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
+  { title: '医生', dataIndex: 'attendingDoctor', key: 'attendingDoctor', width: 120 },
+  { title: '诊断', dataIndex: 'diagnosisSummary', key: 'diagnosisSummary' },
+  { title: '状态', key: 'encounterType', width: 90 },
 ]
 
-const outpatientData = [
-  { id: 'OP2025031501', date: '2025-03-15', department: '心内科', doctor: '王建国', diagnosis: '冠心病、高血压3级、2型糖尿病', status: '已完成' },
-  { id: 'OP2025020801', date: '2025-02-08', department: '内分泌科', doctor: '李明华', diagnosis: '2型糖尿病、糖尿病肾病II期', status: '已完成' },
-  { id: 'OP2024112001', date: '2024-11-20', department: '心内科', doctor: '王建国', diagnosis: '冠心病PCI术后、高血压', status: '已完成' },
-  { id: 'OP2024090801', date: '2024-09-08', department: '内分泌科', doctor: '李明华', diagnosis: '2型糖尿病复诊', status: '已完成' },
-  { id: 'OP2024061201', date: '2024-06-12', department: '呼吸内科', doctor: '赵志远', diagnosis: '慢性支气管炎', status: '已完成' },
-  { id: 'OP2024020301', date: '2024-02-03', department: '内分泌科', doctor: '李明华', diagnosis: '2型糖尿病、血脂异常', status: '已完成' },
-  { id: 'OP2023111501', date: '2023-11-15', department: '心内科', doctor: '王建国', diagnosis: '高血压3级、窦性心动过速', status: '已完成' },
-]
-
-// ============ Tab: Inpatient ============
 const inpatientColumns = [
-  { title: '住院号', dataIndex: 'admissionId', key: 'admissionId', width: 120 },
-  { title: '入院日期', dataIndex: 'admissionDate', key: 'admissionDate', width: 120 },
-  { title: '出院日期', dataIndex: 'dischargeDate', key: 'dischargeDate', width: 120 },
+  { title: '入院日期', dataIndex: 'admissionTime', key: 'admissionTime', width: 120, customRender: ({ text }: any) => fmtDate(text) },
+  { title: '出院日期', key: 'dischargeTime', width: 120 },
   { title: '科室', dataIndex: 'department', key: 'department', width: 100 },
-  { title: '入院诊断', dataIndex: 'diagnosis', key: 'diagnosis' },
-  { title: '住院天数', dataIndex: 'days', key: 'days', width: 90 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
+  { title: '入院诊断', dataIndex: 'diagnosisSummary', key: 'diagnosisSummary' },
+  { title: '住院天数', key: 'los', width: 90 },
 ]
 
-const inpatientData = [
-  { id: 'IP001', admissionId: 'A2025012001', admissionDate: '2025-01-20', dischargeDate: '2025-01-28', department: '心内科', diagnosis: '急性ST段抬高型心肌梗死', days: 8, status: '已出院' },
-  { id: 'IP002', admissionId: 'A2024030501', admissionDate: '2024-03-05', dischargeDate: '2024-03-12', department: '内分泌科', diagnosis: '2型糖尿病酮症酸中毒', days: 7, status: '已出院' },
-  { id: 'IP003', admissionId: 'A2023061501', admissionDate: '2023-06-15', dischargeDate: '2023-06-22', department: '呼吸内科', diagnosis: '慢性阻塞性肺疾病急性加重', days: 7, status: '已出院' },
-]
-
-// ============ Tab: Lab Reports ============
-const labColumns = [
-  { title: '报告日期', dataIndex: 'date', key: 'date', width: 120 },
-  { title: '检验项目', dataIndex: 'testName', key: 'testName', width: 160 },
-  { title: '结果', dataIndex: 'result', key: 'result', width: 120 },
+const labItemColumns = [
+  { title: '项目名称', dataIndex: 'itemName', key: 'itemName', width: 160 },
+  { title: '结果', key: 'abnormalFlag', width: 100 },
+  { title: '单位', dataIndex: 'resultUnit', key: 'resultUnit', width: 80 },
   { title: '参考范围', dataIndex: 'referenceRange', key: 'referenceRange', width: 120 },
-  { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
-  { title: '异常', dataIndex: 'abnormal', key: 'abnormal', width: 70 },
+  { title: '', key: 'flag', width: 40 },
 ]
 
-const labData = [
-  { id: 'LAB001', date: '2025-03-15', testName: '空腹血糖(FBG)', result: '6.8', referenceRange: '3.9-6.1', unit: 'mmol/L', abnormal: true },
-  { id: 'LAB002', date: '2025-03-15', testName: '糖化血红蛋白(HbA1c)', result: '6.8', referenceRange: '4.0-6.0', unit: '%', abnormal: true },
-  { id: 'LAB003', date: '2025-03-15', testName: '总胆固醇(TC)', result: '4.2', referenceRange: '2.8-5.2', unit: 'mmol/L', abnormal: false },
-  { id: 'LAB004', date: '2025-03-15', testName: '低密度脂蛋白(LDL)', result: '2.6', referenceRange: '0-3.4', unit: 'mmol/L', abnormal: false },
-  { id: 'LAB005', date: '2025-03-15', testName: '肌酐(Cr)', result: '98', referenceRange: '44-133', unit: 'umol/L', abnormal: false },
-  { id: 'LAB006', date: '2025-01-22', testName: '肌钙蛋白I(cTnI)', result: '0.03', referenceRange: '0-0.04', unit: 'ng/mL', abnormal: false },
-  { id: 'LAB007', date: '2025-01-22', testName: 'BNP', result: '186', referenceRange: '0-100', unit: 'pg/mL', abnormal: true },
-  { id: 'LAB008', date: '2024-09-08', testName: '血红蛋白(Hb)', result: '132', referenceRange: '120-160', unit: 'g/L', abnormal: false },
-  { id: 'LAB009', date: '2024-09-08', testName: '白细胞(WBC)', result: '7.2', referenceRange: '3.5-9.5', unit: '10^9/L', abnormal: false },
-  { id: 'LAB010', date: '2024-09-08', testName: '血小板(PLT)', result: '198', referenceRange: '125-350', unit: '10^9/L', abnormal: false },
+const microColumns = [
+  { title: '抗生素', dataIndex: 'abName', key: 'abName', width: 200 },
+  { title: 'MIC值', dataIndex: 'dilutionText', key: 'dilutionText', width: 100 },
+  { title: '结果', key: 'interpretation', width: 120 },
 ]
 
-// ============ Tab: Imaging ============
+function toggleReport(prefix: string, id: number | string) {
+  const key = `${prefix}-${id}`
+  expandedReports.value[key] = !expandedReports.value[key]
+}
+
 const imagingColumns = [
-  { title: '检查日期', dataIndex: 'date', key: 'date', width: 120 },
+  { title: '检查日期', dataIndex: 'studyDate', key: 'studyDate', width: 120, customRender: ({ text }: any) => fmtDate(text) },
   { title: '检查类型', dataIndex: 'modality', key: 'modality', width: 100 },
   { title: '检查部位', dataIndex: 'bodyPart', key: 'bodyPart', width: 100 },
-  { title: '检查描述', dataIndex: 'description', key: 'description' },
-  { title: '报告医生', dataIndex: 'reportDoctor', key: 'reportDoctor', width: 90 },
+  { title: '检查描述', dataIndex: 'reportText', key: 'reportText', ellipsis: true },
 ]
 
-const imagingData = [
-  { id: 'IMG001', date: '2025-01-21', modality: 'CT', bodyPart: '冠状动脉', description: '冠脉CTA示前降支近段支架通畅，余冠脉未见明显狭窄', reportDoctor: '陈晓峰' },
-  { id: 'IMG002', date: '2024-06-12', modality: 'CT', bodyPart: '胸部', description: '双肺纹理增多，右下肺陈旧灶，心影增大，主动脉结钙化', reportDoctor: '陈晓峰' },
-  { id: 'IMG003', date: '2024-02-03', modality: 'X线', bodyPart: '胸部', description: '心影增大，心胸比0.55，两肺未见明显实变影', reportDoctor: '周丽萍' },
-  { id: 'IMG004', date: '2023-10-18', modality: '超声', bodyPart: '心脏', description: '左室壁运动减弱，LVEF 52%，左房增大，二尖瓣轻度反流', reportDoctor: '孙婉清' },
-  { id: 'IMG005', date: '2023-06-16', modality: 'CT', bodyPart: '胸部', description: '慢支肺气肿改变，右下肺轻度感染，建议抗炎后复查', reportDoctor: '陈晓峰' },
-]
-
-// ============ Tab: Medication ============
 const medicationColumns = [
-  { title: '药品名称', dataIndex: 'drugName', key: 'drugName', width: 160 },
-  { title: '规格', dataIndex: 'specification', key: 'specification', width: 120 },
-  { title: '用法用量', dataIndex: 'dosage', key: 'dosage', width: 140 },
-  { title: '开始日期', dataIndex: 'startDate', key: 'startDate', width: 120 },
-  { title: '结束日期', dataIndex: 'endDate', key: 'endDate', width: 120 },
-  { title: '开药医生', dataIndex: 'doctor', key: 'doctor', width: 90 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
+  { title: '药品名称', dataIndex: 'medName', key: 'medName', width: 160 },
+  { title: '用法用量', key: 'dosage', width: 180, customRender: ({ record }: any) => `${record.dosage || ''} ${record.route || ''} ${record.frequency || ''}` },
+  { title: '开始日期', dataIndex: 'startTime', key: 'startTime', width: 120, customRender: ({ text }: any) => fmtDate(text) },
+  { title: '结束日期', dataIndex: 'endTime', key: 'endTime', width: 120, customRender: ({ text }: any) => text ? fmtDate(text) : '-' },
+  { title: '开药医生', dataIndex: 'prescriber', key: 'prescriber', width: 110 },
+  { title: '状态', key: 'status', width: 90 },
 ]
 
-const medicationData = [
-  { id: 'MED001', drugName: '阿司匹林肠溶片', specification: '100mg', dosage: '100mg qd 口服', startDate: '2025-01-20', endDate: '-', doctor: '王建国', status: '使用中' },
-  { id: 'MED002', drugName: '氯吡格雷片', specification: '75mg', dosage: '75mg qd 口服', startDate: '2025-01-20', endDate: '-', doctor: '王建国', status: '使用中' },
-  { id: 'MED003', drugName: '阿托伐他汀钙片', specification: '20mg', dosage: '20mg qn 口服', startDate: '2025-01-20', endDate: '-', doctor: '王建国', status: '使用中' },
-  { id: 'MED004', drugName: '盐酸二甲双胍片', specification: '500mg', dosage: '500mg tid 口服', startDate: '2024-02-03', endDate: '-', doctor: '李明华', status: '使用中' },
-  { id: 'MED005', drugName: '苯磺酸氨氯地平片', specification: '5mg', dosage: '5mg qd 口服', startDate: '2023-11-15', endDate: '-', doctor: '王建国', status: '使用中' },
-  { id: 'MED006', drugName: '美托洛尔缓释片', specification: '47.5mg', dosage: '47.5mg qd 口服', startDate: '2025-01-20', endDate: '-', doctor: '王建国', status: '使用中' },
-  { id: 'MED007', drugName: '硝酸甘油片', specification: '0.5mg', dosage: '0.5mg 舌下含服 必要时', startDate: '2025-01-20', endDate: '2025-03-20', doctor: '王建国', status: '已停用' },
-  { id: 'MED008', drugName: '低分子肝素钠注射液', specification: '4000IU', dosage: '4000IU q12h 皮下注射', startDate: '2025-01-20', endDate: '2025-01-26', doctor: '王建国', status: '已停用' },
-]
+async function fetchPatient360() {
+  const id = route.params.id as string
+  if (!id) return
+  loading.value = true
+  try {
+    const res = await getPatient360(id)
+    const data = res.data?.data || res.data
+    patient.value = data
+    encounters.value = data.encounters || []
+    diagnoses.value = data.diagnoses || []
+    allergies.value = data.allergies || []
+    labTests.value = data.labTests || []
+    medications.value = data.medications || []
+    imagingExams.value = data.imagingExams || []
+    microbiology.value = data.microbiology || []
+    metrics.value = {
+      encounterCount: data.encounterCount || encounters.value.length,
+      diagnosisCount: data.diagnosisCount || diagnoses.value.length,
+      medicationCount: data.medicationCount || medications.value.length,
+      labTestCount: data.labTestCount || labTests.value.length,
+    }
+  } catch (e) {
+    console.error('Failed to load patient 360 data:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchPatient360)
 </script>
 
 <style scoped>
-/* Profile Card */
-.profile-card {
-  border-radius: 8px;
-}
-.profile-layout {
+/* Compact Profile Header */
+.profile-compact {
   display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #f0f5ff 0%, #fff 100%);
+  border-radius: 8px;
+  padding: 12px 16px;
+  border: 1px solid #e6e8eb;
 }
-.profile-avatar {
-  flex-shrink: 0;
+.profile-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.avatar-circle {
-  width: 72px;
-  height: 72px;
+.avatar-mini {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: rgba(22, 119, 255, 0.08);
+  background: rgba(22, 119, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
-.profile-info {
-  flex: 1;
-  min-width: 0;
-}
-.profile-name-row {
+.profile-basic {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-.profile-name {
-  font-size: 22px;
+.profile-basic .name {
+  font-size: 16px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.88);
-  margin: 0;
 }
-.gender-tag {
-  font-size: 12px;
-  border-radius: 4px;
-}
-.profile-age {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.55);
-}
-.profile-desc {
-  margin-bottom: 8px;
-}
-.allergy-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-.allergy-label {
+.profile-basic .age {
   font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+.profile-basic .divider {
+  color: #d9d9d9;
+  font-size: 12px;
+}
+.profile-basic .birth,
+.profile-basic .org {
+  font-size: 12px;
   color: rgba(0, 0, 0, 0.55);
-  flex-shrink: 0;
 }
 
-/* Profile Metrics (merged into header) */
-.profile-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 20px;
-  padding: 4px 0 4px 24px;
-  border-left: 1px solid #f0f0f0;
-  margin-left: 8px;
-  flex-shrink: 0;
-  width: 220px;
-  align-self: center;
+/* Compact Metrics */
+.profile-metrics-mini {
+  display: flex;
+  gap: 24px;
 }
-.metric-item {
+.profile-metrics-mini .metric {
   text-align: center;
-  padding: 4px 0;
 }
-.metric-value {
-  font-size: 22px;
+.profile-metrics-mini .val {
+  font-size: 18px;
   font-weight: 600;
   color: #1677ff;
-  line-height: 1.2;
 }
-.metric-suffix {
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(0, 0, 0, 0.45);
-  margin-left: 2px;
-}
-.metric-title {
+.profile-metrics-mini .lbl {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.45);
-  margin-top: 2px;
+  margin-left: 4px;
 }
 
-/* Timeline - Horizontal */
-.timeline-hint {
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.35);
-}
-.timeline-horizontal {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-  padding: 8px 0 4px;
-}
-.timeline-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-width: 180px;
-}
-.timeline-connector {
+/* Timeline Mini in Tab Extra */
+.timeline-mini {
   display: flex;
   align-items: center;
-  width: 100%;
-  padding: 0 4px;
-  margin-bottom: 10px;
+  gap: 8px;
 }
-.timeline-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.timeline-dot.dot-blue { background: #1677ff; }
-.timeline-dot.dot-red { background: #ff4d4f; }
-.timeline-dot.dot-green { background: #52c41a; }
-.timeline-dot.dot-orange { background: #fa8c16; }
-.timeline-line {
-  flex: 1;
-  height: 2px;
-  background: #e8e8e8;
-  margin: 0 2px;
-}
-.timeline-content {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-}
-.timeline-date {
-  font-size: 13px;
+.timeline-label {
+  font-size: 12px;
   color: rgba(0, 0, 0, 0.45);
-  font-weight: 500;
 }
-.timeline-body {
+.timeline-tag {
+  margin: 0;
+  font-size: 11px;
+}
+
+/* Report Cards */
+.report-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.report-header {
+  padding: 12px 16px;
+  cursor: pointer;
+  background: #fafafa;
+  transition: background 0.2s;
+}
+.report-header:hover {
+  background: #f0f5ff;
+}
+.report-title-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
-.timeline-type-tag {
-  flex-shrink: 0;
-  border-radius: 4px;
-  font-size: 12px;
-}
-.timeline-dept {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.35);
-}
-.timeline-title {
-  font-size: 13px;
+.report-title {
+  font-size: 15px;
+  font-weight: 600;
   color: rgba(0, 0, 0, 0.85);
-  font-weight: 500;
 }
-.timeline-detail {
+.report-meta {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.45);
-  line-height: 1.6;
-  max-width: 200px;
+}
+.report-body {
+  padding: 0 16px 12px;
+}
+
+/* Microbiology */
+.micro-organism {
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed #f0f0f0;
+}
+.micro-organism:last-child {
+  border-bottom: none;
+}
+.organism-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.organism-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.8);
 }
 </style>

@@ -64,7 +64,31 @@ ALTER TABLE cdr.c_clinical_note ALTER COLUMN note_type TYPE VARCHAR(64);
 ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS is_error BOOLEAN DEFAULT FALSE;
 ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS note_category VARCHAR(64);
 
-COMMENT ON COLUMN cdr.c_clinical_note.note_category IS 'MIMIC note category: Nursing, Radiology, General, ECG, Echo, Respiratory etc.';
+-- 6b. c_clinical_note: unified document model metadata
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS structured_data JSONB;
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS template_id BIGINT;
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS sign_status VARCHAR(16) NOT NULL DEFAULT 'UNSIGNED';
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS signed_by VARCHAR(64);
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS signed_at TIMESTAMP;
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS urgency VARCHAR(16) NOT NULL DEFAULT 'NORMAL';
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS source VARCHAR(32) NOT NULL DEFAULT 'MANUAL';
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1;
+ALTER TABLE cdr.c_clinical_note ADD COLUMN IF NOT EXISTS parent_id BIGINT;
+
+COMMENT ON COLUMN cdr.c_clinical_note.note_category IS 'Note category grouping: CLINICAL, NURSING, REPORT, ASSESSMENT, OTHER';
+COMMENT ON COLUMN cdr.c_clinical_note.structured_data IS 'Type-specific structured content as JSON';
+COMMENT ON COLUMN cdr.c_clinical_note.template_id IS 'Reference to document template';
+COMMENT ON COLUMN cdr.c_clinical_note.sign_status IS 'Sign status: UNSIGNED, SIGNED, COUNTERSIGNED';
+COMMENT ON COLUMN cdr.c_clinical_note.urgency IS 'Document urgency: NORMAL, URGENT, CRITICAL';
+COMMENT ON COLUMN cdr.c_clinical_note.source IS 'Document origin: MANUAL, IMPORT, AI_GENERATED';
+COMMENT ON COLUMN cdr.c_clinical_note.version IS 'Document version for revision tracking';
+COMMENT ON COLUMN cdr.c_clinical_note.parent_id IS 'Parent document ID for amendments/supplements';
+
+CREATE INDEX IF NOT EXISTS idx_c_note_encounter ON cdr.c_clinical_note(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_c_note_type ON cdr.c_clinical_note(note_type);
+CREATE INDEX IF NOT EXISTS idx_c_note_category ON cdr.c_clinical_note(note_category);
+CREATE INDEX IF NOT EXISTS idx_c_note_sign_status ON cdr.c_clinical_note(sign_status);
+CREATE INDEX IF NOT EXISTS idx_c_note_parent ON cdr.c_clinical_note(parent_id);
 
 -- ===========================================================
 -- Part B: New CDR clinical tables (12 tables)

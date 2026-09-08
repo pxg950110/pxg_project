@@ -14,6 +14,20 @@ public interface DataMapper {
 
     DiagnosisVO toDiagnosisVO(DiagnosisEntity entity);
 
+    AllergyVO toAllergyVO(AllergyEntity entity);
+
+    LabTestVO toLabTestVO(LabTestEntity entity);
+
+    LabPanelItemVO toLabPanelItemVO(LabPanelEntity entity);
+
+    MedicationVO toMedicationVO(MedicationEntity entity);
+
+    ImagingExamVO toImagingExamVO(ImagingExamEntity entity);
+
+    VitalSignVO toVitalSignVO(VitalSignEntity entity);
+
+    MicrobiologyVO toMicrobiologyVO(MicrobiologyEntity entity);
+
     // ==================== RDR ====================
     ProjectVO toProjectVO(ProjectEntity entity);
 

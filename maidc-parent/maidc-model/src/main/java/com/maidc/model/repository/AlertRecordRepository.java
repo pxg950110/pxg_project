@@ -12,4 +12,6 @@ public interface AlertRecordRepository extends JpaRepository<AlertRecordEntity, 
     Page<AlertRecordEntity> findByRuleIdOrderByTriggeredAtDesc(Long ruleId, Pageable pageable);
 
     Page<AlertRecordEntity> findByStatusOrderByTriggeredAtDesc(String status, Pageable pageable);
+
+    long countBySeverity(String severity);
 }

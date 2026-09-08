@@ -8,7 +8,7 @@
           <span class="org-page-subtitle">管理医院、科室与部门组织架构</span>
         </div>
         <div class="org-page-header-right">
-          <a-button type="primary">
+          <a-button type="primary" @click="handleAddOrg">
             <PlusOutlined /> 新增组织
           </a-button>
         </div>
@@ -100,7 +100,7 @@
                 <h3 class="org-detail-title">{{ selectedOrg.name }}</h3>
                 <span class="org-detail-desc">{{ selectedOrg.description }}</span>
               </div>
-              <a-button class="org-detail-edit-btn">
+              <a-button class="org-detail-edit-btn" @click="handleEditOrg(selectedOrg)">
                 <EditOutlined /> 编辑
               </a-button>
             </div>
@@ -155,6 +155,38 @@
           </div>
         </div>
       </div>
+      <!-- Add/Edit Organization Modal -->
+      <a-modal
+        v-model:open="orgModalVisible"
+        :title="editingOrg ? '编辑组织' : '新增组织'"
+        @ok="handleOrgModalOk"
+        width="560px"
+      >
+        <a-form layout="vertical">
+          <a-form-item label="组织名称" required>
+            <a-input v-model:value="orgForm.name" placeholder="请输入组织名称" />
+          </a-form-item>
+          <a-form-item label="组织编码" required>
+            <a-input v-model:value="orgForm.code" placeholder="例如：DEPT-XX-001" />
+          </a-form-item>
+          <a-form-item label="组织类型">
+            <a-select v-model:value="orgForm.type" placeholder="选择类型">
+              <a-select-option value="医院">医院</a-select-option>
+              <a-select-option value="科室">科室</a-select-option>
+              <a-select-option value="部门">部门</a-select-option>
+            </a-select>
+          </a-form-item>
+          <a-form-item label="负责人">
+            <a-input v-model:value="orgForm.leader" placeholder="请输入负责人" />
+          </a-form-item>
+          <a-form-item label="联系方式">
+            <a-input v-model:value="orgForm.phone" placeholder="请输入联系方式" />
+          </a-form-item>
+          <a-form-item label="描述">
+            <a-textarea v-model:value="orgForm.description" :rows="2" placeholder="请输入描述" />
+          </a-form-item>
+        </a-form>
+      </a-modal>
     </template>
   </PageContainer>
 </template>
@@ -162,6 +194,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { PlusOutlined, SearchOutlined, ApartmentOutlined, EditOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 interface OrgNode {
@@ -303,6 +336,76 @@ function toggleExpand(id: number) {
   } else {
     expandedKeys.value.push(id)
   }
+}
+
+// --- Add/Edit Organization Modal ---
+const orgModalVisible = ref(false)
+const editingOrg = ref<OrgNode | null>(null)
+const orgForm = reactive({
+  name: '',
+  code: '',
+  type: '',
+  leader: '',
+  phone: '',
+  description: '',
+})
+
+function handleAddOrg() {
+  editingOrg.value = null
+  orgForm.name = ''
+  orgForm.code = ''
+  orgForm.type = '科室'
+  orgForm.leader = ''
+  orgForm.phone = ''
+  orgForm.description = ''
+  orgModalVisible.value = true
+}
+
+function handleEditOrg(org: OrgNode) {
+  editingOrg.value = org
+  orgForm.name = org.name
+  orgForm.code = org.code
+  orgForm.type = org.type
+  orgForm.leader = org.leader
+  orgForm.phone = org.phone
+  orgForm.description = org.description
+  orgModalVisible.value = true
+}
+
+function handleOrgModalOk() {
+  if (!orgForm.name || !orgForm.code) {
+    message.warning('请填写组织名称和编码')
+    return
+  }
+  if (editingOrg.value) {
+    Object.assign(editingOrg.value, {
+      name: orgForm.name,
+      code: orgForm.code,
+      type: orgForm.type,
+      leader: orgForm.leader,
+      phone: orgForm.phone,
+      description: orgForm.description,
+    })
+    message.success('组织已更新')
+  } else {
+    const newOrg: OrgNode = {
+      id: Date.now(),
+      name: orgForm.name,
+      code: orgForm.code,
+      type: orgForm.type,
+      leader: orgForm.leader,
+      phone: orgForm.phone,
+      description: orgForm.description,
+    }
+    // Add to root's children
+    if (treeData.length > 0) {
+      const root = treeData[0]
+      if (!root.children) root.children = []
+      root.children.push(newOrg)
+    }
+    message.success('组织已创建')
+  }
+  orgModalVisible.value = false
 }
 </script>
 

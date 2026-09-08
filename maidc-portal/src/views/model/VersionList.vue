@@ -1,5 +1,9 @@
 <template>
-  <div>
+  <div v-if="!modelId" style="text-align: center; padding: 60px 0; color: #999">
+    <p style="font-size: 16px; margin-bottom: 8px">请从模型详情页进入版本管理</p>
+    <a-button type="primary" @click="$router.push('/model/list')">前往模型列表</a-button>
+  </div>
+  <template v-else>
     <div style="margin-bottom: 16px; display: flex; justify-content: space-between">
       <a-space>
         <a-button @click="loadVersions">刷新</a-button>
@@ -119,7 +123,7 @@
         </a-descriptions>
       </div>
     </a-modal>
-  </div>
+  </template>
 </template>
 
 <script setup lang="ts">
@@ -132,7 +136,7 @@ import { useModal } from '@/hooks/useModal'
 import { getVersions, createVersion, compareVersions } from '@/api/model'
 import { formatDateTime } from '@/utils/date'
 
-const props = defineProps<{ modelId: number }>()
+const props = defineProps<{ modelId?: number }>()
 const uploadModal = useModal()
 const versions = ref<any[]>([])
 const loading = ref(false)
@@ -151,6 +155,7 @@ const columns = [
 ]
 
 async function loadVersions() {
+  if (!props.modelId) return
   loading.value = true
   try {
     const res = await getVersions(props.modelId, { page: 1, page_size: 100 })

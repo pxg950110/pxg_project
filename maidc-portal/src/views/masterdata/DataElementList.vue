@@ -122,7 +122,7 @@
     <!-- Detail drawer -->
     <a-drawer
       v-model:open="drawerVisible"
-      :title="currentElement ? '数据元详情' : '数据元详情'"
+      :title="editingId ? '编辑数据元' : '数据元详情'"
       width="720"
       destroy-on-close
     >

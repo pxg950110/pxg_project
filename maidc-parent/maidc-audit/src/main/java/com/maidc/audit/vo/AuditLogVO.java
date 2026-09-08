@@ -7,39 +7,45 @@ import java.time.LocalDateTime;
 @Data
 public class AuditLogVO {
 
-    private String id;
+    private Long id;
 
     private String traceId;
 
-    private String userId;
+    private Long userId;
 
     private String username;
 
-    private String orgId;
-
-    private String module;
+    private String serviceName;
 
     private String operation;
 
-    private String method;
+    private String resourceType;
 
-    private String params;
+    private String resourceId;
 
-    private String ip;
+    private String resourceName;
+
+    private String requestMethod;
 
     private String requestUrl;
 
-    private String requestMethod;
+    private String requestParams;
 
     private Integer responseCode;
 
     private String responseMsg;
 
-    private Long duration;
+    private String ipAddress;
 
-    private Short status;
+    private String userAgent;
 
-    private String errorMsg;
+    private Integer durationMs;
+
+    private String status;
+
+    private String errorMessage;
 
     private LocalDateTime createdAt;
+
+    private Long orgId;
 }

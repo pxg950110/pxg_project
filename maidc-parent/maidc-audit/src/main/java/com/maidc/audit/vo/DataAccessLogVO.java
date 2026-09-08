@@ -7,25 +7,27 @@ import java.time.LocalDateTime;
 @Data
 public class DataAccessLogVO {
 
-    private String id;
+    private Long id;
 
-    private String userId;
+    private Long userId;
 
-    private String username;
+    private String accessType;
 
-    private String orgId;
+    private String dataDomain;
 
-    private String dataType;
+    private String tableName;
 
-    private String dataId;
+    private Long recordId;
 
-    private String action;
+    private Long patientId;
 
-    private String patientId;
+    private String purpose;
 
-    private String accessPurpose;
+    private Long dataVolume;
 
-    private String ip;
+    private String ipAddress;
 
     private LocalDateTime createdAt;
+
+    private Long orgId;
 }

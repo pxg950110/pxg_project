@@ -2,10 +2,11 @@ import { ref, reactive } from 'vue'
 import type { ApiResponse, PageResult } from '@/utils/request'
 
 export function useTable<T>(
-  fetchFn: (params: { page: number; pageSize: number }) => Promise<{ data: ApiResponse<PageResult<T>> }>,
+  fetchFn: (params: Record<string, any>) => Promise<{ data: ApiResponse<PageResult<T>> }>,
 ) {
   const tableData = ref<T[]>([]) as any
   const loading = ref(false)
+  const searchParams = ref<Record<string, any>>({})
   const pagination = reactive({
     current: 1,
     pageSize: 20,
@@ -18,9 +19,10 @@ export function useTable<T>(
   async function fetchData(extra?: { page?: number; pageSize?: number }) {
     loading.value = true
     try {
-      const params = {
+      const params: Record<string, any> = {
         page: extra?.page ?? pagination.current,
-        pageSize: extra?.pageSize ?? pagination.pageSize,
+        page_size: extra?.pageSize ?? pagination.pageSize,
+        ...searchParams.value,
       }
       const res = await fetchFn(params)
       tableData.value = res.data.data.items
@@ -31,11 +33,16 @@ export function useTable<T>(
     }
   }
 
+  function setSearchParams(params: Record<string, any>) {
+    searchParams.value = { ...params }
+    pagination.current = 1
+  }
+
   function handleTableChange(pag: any) {
     pagination.current = pag.current
     pagination.pageSize = pag.pageSize
     fetchData({ page: pag.current, pageSize: pag.pageSize })
   }
 
-  return { tableData, loading, pagination, fetchData, handleTableChange }
+  return { tableData, loading, pagination, fetchData, handleTableChange, setSearchParams }
 }

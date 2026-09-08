@@ -18,28 +18,28 @@ spring:
         - id: maidc-auth
           uri: lb://maidc-auth
           predicates:
-            - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**,/api/v1/system/**
+            - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**,/api/v1/permissions/**,/api/v1/system/**
           filters:
             - StripPrefix=0
 
         - id: maidc-model
           uri: lb://maidc-model
           predicates:
-            - Path=/api/v1/models/**,/api/v1/evaluations/**,/api/v1/approvals/**,/api/v1/deployments/**,/api/v1/routes/**,/api/v1/inference/**,/api/v1/workers/**,/api/v1/alert-rules/**,/api/v1/alerts/**,/api/v1/monitoring/**
+            - Path=/api/v1/models/**,/api/v1/evaluations/**,/api/v1/approvals/**,/api/v1/deployments/**,/api/v1/routes/**,/api/v1/inference/**,/api/v1/workers/**,/api/v1/alert-rules/**,/api/v1/alerts/**,/api/v1/monitoring/**,/api/v1/alert/**
           filters:
             - StripPrefix=0
 
         - id: maidc-data
           uri: lb://maidc-data
           predicates:
-            - Path=/api/v1/cdr/**,/api/v1/rdr/**,/api/v1/etl/**,/api/v1/quality/**,/api/v1/dict/**,/api/v1/desensitize/**
+            - Path=/api/v1/cdr/**,/api/v1/rdr/**,/api/v1/etl/**,/api/v1/quality/**,/api/v1/dict/**,/api/v1/desensitize/**,/api/v1/workspace/**,/api/v1/masterdata/**
           filters:
             - StripPrefix=0
 
         - id: maidc-task
           uri: lb://maidc-task
           predicates:
-            - Path=/api/v1/task/**
+            - Path=/api/v1/task/**,/api/v1/tasks/**
           filters:
             - StripPrefix=0
 

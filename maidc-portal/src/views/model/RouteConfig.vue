@@ -141,7 +141,7 @@ import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import TrafficRuleEditor from '@/components/TrafficRuleEditor/index.vue'
 import { useModal } from '@/hooks/useModal'
-import request from '@/utils/request'
+import { getRoutes, createRoute, updateRoute } from '@/api/model'
 
 interface TrafficRule {
   version: string
@@ -175,65 +175,7 @@ const routes = ref<Route[]>([])
 const selectedRoute = ref<Route | null>(null)
 const editingId = ref<number | null>(null)
 
-// Mock data used as fallback when API is unavailable
-const mockRoutes: Route[] = [
-  {
-    id: 1,
-    name: '肺结节检测-金丝雀发布',
-    type: 'CANARY',
-    model: '肺结节检测模型',
-    status: 'active',
-    rules: [
-      { version: '生产v2.1.0', weight: 90, color: '#1677ff' },
-      { version: '灰度v2.3.1', weight: 10, color: '#52c41a' },
-    ],
-    config: {
-      defaultDeployment: '生产v2.1.0',
-      canaryPercent: 10,
-      successThreshold: '95%',
-      autoPromote: false,
-    },
-    json: '{\n  "route_type": "canary",\n  "default_deployment": "prod-v2.1.0",\n  "canary_deployment": "gray-v2.3.1",\n  "canary_percent": 10,\n  "success_threshold": 0.95,\n  "auto_promote": false\n}',
-  },
-  {
-    id: 2,
-    name: '心电图分析-AB测试',
-    type: 'AB_TEST',
-    model: '心电图分析模型',
-    status: 'active',
-    rules: [
-      { version: '版本A v1.0', weight: 50, color: '#52c41a' },
-      { version: '版本B v1.1', weight: 50, color: '#faad14' },
-    ],
-    config: {
-      defaultDeployment: '版本A v1.0',
-      successThreshold: '90%',
-      autoPromote: true,
-    },
-    json: '{\n  "route_type": "a_b_test",\n  "version_a": "v1.0",\n  "version_b": "v1.1",\n  "traffic_split": 0.5,\n  "auto_promote": true\n}',
-  },
-  {
-    id: 3,
-    name: '糖尿病预测-加权路由',
-    type: 'WEIGHTED',
-    model: '糖尿病预测模型',
-    status: 'disabled',
-    rules: [
-      { version: '模型A v2.0', weight: 60, color: '#722ed1' },
-      { version: '模型B v1.5', weight: 40, color: '#b37feb' },
-    ],
-    config: {
-      defaultDeployment: '模型A v2.0',
-      weights: '60:40',
-      successThreshold: '85%',
-      autoPromote: false,
-    },
-    json: '{\n  "route_type": "weighted",\n  "deployments": [\n    {"version": "v2.0", "weight": 60},\n    {"version": "v1.5", "weight": 40}\n  ]\n}',
-  },
-]
-
-// Display routes: prefer API data, fall back to mock
-const displayRoutes = ref<Route[]>(mockRoutes)
+const displayRoutes = ref<Route[]>([])
 
 const routeForm = reactive({
   name: '',
@@ -262,16 +204,13 @@ function typeBadgeLabel(type: string): string {
 async function loadRoutes() {
   loading.value = true
   try {
-    const res = await request.get('/deployments/routes')
+    const res = await getRoutes()
     const data = res.data?.data || []
-    if (data.length > 0) {
-      routes.value = data
-      displayRoutes.value = data
-    } else {
-      displayRoutes.value = mockRoutes
-    }
+    routes.value = data
+    displayRoutes.value = data
   } catch {
-    displayRoutes.value = mockRoutes
+    routes.value = []
+    displayRoutes.value = []
   } finally {
     loading.value = false
   }
@@ -301,9 +240,9 @@ async function handleSave() {
   submitting.value = true
   try {
     if (editingId.value) {
-      await request.put(`/deployments/routes/${editingId.value}`, routeForm)
+      await updateRoute(editingId.value, routeForm)
     } else {
-      await request.post('/deployments/routes', routeForm)
+      await createRoute(routeForm)
     }
     message.success('路由保存成功')
     createModal.close()

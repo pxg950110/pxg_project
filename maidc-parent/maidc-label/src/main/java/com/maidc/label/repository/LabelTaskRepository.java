@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LabelTaskRepository extends JpaRepository<LabelTaskEntity, Long>,
         JpaSpecificationExecutor<LabelTaskEntity> {
+
+    long countByStatusAndIsDeletedFalse(String status);
 }

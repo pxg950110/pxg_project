@@ -14,9 +14,23 @@
           <span>{{ route.meta?.title }}</span>
         </template>
         <template v-for="child in route.children" :key="child.name">
-          <a-menu-item v-if="!child.meta?.hidden" :key="child.name">
-            <span>{{ child.meta?.title }}</span>
-          </a-menu-item>
+          <template v-if="!child.meta?.hidden">
+            <!-- Level 3: sub-menu inside sub-menu -->
+            <a-sub-menu v-if="child.children?.filter(c => !c.meta?.hidden).length" :key="child.name">
+              <template #title>
+                <span>{{ child.meta?.title }}</span>
+              </template>
+              <template v-for="leaf in child.children" :key="leaf.name">
+                <a-menu-item v-if="!leaf.meta?.hidden" :key="leaf.name">
+                  <span>{{ leaf.meta?.title }}</span>
+                </a-menu-item>
+              </template>
+            </a-sub-menu>
+            <!-- Level 2 leaf -->
+            <a-menu-item v-else :key="child.name">
+              <span>{{ child.meta?.title }}</span>
+            </a-menu-item>
+          </template>
         </template>
       </a-sub-menu>
       <a-menu-item v-else-if="!route.meta?.hidden" :key="route.name">
@@ -78,12 +92,25 @@ watch(
   () => route.name,
   (name) => {
     for (const parent of menuRoutes.value) {
-      if (parent.children?.some(c => c.name === name)) {
-        const key = parent.name as string
-        if (!openKeys.value.includes(key)) {
-          openKeys.value = [...openKeys.value, key]
+      for (const child of parent.children || []) {
+        // Level 3 match
+        if (child.children?.some((c: any) => c.name === name)) {
+          const pKey = parent.name as string
+          const cKey = child.name as string
+          const keys = [...openKeys.value]
+          if (!keys.includes(pKey)) keys.push(pKey)
+          if (!keys.includes(cKey)) keys.push(cKey)
+          openKeys.value = keys
+          return
         }
-        return
+        // Level 2 match
+        if (child.name === name) {
+          const pKey = parent.name as string
+          if (!openKeys.value.includes(pKey)) {
+            openKeys.value = [...openKeys.value, pKey]
+          }
+          return
+        }
       }
     }
   },
@@ -91,8 +118,30 @@ watch(
 )
 
 function onOpenChange(keys: string[]) {
+  // Build parent map: key -> parent key (or null for top-level)
+  const parentOf = new Map<string, string | null>()
+  for (const parent of menuRoutes.value) {
+    parentOf.set(parent.name as string, null)
+    for (const child of parent.children || []) {
+      parentOf.set(child.name as string, parent.name as string)
+    }
+  }
+
   const latest = keys.find(k => !openKeys.value.includes(k))
-  openKeys.value = latest ? [latest] : []
+  if (!latest) {
+    // Something was closed
+    const closed = openKeys.value.find(k => !keys.includes(k))
+    if (!closed) { openKeys.value = keys; return }
+    // When closing a level-1 item, also close its children
+    const childKeys = keys.filter(k => parentOf.get(k) === closed)
+    openKeys.value = keys.filter(k => !childKeys.includes(k) && k !== closed)
+  } else {
+    // Something was opened: close siblings at the same level, keep ancestors
+    const parentKey = parentOf.get(latest)
+    const next = openKeys.value.filter(k => parentOf.get(k) !== parentKey)
+    next.push(latest)
+    openKeys.value = next
+  }
 }
 
 function onMenuClick({ key }: { key: string }) {

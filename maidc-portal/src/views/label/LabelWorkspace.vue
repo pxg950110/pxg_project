@@ -33,12 +33,12 @@
       <!-- Header bar -->
       <div class="viewer-header">
         <div class="header-left">
-          <span class="task-title">肺结节CT标注任务</span>
+          <span class="task-title">{{ taskInfo?.name || '标注任务' }}</span>
         </div>
         <div class="header-center">
-          <a-button size="small" :disabled="currentIndex <= 0" @click="currentIndex--">上一张</a-button>
-          <span class="image-counter">IMG_{{ String(currentIndex).padStart(4, '0') }} / {{ totalCount }}</span>
-          <a-button size="small" :disabled="currentIndex >= totalCount - 1" @click="currentIndex++">下一张</a-button>
+          <a-button size="small" :disabled="currentIndex <= 0" @click="navigateItem(-1)">上一张</a-button>
+          <span class="image-counter">{{ currentIndex + 1 }} / {{ totalCount }}</span>
+          <a-button size="small" :disabled="currentIndex >= totalCount - 1" @click="navigateItem(1)">下一张</a-button>
         </div>
         <div class="header-right">
           <a-button type="primary" size="small" @click="handleSave">保存</a-button>
@@ -128,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   BorderOutlined, GatewayOutlined, RadiusSettingOutlined,
@@ -138,9 +138,10 @@ import {
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { useModal } from '@/hooks/useModal'
-import { getLabelTask, triggerAiPreAnnotate } from '@/api/label'
+import { getLabelTask, getLabelItems, getLabelItemAnnotations, saveLabelAnnotations, submitLabelItem, skipLabelItem } from '@/api/label'
 
 const route = useRoute()
+const taskId = computed(() => Number(route.params.id))
 
 // Tool definitions
 const drawingTools = [
@@ -162,20 +163,20 @@ const utilityTools = [
 // Tool state
 const activeTool = ref('rectangle')
 
-// Navigation
-const currentIndex = ref(344)
-const totalCount = ref(600)
+// Task & items data
+const taskInfo = ref<any>(null)
+const items = ref<any[]>([])
+const currentIndex = ref(0)
+const totalCount = ref(0)
+const loading = ref(false)
 
-// Annotations (mock)
+// Annotations
 const tagColors: Record<string, string> = {
   nodule: '#ff4d4f',
   mass: '#1677ff',
   effusion: '#722ed1',
 }
-const annotations = ref([
-  { id: 1, label: 'nodule', x: 300, y: 200, w: 120, h: 80 },
-  { id: 2, label: 'mass', x: 450, y: 280, w: 90, h: 60 },
-])
+const annotations = ref<any[]>([])
 
 // Utility handler
 function handleUtility(key: string) {
@@ -185,13 +186,99 @@ function handleUtility(key: string) {
   else if (key === 'zoom-out') message.info('缩小')
 }
 
-// Methods
-function handleSave() { message.success('标注已保存') }
-function handleSubmit() { message.success('已提交审核') }
-function handleSkip() { message.info('已跳过') }
+async function loadTask() {
+  loading.value = true
+  try {
+    const res = await getLabelTask(taskId.value)
+    taskInfo.value = res.data.data
+    // Load label tags from task config
+    if (taskInfo.value?.tags) {
+      taskInfo.value.tags.forEach((tag: string, idx: number) => {
+        if (!tagColors[tag]) {
+          const colors = ['#ff4d4f', '#1677ff', '#722ed1', '#fa8c16', '#13c2c2', '#eb2f96']
+          tagColors[tag] = colors[idx % colors.length]
+        }
+      })
+    }
+  } catch { /* ignore */ }
+}
+
+async function loadItems() {
+  try {
+    const res = await getLabelItems(taskId.value, { page: 1, page_size: 1000 })
+    items.value = res.data.data?.items || []
+    totalCount.value = res.data.data?.total || 0
+    if (items.value.length > 0) {
+      await loadAnnotations()
+    }
+  } catch { /* ignore */ }
+}
+
+async function loadAnnotations() {
+  if (!items.value[currentIndex.value]) return
+  const itemId = items.value[currentIndex.value].id
+  try {
+    const res = await getLabelItemAnnotations(taskId.value, itemId)
+    annotations.value = res.data.data || []
+  } catch {
+    annotations.value = []
+  }
+}
+
+async function handleSave() {
+  if (!items.value[currentIndex.value]) { message.warning('没有可保存的标注项'); return }
+  const itemId = items.value[currentIndex.value].id
+  try {
+    await saveLabelAnnotations(taskId.value, itemId, { annotations: annotations.value })
+    message.success('标注已保存')
+  } catch {
+    message.error('保存失败')
+  }
+}
+
+async function handleSubmit() {
+  if (!items.value[currentIndex.value]) return
+  const itemId = items.value[currentIndex.value].id
+  try {
+    await handleSave()
+    await submitLabelItem(taskId.value, itemId)
+    message.success('已提交审核')
+  } catch {
+    message.error('提交失败')
+  }
+}
+
+async function handleSkip() {
+  if (!items.value[currentIndex.value]) return
+  const itemId = items.value[currentIndex.value].id
+  try {
+    await skipLabelItem(taskId.value, itemId)
+    message.info('已跳过')
+    if (currentIndex.value < totalCount.value - 1) {
+      currentIndex.value++
+      await loadAnnotations()
+    }
+  } catch {
+    message.error('操作失败')
+  }
+}
+
 function removeAnnotation(id: number) {
   annotations.value = annotations.value.filter(a => a.id !== id)
 }
+
+async function navigateItem(delta: number) {
+  const newIndex = currentIndex.value + delta
+  if (newIndex < 0 || newIndex >= totalCount.value) return
+  await handleSave()
+  currentIndex.value = newIndex
+  await loadAnnotations()
+}
+
+onMounted(async () => {
+  await loadTask()
+  await loadItems()
+})
 </script>
 
 <style scoped>

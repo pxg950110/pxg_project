@@ -8,11 +8,10 @@
             <ArrowLeftOutlined />
           </a-button>
           <div class="task-title-block">
-            <h2 class="task-title">肺结节影像标注</h2>
+            <h2 class="task-title">{{ taskData?.name || '标注任务' }}</h2>
             <span class="task-subtitle">
-              <a-tag color="blue">影像标注</a-tag>
-              <a-tag color="orange">矩形框标注</a-tag>
-              <a-tag color="green">进行中</a-tag>
+              <a-tag v-for="tag in (taskData?.tags || [])" :key="tag" color="blue">{{ tag }}</a-tag>
+              <a-tag v-if="taskData?.status" :color="taskData.status === 'IN_PROGRESS' ? 'green' : taskData.status === 'COMPLETED' ? 'blue' : 'orange'">{{ taskData.status }}</a-tag>
             </span>
           </div>
         </div>
@@ -34,15 +33,15 @@
           <a-col :span="6">
             <MetricCard
               title="标注进度"
-              :value="650"
-              suffix="/1000"
+              :value="progressValue"
+              :suffix="`/${totalItems}`"
               :icon="DashboardOutlined"
             />
           </a-col>
           <a-col :span="6">
             <MetricCard
               title="标注员"
-              :value="3"
+              :value="annotatorCount"
               suffix="人"
               :icon="TeamOutlined"
             />
@@ -50,7 +49,7 @@
           <a-col :span="6">
             <MetricCard
               title="标注数据"
-              :value="650"
+              :value="progressValue"
               suffix="条"
               :icon="DatabaseOutlined"
             />
@@ -61,7 +60,7 @@
                 <div class="metric-content">
                   <div class="metric-title">平均一致性</div>
                   <div class="metric-value">
-                    <span class="value-number" style="color: #52c41a">0.92</span>
+                    <span class="value-number" style="color: #52c41a">{{ avgConsistency.toFixed(2) }}</span>
                   </div>
                 </div>
                 <div class="metric-icon">
@@ -76,8 +75,8 @@
         <a-card style="margin-bottom: 16px">
           <div style="display: flex; align-items: center; gap: 16px">
             <span style="white-space: nowrap; font-weight: 500">总标注进度</span>
-            <a-progress :percent="75" style="flex: 1" />
-            <span style="white-space: nowrap; color: rgba(0,0,0,0.45)">450 / 600</span>
+            <a-progress :percent="progressPercent" style="flex: 1" />
+            <span style="white-space: nowrap; color: rgba(0,0,0,0.45)">{{ progressValue }} / {{ totalItems }}</span>
           </div>
         </a-card>
 
@@ -108,7 +107,7 @@
               </a-table>
               <div>
                 <a-button type="primary" style="margin-right: 12px">分配标注</a-button>
-                <a-button>批量导出</a-button>
+                <a-button @click="handleBatchExport">批量导出</a-button>
               </div>
             </a-tab-pane>
 
@@ -294,8 +293,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -322,6 +322,32 @@ const reviewModal = useModal()
 const loading = ref(false)
 const activeTab = ref('progress')
 
+// Task data
+const taskData = ref<any>(null)
+const taskStats = ref<any>(null)
+const taskId = computed(() => Number(route.params.id))
+
+// Derived metrics from API data
+const progressValue = computed(() => taskStats.value?.labeledCount || 0)
+const totalItems = computed(() => taskStats.value?.totalItems || 0)
+const progressPercent = computed(() => totalItems.value > 0 ? Math.round(progressValue.value / totalItems.value * 100) : 0)
+const annotatorCount = computed(() => taskStats.value?.annotatorCount || 0)
+const avgConsistency = computed(() => taskStats.value?.avgConsistency ?? 0)
+
+async function loadTaskData() {
+  loading.value = true
+  try {
+    const [taskRes, statsRes] = await Promise.allSettled([
+      getLabelTask(taskId.value),
+      getLabelTaskStats(taskId.value),
+    ])
+    if (taskRes.status === 'fulfilled') taskData.value = taskRes.value.data.data
+    if (statsRes.status === 'fulfilled') taskStats.value = statsRes.value.data.data
+  } finally {
+    loading.value = false
+  }
+}
+
 // =============================================
 // Tab 1: 标注进度 — Annotator Progress Table
 // =============================================
@@ -335,13 +361,7 @@ const annotatorProgressColumns = [
   { title: '操作', key: 'action', width: 80 },
 ]
 
-const annotatorProgressData = ref([
-  { name: '李医生', assigned: 150, completed: 128, inProgress: 12, pending: 10, completionRate: 85 },
-  { name: '王技师', assigned: 180, completed: 162, inProgress: 8, pending: 10, completionRate: 90 },
-  { name: '赵实习生', assigned: 120, completed: 96, inProgress: 14, pending: 10, completionRate: 80 },
-  { name: '张主任', assigned: 100, completed: 50, inProgress: 20, pending: 30, completionRate: 50 },
-  { name: 'AI预标注', assigned: 50, completed: 14, inProgress: 0, pending: 36, completionRate: 28 },
-])
+const annotatorProgressData = computed(() => taskStats.value?.annotatorProgress || [])
 
 function getCompletionColor(rate: number): string {
   if (rate >= 80) return '#52c41a'
@@ -361,95 +381,70 @@ const qualityIssueColumns = [
   { title: '时间', dataIndex: 'time', key: 'time', width: 170 },
 ]
 
-const qualityIssueData = ref([
-  { id: 1, annotator: '赵实习生', issueType: '标注偏差过大', severity: '高', status: '待处理', time: '2026-04-12 09:30' },
-  { id: 2, annotator: '李医生', issueType: '遗漏标注', severity: '中', status: '已解决', time: '2026-04-11 15:20' },
-  { id: 3, annotator: '王技师', issueType: '边界不精确', severity: '低', status: '已解决', time: '2026-04-10 11:45' },
-])
+const qualityIssueData = computed(() => taskStats.value?.qualityIssues || [])
 
-const qualityTrendOption = ref({
-  tooltip: { trigger: 'axis' },
-  legend: { data: ['一致性', '准确率', 'F1'] },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: {
-    type: 'category',
-    data: ['04-06', '04-07', '04-08', '04-09', '04-10', '04-11', '04-12'],
-  },
-  yAxis: { type: 'value', min: 0.7, max: 1.0 },
-  series: [
-    {
-      name: '一致性',
-      type: 'bar',
-      data: [0.85, 0.88, 0.87, 0.90, 0.89, 0.91, 0.92],
-      itemStyle: { color: '#52c41a' },
-    },
-    {
-      name: '准确率',
-      type: 'bar',
-      data: [0.82, 0.84, 0.85, 0.86, 0.87, 0.87, 0.88],
-      itemStyle: { color: '#1677ff' },
-    },
-    {
-      name: 'F1',
-      type: 'bar',
-      data: [0.83, 0.85, 0.86, 0.88, 0.88, 0.89, 0.89],
-      itemStyle: { color: '#722ed1' },
-    },
-  ],
+const qualityTrendOption = computed(() => {
+  const trendData = taskStats.value?.qualityTrend || {}
+  const dates = trendData.dates || []
+  return {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['一致性', '准确率', 'F1'] },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: dates },
+    yAxis: { type: 'value', min: 0.7, max: 1.0 },
+    series: [
+      { name: '一致性', type: 'bar', data: trendData.consistency || [], itemStyle: { color: '#52c41a' } },
+      { name: '准确率', type: 'bar', data: trendData.accuracy || [], itemStyle: { color: '#1677ff' } },
+      { name: 'F1', type: 'bar', data: trendData.f1 || [], itemStyle: { color: '#722ed1' } },
+    ],
+  }
 })
 
 // =============================================
 // Tab 3: 标注人员
 // =============================================
-const personnelData = ref([
-  { name: '李医生', role: '标注员', assigned: 150, completed: 128, status: '在线', color: '#1677ff' },
-  { name: '王技师', role: '标注员', assigned: 180, completed: 162, status: '在线', color: '#52c41a' },
-  { name: '张主任', role: '审核员', assigned: 100, completed: 50, status: '离线', color: '#722ed1' },
-  { name: '赵实习生', role: '标注员', assigned: 120, completed: 96, status: '在线', color: '#fa8c16' },
-])
+const personnelData = computed(() => taskStats.value?.personnel || [])
 
 // =============================================
 // Tab 4: 标注统计
 // =============================================
-const labelDistOption = ref({
-  tooltip: { trigger: 'item' },
-  legend: { bottom: 0 },
-  series: [{
-    type: 'pie',
-    radius: ['35%', '65%'],
-    data: [
-      { value: 320, name: '肺结节' },
-      { value: 180, name: '磨玻璃影' },
-      { value: 95, name: '实变' },
-      { value: 55, name: '钙化' },
-    ],
-    itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
-  }],
+const labelDistOption = computed(() => {
+  const distData = taskStats.value?.labelDistribution || []
+  return {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0 },
+    series: [{
+      type: 'pie',
+      radius: ['35%', '65%'],
+      data: distData,
+      itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+    }],
+  }
 })
 
-const dailyCountOption = ref({
-  tooltip: { trigger: 'axis' },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: {
-    type: 'category',
-    data: ['04-06', '04-07', '04-08', '04-09', '04-10', '04-11', '04-12'],
-  },
-  yAxis: { type: 'value' },
-  series: [{
-    type: 'bar',
-    data: [45, 62, 58, 71, 68, 75, 80],
-    itemStyle: {
-      color: {
-        type: 'linear',
-        x: 0, y: 0, x2: 0, y2: 1,
-        colorStops: [
-          { offset: 0, color: '#1677ff' },
-          { offset: 1, color: '#69b1ff' },
-        ],
+const dailyCountOption = computed(() => {
+  const dailyData = taskStats.value?.dailyCount || {}
+  return {
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: dailyData.dates || [] },
+    yAxis: { type: 'value' },
+    series: [{
+      type: 'bar',
+      data: dailyData.counts || [],
+      itemStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: '#1677ff' },
+            { offset: 1, color: '#69b1ff' },
+          ],
+        },
+        borderRadius: [4, 4, 0, 0],
       },
-      borderRadius: [4, 4, 0, 0],
-    },
-  }],
+    }],
+  }
 })
 
 // =============================================
@@ -473,16 +468,26 @@ const logTypeColorMap: Record<string, string> = {
   '导出数据': 'geekblue',
 }
 
-const logData = ref([
-  { id: 1, time: '2026-04-12 10:30:00', operator: '管理员', type: '创建任务', detail: '创建标注任务"肺结节影像标注"，分配数据集1000条' },
-  { id: 2, time: '2026-04-12 10:35:00', operator: '管理员', type: '添加标注员', detail: '添加标注员：李医生、王技师、赵实习生' },
-  { id: 3, time: '2026-04-12 10:40:00', operator: '管理员', type: '分配标注', detail: '分配150条数据给李医生，数据ID范围: 1-150' },
-  { id: 4, time: '2026-04-12 11:00:00', operator: '管理员', type: '分配标注', detail: '分配180条数据给王技师，数据ID范围: 151-330' },
-  { id: 5, time: '2026-04-12 14:20:00', operator: '李医生', type: '完成标注', detail: '完成数据ID 1-50的标注，共50条' },
-  { id: 6, time: '2026-04-12 15:00:00', operator: '张主任', type: '审核通过', detail: '审核通过李医生标注的数据ID 1-30，共30条' },
-  { id: 7, time: '2026-04-12 16:30:00', operator: '张主任', type: '审核驳回', detail: '驳回赵实习生标注的数据ID 500-510，原因：标注边界不精确' },
-  { id: 8, time: '2026-04-12 17:00:00', operator: '管理员', type: '修改设置', detail: '修改任务设置：启用AI预标注辅助' },
-])
+const logData = computed(() => taskStats.value?.logs || [])
+
+function handleBatchExport() {
+  const data = annotatorProgressData.value
+  if (!data.length) { message.warning('暂无数据可导出'); return }
+  const rows = [
+    ['标注员', '已分配', '已完成', '进行中', '待处理', '完成率(%)'],
+    ...data.map((r: any) => [r.name, r.assigned, r.completed, r.inProgress, r.pending, r.completionRate]),
+  ]
+  const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${taskData.value?.name || 'label_task'}_progress.csv`
+  a.click()
+  window.URL.revokeObjectURL(url)
+}
+
+onMounted(loadTaskData)
 </script>
 
 <style scoped>

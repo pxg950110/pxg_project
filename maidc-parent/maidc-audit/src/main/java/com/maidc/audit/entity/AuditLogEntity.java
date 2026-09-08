@@ -18,57 +18,66 @@ import java.time.LocalDateTime;
 public class AuditLogEntity {
 
     @Id
-    @Column(name = "id", length = 36)
-    private String id;
+    @Column(name = "id")
+    private Long id;
 
     @Column(name = "trace_id", length = 64)
     private String traceId;
 
-    @Column(name = "user_id", length = 36)
-    private String userId;
+    @Column(name = "user_id")
+    private Long userId;
 
-    @Column(name = "username", length = 100)
+    @Column(name = "username", length = 64)
     private String username;
 
-    @Column(name = "org_id", length = 36)
-    private String orgId;
+    @Column(name = "service_name", length = 64)
+    private String serviceName;
 
-    @Column(name = "module", length = 50)
-    private String module;
-
-    @Column(name = "operation", length = 100)
+    @Column(name = "operation", length = 32)
     private String operation;
 
-    @Column(name = "method", length = 200)
-    private String method;
+    @Column(name = "resource_type", length = 32)
+    private String resourceType;
 
-    @Column(name = "params", columnDefinition = "TEXT")
-    private String params;
+    @Column(name = "resource_id", length = 64)
+    private String resourceId;
 
-    @Column(name = "ip", length = 50)
-    private String ip;
+    @Column(name = "resource_name", length = 128)
+    private String resourceName;
 
-    @Column(name = "request_url", length = 500)
+    @Column(name = "request_method", length = 8)
+    private String requestMethod;
+
+    @Column(name = "request_url", length = 256)
     private String requestUrl;
 
-    @Column(name = "request_method", length = 10)
-    private String requestMethod;
+    @Column(name = "request_params", columnDefinition = "JSONB")
+    private String requestParams;
 
     @Column(name = "response_code")
     private Integer responseCode;
 
-    @Column(name = "response_msg", columnDefinition = "TEXT")
+    @Column(name = "response_msg", length = 256)
     private String responseMsg;
 
-    @Column(name = "duration")
-    private Long duration;
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
 
-    @Column(name = "status")
-    private Short status = 1;
+    @Column(name = "user_agent", length = 256)
+    private String userAgent;
 
-    @Column(name = "error_msg", columnDefinition = "TEXT")
-    private String errorMsg;
+    @Column(name = "duration_ms")
+    private Integer durationMs;
+
+    @Column(name = "status", length = 16)
+    private String status;
+
+    @Column(name = "error_message", columnDefinition = "TEXT")
+    private String errorMessage;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "org_id")
+    private Long orgId;
 }

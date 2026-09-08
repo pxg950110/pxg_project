@@ -1,12 +1,13 @@
 <template>
   <PageContainer title="系统总览" subtitle="MAIDC 医疗 AI 数据中心运行概览">
+    <a-spin :spinning="loading" tip="加载中...">
     <!-- Welcome Banner -->
     <div class="welcome-banner">
       <div class="welcome-info">
         <h2 class="welcome-greeting">{{ greeting }}，{{ userName }}</h2>
         <p class="welcome-date">今天是{{ currentDate }}</p>
         <p class="welcome-tasks">
-          您有 <span class="task-count">3</span> 条待办事项
+          您有 <span class="task-count">{{ pendingApprovals }}</span> 条待办事项
         </p>
       </div>
       <div class="welcome-actions">
@@ -30,7 +31,7 @@
       <a-col :span="8">
         <MetricCard
           title="模型总数"
-          :value="28"
+          :value="modelCount"
           suffix="个"
           :trend="{ value: 12, type: 'up' }"
         >
@@ -40,7 +41,7 @@
       <a-col :span="8">
         <MetricCard
           title="活跃部署"
-          :value="8"
+          :value="activeDeployments"
           suffix="个"
           :trend="{ value: 3, type: 'up' }"
         >
@@ -50,7 +51,7 @@
       <a-col :span="8">
         <MetricCard
           title="今日推理次数"
-          :value="12456"
+          :value="dailyInferences"
           suffix="次"
           :trend="{ value: 8, type: 'up' }"
         >
@@ -64,7 +65,7 @@
       <a-col :span="8">
         <MetricCard
           title="患者记录"
-          :value="156000"
+          :value="patientRecords"
           suffix="条"
           :trend="{ value: 5, type: 'up' }"
         >
@@ -74,7 +75,7 @@
       <a-col :span="8">
         <MetricCard
           title="研究项目"
-          :value="12"
+          :value="researchProjects"
           suffix="个"
         >
           <template #icon><ProjectOutlined /></template>
@@ -83,7 +84,7 @@
       <a-col :span="8">
         <MetricCard
           title="待审批"
-          :value="5"
+          :value="pendingApprovals"
           suffix="条"
           :trend="{ value: 2, type: 'down' }"
         >
@@ -171,11 +172,12 @@
         </a-card>
       </a-col>
     </a-row>
+    </a-spin>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ExperimentOutlined,
@@ -191,9 +193,23 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
 import { useAuthStore } from '@/stores/auth'
+import { getModels, getDeployments, getApprovals, getAlerts, getMetricsOverview } from '@/api/model'
+import { getAuditLogs } from '@/api/audit'
+import { getDataSources, getPatients, getProjects } from '@/api/data'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// ============ Loading State ============
+const loading = ref(true)
+
+// ============ Metric Cards (reactive) ============
+const modelCount = ref(0)
+const activeDeployments = ref(0)
+const dailyInferences = ref(0)
+const patientRecords = ref(0)
+const researchProjects = ref(0)
+const pendingApprovals = ref(0)
 
 // ============ Welcome Section ============
 const userName = computed(() => authStore.userInfo?.realName || '医生')
@@ -216,63 +232,163 @@ const currentDate = computed(() => {
 })
 
 // ============ Recent Alerts ============
-const recentAlerts = [
-  { severity: 'CRITICAL', message: '推理延迟P99超阈值', time: '10分钟前' },
-  { severity: 'WARNING', message: 'GPU使用率 > 90%', time: '1小时前' },
-  { severity: 'WARNING', message: '磁盘空间 < 20%', time: '3小时前' },
-  { severity: 'WARNING', message: '模型推理服务响应时间增加', time: '5小时前' },
-]
+const recentAlerts = ref<any[]>([])
 
 // ============ Recent Activity ============
-const recentActivities = [
-  { text: '胸部CT诊断模型 v2.3 已通过审批', category: '审批', tagColor: 'purple', dotColor: '#722ed1', time: '10分钟前' },
-  { text: '推理延迟P99超过阈值，已触发告警', category: '告警', tagColor: 'red', dotColor: '#ff4d4f', time: '15分钟前' },
-  { text: '心血管风险评估模型评估完成 AUC=0.94', category: '评估', tagColor: 'blue', dotColor: '#1677ff', time: '32分钟前' },
-  { text: '糖尿病视网膜病变检测模型已部署上线', category: '部署', tagColor: 'green', dotColor: '#52c41a', time: '1小时前' },
-  { text: '影像数据集 v3.0 ETL 导入完成', category: 'ETL', tagColor: 'cyan', dotColor: '#13c2c2', time: '2小时前' },
-  { text: '病理切片分析模型 v1.0 注册成功', category: '模型', tagColor: 'geekblue', dotColor: '#2f54eb', time: '3小时前' },
-  { text: 'GPU集群 node-03 内存使用率超过90%', category: '告警', tagColor: 'red', dotColor: '#ff4d4f', time: '4小时前' },
-  { text: '电子病历数据ETL任务执行完成', category: 'ETL', tagColor: 'cyan', dotColor: '#13c2c2', time: '5小时前' },
-]
+const recentActivities = ref<any[]>([])
 
 // ============ Data Sources ============
-const dataSources = [
-  { name: 'HIS 系统', description: '医院信息系统', connected: true },
-  { name: 'LIS 检验系统', description: '实验室信息管理', connected: true },
-  { name: 'PACS 影像系统', description: '医学影像存档与传输', connected: true },
-  { name: 'EMR 电子病历', description: '电子病历系统', connected: false },
-]
+const dataSources = ref<any[]>([])
 
 // ============ Chart: Model Status Horizontal Bar ============
-const modelStatusOption = {
-  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-  grid: { left: '3%', right: '10%', bottom: '3%', top: '3%', containLabel: true },
-  xAxis: { type: 'value', boundaryGap: [0, 0.1] },
-  yAxis: {
-    type: 'category',
-    data: ['DRAFT', 'REGISTERED', 'PUBLISHED', 'DEPRECATED'],
-    axisLabel: { fontSize: 13 },
-  },
-  series: [
-    {
-      type: 'bar',
-      barWidth: 28,
-      label: {
-        show: true,
-        position: 'right',
-        formatter: '{c}个',
-        fontSize: 13,
-        color: 'rgba(0,0,0,0.65)',
-      },
-      data: [
-        { value: 3, itemStyle: { color: '#d9d9d9' } },
-        { value: 2, itemStyle: { color: '#1677ff' } },
-        { value: 18, itemStyle: { color: '#52c41a' } },
-        { value: 5, itemStyle: { color: '#faad14' } },
-      ],
+const modelStatusOption = ref(buildChartOption({}))
+
+function buildChartOption(metricsData: Record<string, any>) {
+  const distribution = metricsData.modelStatusDistribution || {}
+  const categories = ['DRAFT', 'REGISTERED', 'PUBLISHED', 'DEPRECATED']
+  const colorMap: Record<string, string> = {
+    DRAFT: '#d9d9d9',
+    REGISTERED: '#1677ff',
+    PUBLISHED: '#52c41a',
+    DEPRECATED: '#faad14',
+  }
+  const chartData = categories.map((cat) => ({
+    value: distribution[cat] || 0,
+    itemStyle: { color: colorMap[cat] },
+  }))
+
+  return {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '10%', bottom: '3%', top: '3%', containLabel: true },
+    xAxis: { type: 'value', boundaryGap: [0, 0.1] },
+    yAxis: {
+      type: 'category',
+      data: categories,
+      axisLabel: { fontSize: 13 },
     },
-  ],
+    series: [
+      {
+        type: 'bar',
+        barWidth: 28,
+        label: {
+          show: true,
+          position: 'right',
+          formatter: '{c}个',
+          fontSize: 13,
+          color: 'rgba(0,0,0,0.65)',
+        },
+        data: chartData,
+      },
+    ],
+  }
 }
+
+// ============ Helper: format relative time ============
+function formatRelativeTime(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return '刚刚'
+  if (diffMin < 60) return `${diffMin}分钟前`
+  const diffHour = Math.floor(diffMin / 60)
+  if (diffHour < 24) return `${diffHour}小时前`
+  const diffDay = Math.floor(diffHour / 24)
+  return `${diffDay}天前`
+}
+
+// ============ Helper: map audit module to activity category ============
+function mapAuditToCategory(module: string): { category: string; tagColor: string; dotColor: string } {
+  const map: Record<string, { category: string; tagColor: string; dotColor: string }> = {
+    MODEL: { category: '模型', tagColor: 'geekblue', dotColor: '#2f54eb' },
+    APPROVAL: { category: '审批', tagColor: 'purple', dotColor: '#722ed1' },
+    EVALUATION: { category: '评估', tagColor: 'blue', dotColor: '#1677ff' },
+    DEPLOYMENT: { category: '部署', tagColor: 'green', dotColor: '#52c41a' },
+    ALERT: { category: '告警', tagColor: 'red', dotColor: '#ff4d4f' },
+    ETL: { category: 'ETL', tagColor: 'cyan', dotColor: '#13c2c2' },
+    DATA: { category: '数据', tagColor: 'orange', dotColor: '#fa8c16' },
+  }
+  return map[module] || { category: module || '其他', tagColor: 'default', dotColor: '#8c8c8c' }
+}
+
+// ============ Fetch All Dashboard Data ============
+async function fetchDashboardData() {
+  loading.value = true
+  try {
+    const [
+      modelsRes,
+      deploymentsRes,
+      metricsRes,
+      patientsRes,
+      projectsRes,
+      approvalsRes,
+      alertsRes,
+      auditRes,
+      dsRes,
+    ] = await Promise.all([
+      getModels({ page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
+      getDeployments({ page: 1, page_size: 1, status: 'RUNNING' }).catch(() => ({ data: { data: { total: 0 } } })),
+      getMetricsOverview().catch(() => ({ data: { data: {} } })),
+      getPatients({ page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
+      getProjects({ page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
+      getApprovals({ status: 'PENDING', page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
+      getAlerts({ page: 1, page_size: 4 }).catch(() => ({ data: { data: { items: [] } } })),
+      getAuditLogs({ page: 1, page_size: 8 }).catch(() => ({ data: { data: { items: [] } } })),
+      getDataSources({ page: 1, page_size: 10 }).catch(() => ({ data: { data: { items: [] } } })),
+    ])
+
+    // Metric cards
+    modelCount.value = modelsRes.data.data.total || 0
+    const depData = deploymentsRes.data.data
+    activeDeployments.value = Array.isArray(depData) ? depData.length : (depData.total || 0)
+    patientRecords.value = patientsRes.data.data.total || 0
+    researchProjects.value = projectsRes.data.data.total || 0
+    pendingApprovals.value = approvalsRes.data.data.total || 0
+
+    // Daily inferences from metrics
+    const metricsData = metricsRes.data.data
+    dailyInferences.value = metricsData.todayInference || 0
+
+    // Model status chart
+    modelStatusOption.value = buildChartOption(metricsData)
+
+    // Recent alerts
+    const alertItems = alertsRes.data.data.items || []
+    recentAlerts.value = alertItems.map((a: any) => ({
+      severity: a.severity || 'WARNING',
+      message: a.message || a.title || '',
+      time: formatRelativeTime(a.triggeredAt || a.createdAt || a.created_at || ''),
+    }))
+
+    // Recent activities from audit logs
+    const auditItems = auditRes.data.data.items || []
+    recentActivities.value = auditItems.map((log: any) => {
+      const { category, tagColor, dotColor } = mapAuditToCategory(log.module)
+      return {
+        text: log.description || log.operation || `${log.module} ${log.action || ''}`,
+        category,
+        tagColor,
+        dotColor,
+        time: formatRelativeTime(log.createdAt || log.created_at || ''),
+      }
+    })
+
+    // Data sources
+    const dsItems = dsRes.data.data.items || []
+    dataSources.value = dsItems.map((ds: any) => ({
+      name: ds.name || ds.source_name || '',
+      description: ds.description || ds.source_type || '',
+      connected: ds.status === 'CONNECTED' || ds.status === 'ACTIVE' || ds.connected === true,
+    }))
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchDashboardData()
+})
 </script>
 
 <style scoped>

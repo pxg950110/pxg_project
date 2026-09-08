@@ -51,7 +51,7 @@
           </div>
 
           <!-- Row 2: Description -->
-          <div class="model-desc">{{ model.description }}</div>
+          <div class="model-desc">{{ model.description || '暂无描述' }}</div>
 
           <!-- Row 3: Framework + Version + Status -->
           <div class="card-meta-row">
@@ -102,20 +102,20 @@
       <a-form :model="registerForm" :rules="registerRules" ref="registerFormRef" layout="vertical">
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="模型名称" name="model_name">
-              <a-input v-model:value="registerForm.model_name" placeholder="请输入模型名称" />
+            <a-form-item label="模型名称" name="modelName">
+              <a-input v-model:value="registerForm.modelName" placeholder="请输入模型名称" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="模型编码" name="model_code">
-              <a-input v-model:value="registerForm.model_code" placeholder="自动生成或手动输入" />
+            <a-form-item label="模型编码" name="modelCode">
+              <a-input v-model:value="registerForm.modelCode" placeholder="自动生成或手动输入" />
             </a-form-item>
           </a-col>
         </a-row>
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="模型类型" name="model_type">
-              <a-select v-model:value="registerForm.model_type" placeholder="请选择">
+            <a-form-item label="模型类型" name="modelType">
+              <a-select v-model:value="registerForm.modelType" placeholder="请选择">
                 <a-select-option value="IMAGING">影像</a-select-option>
                 <a-select-option value="NLP">NLP</a-select-option>
                 <a-select-option value="STRUCTURED">结构化</a-select-option>
@@ -125,12 +125,26 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
+            <a-form-item label="任务类型" name="taskType">
+              <a-select v-model:value="registerForm.taskType" placeholder="请选择">
+                <a-select-option value="CLASSIFICATION">分类</a-select-option>
+                <a-select-option value="SEGMENTATION">分割</a-select-option>
+                <a-select-option value="OBJECT_DETECTION">目标检测</a-select-option>
+                <a-select-option value="REGRESSION">回归</a-select-option>
+                <a-select-option value="NER">命名实体识别</a-select-option>
+                <a-select-option value="TEXT_CLASSIFICATION">文本分类</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
             <a-form-item label="框架" name="framework">
               <a-select v-model:value="registerForm.framework" placeholder="请选择">
-                <a-select-option value="PyTorch">PyTorch</a-select-option>
-                <a-select-option value="TensorFlow">TensorFlow</a-select-option>
-                <a-select-option value="SKLearn">SKLearn</a-select-option>
-                <a-select-option value="XGBoost">XGBoost</a-select-option>
+                <a-select-option value="PYTORCH">PyTorch</a-select-option>
+                <a-select-option value="TENSORFLOW">TensorFlow</a-select-option>
+                <a-select-option value="SKLEARN">SKLearn</a-select-option>
+                <a-select-option value="XGBOOST">XGBoost</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -150,14 +164,11 @@
       width="640px"
     >
       <a-form :model="editForm" layout="vertical">
-        <a-form-item label="模型名称" name="model_name">
-          <a-input v-model:value="editForm.model_name" />
-        </a-form-item>
         <a-form-item label="描述" name="description">
           <a-textarea v-model:value="editForm.description" :rows="3" />
         </a-form-item>
         <a-form-item label="标签">
-          <a-select v-model:value="editForm.tags" mode="tags" placeholder="输入标签后回车" />
+          <a-input v-model:value="editForm.tags" placeholder="用逗号分隔标签" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -165,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { PlusOutlined, RightOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
@@ -179,6 +190,15 @@ const router = useRouter()
 const registerModal = useModal()
 const editModal = useModal<any>()
 const submitting = ref(false)
+
+// --- Model type to Chinese label mapping ---
+const modelTypeLabel: Record<string, string> = {
+  'IMAGING': '影像',
+  'NLP': 'NLP',
+  'STRUCTURED': '结构化',
+  'MULTIMODAL': '多模态',
+  'GENOMIC': '基因组',
+}
 
 // --- Category color map ---
 const categoryColorMap: Record<string, string> = {
@@ -205,13 +225,27 @@ const categoryToType: Record<string, string | undefined> = {
 }
 
 // --- Table hook with API ---
-const { tableData, loading, pagination, fetchData } = useTable<any>(
+const { tableData: rawTableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getModels({
     page: params.page,
-    page_size: params.pageSize,
+    pageSize: params.pageSize,
     model_type: categoryToType[activeCategory.value],
     keyword: searchKeyword.value.trim() || undefined,
   })
+)
+
+// Map camelCase API response to template-friendly format
+const tableData = computed(() =>
+  rawTableData.value.map((m: any) => ({
+    ...m,
+    model_name: m.modelName,
+    category: modelTypeLabel[m.modelType] || m.modelType,
+    description: m.description || '',
+    version: m.latestVersion || '-',
+    framework: m.framework,
+    status: m.status,
+    qps: m.qps ?? null,
+  }))
 )
 
 function handleSearch() {
@@ -230,20 +264,28 @@ onMounted(() => fetchData())
 
 // --- Register form ---
 const registerForm = reactive({
-  model_name: '',
-  model_code: '',
-  model_type: undefined as string | undefined,
+  modelName: '',
+  modelCode: '',
+  modelType: undefined as string | undefined,
+  taskType: undefined as string | undefined,
   framework: undefined as string | undefined,
   description: '',
 })
 const registerRules = {
-  model_name: [{ required: true, message: '请输入模型名称' }],
-  model_type: [{ required: true, message: '请选择模型类型' }],
+  modelName: [{ required: true, message: '请输入模型名称' }],
+  modelCode: [{ required: true, message: '请输入模型编码' }],
+  modelType: [{ required: true, message: '请选择模型类型' }],
+  taskType: [{ required: true, message: '请选择任务类型' }],
   framework: [{ required: true, message: '请选择框架' }],
 }
 const registerFormRef = ref()
 
 async function handleRegister() {
+  try {
+    await registerFormRef.value?.validateFields()
+  } catch {
+    return
+  }
   submitting.value = true
   try {
     await createModel(registerForm)
@@ -257,9 +299,8 @@ async function handleRegister() {
 
 // --- Edit form ---
 const editForm = reactive({
-  model_name: '',
   description: '',
-  tags: [] as string[],
+  tags: '' as string,
 })
 let editingId = 0
 
@@ -267,9 +308,8 @@ function onEditOpen() {
   if (editModal.currentRecord.value) {
     const r = editModal.currentRecord.value
     editingId = r.id
-    editForm.model_name = r.model_name
-    editForm.description = r.description
-    editForm.tags = r.tags || []
+    editForm.description = r.description || ''
+    editForm.tags = r.tags || ''
   }
 }
 

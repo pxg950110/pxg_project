@@ -120,7 +120,7 @@
 
       <!-- Tab 3: 评估记录 -->
       <a-tab-pane key="evaluations" tab="评估记录">
-        <a-space direction="vertical" :size="16" style="width: 100%">
+        <a-space v-if="evaluations.length" direction="vertical" :size="16" style="width: 100%">
           <a-card v-for="evalItem in evaluations" :key="evalItem.title">
             <div class="eval-header">
               <span class="eval-title">{{ evalItem.title }}</span>
@@ -156,6 +156,7 @@
             </div>
           </a-card>
         </a-space>
+        <a-empty v-else description="暂无评估记录" style="padding: 60px 0" />
       </a-tab-pane>
 
       <!-- Tab 4: 部署管理 -->
@@ -218,6 +219,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -289,18 +291,18 @@ async function loadModelDetail() {
   try {
     const res = await getModel(modelId)
     const data = res.data.data
-    modelInfo.name = data.modelName || data.model_name || ''
+    modelInfo.name = data.model_name || ''
     modelInfo.status = data.status || ''
     modelInfo.description = data.description || ''
-    modelInfo.code = data.modelCode || data.model_code || ''
-    modelInfo.type = data.modelType || data.model_type || ''
+    modelInfo.code = data.model_code || ''
+    modelInfo.type = data.model_type || ''
     modelInfo.framework = data.framework || ''
-    modelInfo.task = data.taskType || data.task_type || ''
-    modelInfo.project = data.project || ''
-    modelInfo.owner = data.ownerName || data.owner_name || ''
-    modelInfo.createdAt = data.createdAt || data.created_at || ''
-    modelInfo.updatedAt = data.updatedAt || data.updated_at || ''
-    modelInfo.latestVersion = data.latestVersion || data.latest_version || ''
+    modelInfo.task = data.task_type || ''
+    modelInfo.project = ''
+    modelInfo.owner = data.owner_name || ''
+    modelInfo.createdAt = data.created_at ? dayjs(data.created_at).format('YYYY-MM-DD HH:mm:ss') : ''
+    modelInfo.updatedAt = data.updated_at ? dayjs(data.updated_at).format('YYYY-MM-DD HH:mm:ss') : ''
+    modelInfo.latestVersion = data.latest_version || ''
     modelInfo.tags = data.tags || []
   } finally {
     loading.value = false

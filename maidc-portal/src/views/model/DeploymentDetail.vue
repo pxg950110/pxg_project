@@ -43,7 +43,7 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
-import { getDeploymentStatus, stopDeployment } from '@/api/model'
+import { getDeploymentStatus, stopDeployment, getDeploymentMetrics } from '@/api/model'
 import { formatDateTime } from '@/utils/date'
 
 const route = useRoute()
@@ -57,7 +57,7 @@ const trendChartOption = ref({
   tooltip: { trigger: 'axis' as const },
   xAxis: { type: 'category' as const, data: Array.from({ length: 24 }, (_, i) => `${i}:00`) },
   yAxis: { type: 'value' as const },
-  series: [{ type: 'line', data: Array.from({ length: 24 }, () => Math.floor(Math.random() * 200 + 50)), smooth: true, areaStyle: { opacity: 0.3 }, lineStyle: { color: '#1677ff' }, itemStyle: { color: '#1677ff' } }],
+  series: [{ type: 'line' as const, data: [] as number[], smooth: true, areaStyle: { opacity: 0.3 }, lineStyle: { color: '#1677ff' }, itemStyle: { color: '#1677ff' } }],
 })
 
 async function loadDeployment() {
@@ -65,6 +65,29 @@ async function loadDeployment() {
   try {
     const res = await getDeploymentStatus(Number(route.params.id))
     deployment.value = res.data.data
+    // Load metrics
+    const endTime = new Date()
+    const startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000)
+    try {
+      const metricsRes = await getDeploymentMetrics(Number(route.params.id), {
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        interval: '1h',
+      })
+      const metricsData = metricsRes.data.data
+      if (metricsData) {
+        metrics.todayInference = metricsData.todayInference || 0
+        metrics.avgLatency = metricsData.avgLatency || 0
+        metrics.successRate = metricsData.successRate || 0
+        metrics.gpuUsage = metricsData.gpuUsage || 0
+        if (metricsData.trendData) {
+          trendChartOption.value.xAxis.data = metricsData.trendData.timestamps || Array.from({ length: 24 }, (_, i) => `${i}:00`)
+          trendChartOption.value.series[0].data = metricsData.trendData.values || []
+        }
+      }
+    } catch {
+      // Metrics not available - keep defaults
+    }
   } finally { loading.value = false }
 }
 

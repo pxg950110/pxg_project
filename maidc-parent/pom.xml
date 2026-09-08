@@ -42,9 +42,9 @@
         <module>maidc-auth</module>
         <module>maidc-model</module>
         <module>maidc-data</module>
+        <module>maidc-audit</module>
         <module>maidc-task</module>
         <module>maidc-label</module>
-        <module>maidc-audit</module>
         <module>maidc-msg</module>
     </modules>
 

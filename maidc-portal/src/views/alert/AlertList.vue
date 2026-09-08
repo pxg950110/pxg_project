@@ -9,22 +9,22 @@
     <!-- Metric Cards Row -->
     <a-row :gutter="[16, 16]" class="metric-row">
       <a-col :span="6">
-        <MetricCard title="活跃告警" :value="12" suffix="个">
+        <MetricCard title="活跃告警" :value="summary.activeCount" suffix="个">
           <template #icon><AlertOutlined /></template>
         </MetricCard>
       </a-col>
       <a-col :span="6">
-        <MetricCard title="今日已处理" :value="34" suffix="个">
+        <MetricCard title="今日已处理" :value="summary.todayProcessed" suffix="个">
           <template #icon><CheckCircleOutlined /></template>
         </MetricCard>
       </a-col>
       <a-col :span="6">
-        <MetricCard title="平均响应" value="8分钟">
+        <MetricCard title="平均响应" :value="summary.avgResponseTime">
           <template #icon><ClockCircleOutlined /></template>
         </MetricCard>
       </a-col>
       <a-col :span="6">
-        <MetricCard title="告警规则" :value="12" suffix="条">
+        <MetricCard title="告警规则" :value="summary.ruleCount" suffix="条">
           <template #icon><SettingOutlined /></template>
         </MetricCard>
       </a-col>
@@ -121,12 +121,27 @@ import MetricCard from '@/components/MetricCard/index.vue'
 import { useModal } from '@/hooks/useModal'
 import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
-import { getAlerts, acknowledgeAlert } from '@/api/model'
+import { getAlerts, acknowledgeAlert, getAlertSummary } from '@/api/model'
 
 // ============ State ============
 const activeTab = ref('active')
 const ruleModal = useModal()
 const submitting = ref(false)
+const summary = reactive({ activeCount: 0, todayProcessed: 0, avgResponseTime: '-', ruleCount: 0 })
+
+// ============ Summary ============
+async function fetchSummary() {
+  try {
+    const res = await getAlertSummary()
+    const d = res.data
+    summary.activeCount = d.activeCount
+    summary.todayProcessed = d.todayProcessed
+    summary.avgResponseTime = d.avgResponseTime
+    summary.ruleCount = d.ruleCount
+  } catch {
+    // keep default zeros
+  }
+}
 
 // ============ Table ============
 const { tableData: alertData, loading, fetchData } = useTable<any>(
@@ -190,7 +205,10 @@ async function handleCreateRule() {
   }
 }
 
-onMounted(() => fetchData())
+onMounted(() => {
+  fetchData()
+  fetchSummary()
+})
 </script>
 
 <style scoped>

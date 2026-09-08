@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/inference")
 @RequiredArgsConstructor
@@ -21,5 +25,11 @@ public class InferenceController {
     public R<InferenceResultVO> inference(@PathVariable Long deploymentId,
                                            @RequestBody @Valid InferenceRequestDTO dto) {
         return R.ok(inferenceService.inference(deploymentId, dto));
+    }
+
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping("/models")
+    public R<List<Map<String, Object>>> listModels() {
+        return R.ok(Collections.emptyList());
     }
 }

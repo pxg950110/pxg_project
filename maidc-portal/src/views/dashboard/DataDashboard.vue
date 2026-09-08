@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import {
   TeamOutlined,
   ProjectOutlined,
@@ -99,15 +99,17 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
+import { getPatients, getProjects, getDatasets, getDataGrowthTrend, getDataSourceDistribution } from '@/api/data'
+import { getEtlExecutions } from '@/api/etl'
 
 const loading = ref(false)
 
 // ============ Metrics ============
 const metrics = reactive({
-  totalPatients: 152847,
-  researchProjects: 28,
-  datasets: 64,
-  etlTasks: 156,
+  totalPatients: 0,
+  researchProjects: 0,
+  datasets: 0,
+  etlTasks: 0,
 })
 
 // ============ ETL Table ============
@@ -119,83 +121,10 @@ const etlColumns = [
   { title: '完成时间', dataIndex: 'completedAt', key: 'completedAt' },
 ]
 
-const etlTasks = ref([
-  {
-    id: '1',
-    name: '影像数据增量同步',
-    type: '增量同步',
-    statusLabel: 'COMPLETED',
-    statusType: 'sync' as const,
-    dataSize: 128.5,
-    completedAt: '2026-04-11 09:32:00',
-  },
-  {
-    id: '2',
-    name: '检验报告全量导入',
-    type: '全量导入',
-    statusLabel: 'RUNNING',
-    statusType: 'sync' as const,
-    dataSize: 45.2,
-    completedAt: '--',
-  },
-  {
-    id: '3',
-    name: '电子病历数据清洗',
-    type: '数据清洗',
-    statusLabel: 'COMPLETED',
-    statusType: 'sync' as const,
-    dataSize: 86.7,
-    completedAt: '2026-04-11 07:15:00',
-  },
-  {
-    id: '4',
-    name: '患者基本信息脱敏',
-    type: '数据脱敏',
-    statusLabel: 'COMPLETED',
-    statusType: 'sync' as const,
-    dataSize: 12.3,
-    completedAt: '2026-04-10 22:48:00',
-  },
-  {
-    id: '5',
-    name: '用药记录增量同步',
-    type: '增量同步',
-    statusLabel: 'FAILED',
-    statusType: 'sync' as const,
-    dataSize: 0,
-    completedAt: '--',
-  },
-  {
-    id: '6',
-    name: '病理报告格式转换',
-    type: '格式转换',
-    statusLabel: 'COMPLETED',
-    statusType: 'sync' as const,
-    dataSize: 34.1,
-    completedAt: '2026-04-10 18:20:00',
-  },
-  {
-    id: '7',
-    name: '基因组数据导入',
-    type: '全量导入',
-    statusLabel: 'PENDING',
-    statusType: 'sync' as const,
-    dataSize: 0,
-    completedAt: '--',
-  },
-  {
-    id: '8',
-    name: '影像数据标签提取',
-    type: '数据清洗',
-    statusLabel: 'COMPLETED',
-    statusType: 'sync' as const,
-    dataSize: 67.8,
-    completedAt: '2026-04-10 14:55:00',
-  },
-])
+const etlTasks = ref<any[]>([])
 
 // ============ Data Growth Chart ============
-const dataGrowthOption = {
+const dataGrowthOption = ref({
   tooltip: {
     trigger: 'axis',
     axisPointer: { type: 'cross' },
@@ -207,10 +136,7 @@ const dataGrowthOption = {
   xAxis: {
     type: 'category',
     boundaryGap: false,
-    data: [
-      '2025-10', '2025-11', '2025-12',
-      '2026-01', '2026-02', '2026-03', '2026-04',
-    ],
+    data: [] as string[],
   },
   yAxis: {
     type: 'value',
@@ -223,7 +149,7 @@ const dataGrowthOption = {
       type: 'line',
       smooth: true,
       areaStyle: { opacity: 0.15 },
-      data: [1240, 1380, 1520, 1650, 1820, 2010, 2230],
+      data: [] as number[],
       itemStyle: { color: '#1677ff' },
     },
     {
@@ -231,7 +157,7 @@ const dataGrowthOption = {
       type: 'line',
       smooth: true,
       areaStyle: { opacity: 0.12 },
-      data: [680, 750, 830, 920, 1010, 1130, 1280],
+      data: [] as number[],
       itemStyle: { color: '#52c41a' },
     },
     {
@@ -239,14 +165,14 @@ const dataGrowthOption = {
       type: 'line',
       smooth: true,
       areaStyle: { opacity: 0.10 },
-      data: [2100, 2350, 2600, 2920, 3180, 3540, 3920],
+      data: [] as number[],
       itemStyle: { color: '#722ed1' },
     },
   ],
-}
+})
 
 // ============ Data Source Distribution Pie Chart ============
-const dataSourceOption = {
+const dataSourceOption = ref({
   tooltip: { trigger: 'item' },
   legend: { bottom: 0 },
   series: [
@@ -256,17 +182,85 @@ const dataSourceOption = {
       avoidLabelOverlap: false,
       itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
       label: { show: true, formatter: '{b}: {d}%' },
-      data: [
-        { value: 3920, name: 'DICOM 影像', itemStyle: { color: '#1677ff' } },
-        { value: 2230, name: '电子病历', itemStyle: { color: '#52c41a' } },
-        { value: 1280, name: '研究数据集', itemStyle: { color: '#722ed1' } },
-        { value: 860, name: '检验报告', itemStyle: { color: '#faad14' } },
-        { value: 540, name: '用药记录', itemStyle: { color: '#13c2c2' } },
-        { value: 320, name: '基因组数据', itemStyle: { color: '#eb2f96' } },
-      ],
+      data: [] as { value: number; name: string; itemStyle?: { color: string } }[],
     },
   ],
+})
+
+const PIE_COLORS = ['#1677ff', '#52c41a', '#722ed1', '#faad14', '#13c2c2', '#eb2f96']
+
+// ============ Fetch All Data ============
+async function fetchDashboardData() {
+  loading.value = true
+  try {
+    const [patientsRes, projectsRes, datasetsRes, executionsRes, growthRes, distributionRes] = await Promise.all([
+      getPatients({ page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
+      getProjects({ page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
+      getDatasets({ page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
+      getEtlExecutions({ page: 1, page_size: 5 }).catch(() => ({ data: { data: { total: 0, items: [] } } })),
+      getDataGrowthTrend({ months: 6 }).catch(() => ({ data: { data: null } })),
+      getDataSourceDistribution().catch(() => ({ data: { data: [] } })),
+    ])
+
+    // Metric cards
+    metrics.totalPatients = (patientsRes as any).data?.data?.total ?? 0
+    metrics.researchProjects = (projectsRes as any).data?.data?.total ?? 0
+    metrics.datasets = (datasetsRes as any).data?.data?.total ?? 0
+    metrics.etlTasks = (executionsRes as any).data?.data?.total ?? 0
+
+    // ETL task table
+    const execItems = (executionsRes as any).data?.data?.items ?? []
+    etlTasks.value = execItems.map((item: any) => ({
+      id: item.id,
+      name: item.pipeline_name ?? item.pipelineName ?? '--',
+      type: item.trigger_type ?? item.triggerType ?? '--',
+      status: item.status,
+      statusLabel: (item.status ?? 'UNKNOWN').toUpperCase(),
+      statusType: 'sync' as const,
+      dataSize: item.rows_processed ?? item.rowsProcessed ?? 0,
+      completedAt: item.end_time ?? item.endTime ?? '--',
+    }))
+
+    // Data growth chart
+    const growthData = (growthRes as any).data?.data
+    if (growthData) {
+      dataGrowthOption.value = {
+        ...dataGrowthOption.value,
+        xAxis: {
+          ...dataGrowthOption.value.xAxis,
+          data: growthData.months ?? [],
+        },
+        series: [
+          { ...dataGrowthOption.value.series[0], data: growthData.clinical ?? [] },
+          { ...dataGrowthOption.value.series[1], data: growthData.research ?? [] },
+          { ...dataGrowthOption.value.series[2], data: growthData.imaging ?? [] },
+        ],
+      }
+    }
+
+    // Data source distribution pie chart
+    const distData = (distributionRes as any).data?.data
+    if (Array.isArray(distData) && distData.length > 0) {
+      dataSourceOption.value = {
+        ...dataSourceOption.value,
+        series: [{
+          ...dataSourceOption.value.series[0],
+          data: distData.map((item: any, index: number) => ({
+            value: item.value,
+            name: item.name,
+            itemStyle: { color: PIE_COLORS[index % PIE_COLORS.length] },
+          })),
+        }],
+      }
+    }
+  } finally {
+    loading.value = false
+  }
 }
+
+onMounted(() => {
+  fetchDashboardData()
+})
 </script>
 
 <style scoped>

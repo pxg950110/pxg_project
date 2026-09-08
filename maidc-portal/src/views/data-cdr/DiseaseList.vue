@@ -48,14 +48,29 @@
     >
       <a-form layout="vertical">
         <a-form-item label="专病名称" required>
-          <a-auto-complete
-            v-model:value="form.name"
-            :options="templateOptions"
-            placeholder="输入疾病名称搜索模板"
-            @search="handleTemplateSearch"
-            @select="handleTemplateSelect"
-          />
+          <div style="display: flex; gap: 8px">
+            <a-auto-complete
+              v-model:value="form.name"
+              :options="templateOptions"
+              placeholder="输入疾病名称搜索模板"
+              style="flex: 1"
+              @search="handleTemplateSearch"
+              @select="handleTemplateSelect"
+            />
+            <a-button type="primary" ghost @click="handleAiSuggest" :loading="aiSuggesting">
+              AI 推荐
+            </a-button>
+          </div>
         </a-form-item>
+        <div v-if="aiResult" class="ai-result-hint">
+          <a-tag :color="aiResult.confidence > 70 ? 'green' : aiResult.confidence > 40 ? 'orange' : 'red'">
+            置信度 {{ aiResult.confidence }}%
+          </a-tag>
+          <span v-if="aiResult.groups.length">推荐了 {{ aiResult.groups.length }} 组规则</span>
+          <span v-else style="color: #999">未找到推荐规则</span>
+          <a-button v-if="aiResult.groups.length && form.inclusionRules?.groups !== aiResult.groups"
+            type="link" size="small" @click="acceptAiRules">采纳</a-button>
+        </div>
         <a-form-item label="描述">
           <a-textarea v-model:value="form.description" :rows="2" placeholder="可选" />
         </a-form-item>
@@ -91,7 +106,7 @@ import ConditionBuilder from '@/components/ConditionBuilder/index.vue'
 import {
   getDiseaseCohorts, createDiseaseCohort, updateDiseaseCohort,
   deleteDiseaseCohort, syncDiseaseCohort, previewDiseaseCohort,
-  searchDiseaseTemplates,
+  searchDiseaseTemplates, aiSuggestDiseaseRules,
 } from '@/api/data'
 
 const router = useRouter()
@@ -121,6 +136,9 @@ const form = ref<{
   status: 'ACTIVE',
   inclusionRules: null,
 })
+
+const aiSuggesting = ref(false)
+const aiResult = ref<{ groups: any[]; confidence: number; source: string } | null>(null)
 
 async function loadData() {
   loading.value = true
@@ -249,6 +267,33 @@ function handleTemplateSelect(val: string, option: any) {
         : tpl.inclusionTemplate
     } catch { /* ignore parse error */ }
   }
+  aiResult.value = null
+}
+
+async function handleAiSuggest() {
+  if (!form.value.name) { message.warning('请先输入疾病名称'); return }
+  aiSuggesting.value = true
+  try {
+    const res = await aiSuggestDiseaseRules(form.value.name)
+    aiResult.value = res.data?.data
+    if (aiResult.value?.groups?.length) {
+      form.value.inclusionRules = { groups: aiResult.value.groups }
+      message.success(`AI 推荐了 ${aiResult.value.groups.length} 组纳入规则（置信度 ${aiResult.value.confidence}%）`)
+    } else {
+      message.info('AI 未找到推荐规则，请手动设置')
+    }
+  } catch (e: any) {
+    message.error('AI 推荐失败: ' + (e.message || ''))
+  } finally {
+    aiSuggesting.value = false
+  }
+}
+
+function acceptAiRules() {
+  if (aiResult.value?.groups?.length) {
+    form.value.inclusionRules = { groups: aiResult.value.groups }
+    message.success('已采纳 AI 推荐规则')
+  }
 }
 
 onMounted(loadData)
@@ -269,5 +314,13 @@ onMounted(loadData)
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+.ai-result-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 16px;
+  font-size: 13px;
+  color: #666;
 }
 </style>

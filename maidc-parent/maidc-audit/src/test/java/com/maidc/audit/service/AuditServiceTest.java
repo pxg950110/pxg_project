@@ -39,7 +39,7 @@ class AuditServiceTest {
     void logAudit_savesLogEntry() {
         // Arrange - build an entity with the expected fields
         AuditLogEntity entity = new AuditLogEntity();
-        entity.setModule("MODEL");
+        entity.setServiceName("MODEL");
         entity.setOperation("DEPLOY");
         entity.setUsername("admin");
         entity.setCreatedAt(LocalDateTime.now());
@@ -49,14 +49,14 @@ class AuditServiceTest {
         // Save the entity via repository
         AuditLogEntity saved = auditLogRepository.save(entity);
 
-        // Assert - verify save was called with correct module/operation/operator fields
+        // Assert - verify save was called with correct serviceName/operation/operator fields
         verify(auditLogRepository).save(argThat(e ->
-                "MODEL".equals(e.getModule()) &&
+                "MODEL".equals(e.getServiceName()) &&
                 "DEPLOY".equals(e.getOperation()) &&
                 "admin".equals(e.getUsername())
         ));
         assertNotNull(saved);
-        assertEquals("MODEL", saved.getModule());
+        assertEquals("MODEL", saved.getServiceName());
         assertEquals("DEPLOY", saved.getOperation());
         assertEquals("admin", saved.getUsername());
     }

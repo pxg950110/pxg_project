@@ -4,6 +4,8 @@ import com.maidc.common.core.result.R;
 import com.maidc.common.log.annotation.OperLog;
 import com.maidc.model.dto.DeploymentCreateDTO;
 import com.maidc.model.dto.DeploymentScaleDTO;
+import com.maidc.model.entity.DeployRouteEntity;
+import com.maidc.model.repository.DeployRouteRepository;
 import com.maidc.model.service.DeploymentService;
 import com.maidc.model.vo.DeploymentVO;
 import jakarta.validation.Valid;
@@ -19,6 +21,7 @@ import java.util.List;
 public class DeploymentController {
 
     private final DeploymentService deploymentService;
+    private final DeployRouteRepository deployRouteRepository;
 
     @OperLog(module = "model", operation = "createDeployment")
     @PreAuthorize("hasPermission('model:deploy')")
@@ -59,6 +62,12 @@ public class DeploymentController {
     @PostMapping("/{id}/restart")
     public R<DeploymentVO> restart(@PathVariable Long id) {
         return R.ok(deploymentService.restartDeployment(id));
+    }
+
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping("/routes")
+    public R<List<DeployRouteEntity>> listRoutes() {
+        return R.ok(deployRouteRepository.findAll());
     }
 
     @PreAuthorize("hasPermission('model:read')")

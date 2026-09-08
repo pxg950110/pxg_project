@@ -23,12 +23,12 @@ public class MessageController {
     @PreAuthorize("hasPermission('msg:read')")
     @GetMapping
     public R<PageResult<MessageVO>> listMessages(
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Boolean is_read,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int page_size) {
-        return R.ok(messageService.listMessages(userId, type, is_read, page, page_size));
+        return R.ok(messageService.listMessages(userId != null ? userId : 1L, type, is_read, page, page_size));
     }
 
     /**

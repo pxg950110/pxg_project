@@ -138,6 +138,10 @@ export function getMetricsOverview() {
   return request.get<ApiResponse<any>>('/monitoring/metrics')
 }
 
+export function getDeploymentMetrics(id: number, params: { metric_name?: string; start_time: string; end_time: string; interval?: string }) {
+  return request.get<ApiResponse<any>>(`/monitoring/deployments/${id}/metrics`, { params })
+}
+
 // Alert APIs
 export function getAlerts(params: { page?: number; page_size?: number; status?: string; severity?: string }) {
   return request.get<ApiResponse<PageResult<any>>>('/alerts', { params })
@@ -145,4 +149,26 @@ export function getAlerts(params: { page?: number; page_size?: number; status?: 
 
 export function acknowledgeAlert(id: number) {
   return request.put<ApiResponse<any>>(`/alerts/${id}/acknowledge`)
+}
+
+export function getAlertSummary() {
+  return request.get<ApiResponse<{
+    activeCount: number
+    todayProcessed: number
+    avgResponseTime: string
+    ruleCount: number
+  }>>('/alerts/summary')
+}
+
+// Route APIs
+export function getRoutes() {
+  return request.get<ApiResponse<any[]>>('/deployments/routes')
+}
+
+export function createRoute(data: Record<string, any>) {
+  return request.post<ApiResponse<any>>('/deployments/routes', data)
+}
+
+export function updateRoute(id: number, data: Record<string, any>) {
+  return request.put<ApiResponse<any>>(`/deployments/routes/${id}`, data)
 }

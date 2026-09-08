@@ -4,6 +4,7 @@ import com.maidc.common.core.result.PageResult;
 import com.maidc.common.core.result.R;
 import com.maidc.label.dto.LabelTaskCreateDTO;
 import com.maidc.label.dto.LabelTaskUpdateDTO;
+import com.maidc.label.repository.LabelTaskRepository;
 import com.maidc.label.service.LabelTaskService;
 import com.maidc.label.vo.LabelStatsVO;
 import com.maidc.label.vo.LabelTaskDetailVO;
@@ -13,12 +14,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/label/tasks")
 @RequiredArgsConstructor
 public class LabelTaskController {
 
     private final LabelTaskService labelTaskService;
+    private final LabelTaskRepository labelTaskRepository;
 
     /**
      * List label tasks with optional filters
@@ -40,6 +45,21 @@ public class LabelTaskController {
     @PostMapping
     public R<LabelTaskVO> createTask(@Valid @RequestBody LabelTaskCreateDTO dto) {
         return R.ok(labelTaskService.createTask(dto));
+    }
+
+    /**
+     * Get task summary counts
+     */
+    @PreAuthorize("hasPermission('label:read')")
+    @GetMapping("/summary")
+    public R<Map<String, Object>> getTaskSummary() {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalTasks", labelTaskRepository.count());
+        summary.put("pendingTasks", labelTaskRepository.countByStatusAndIsDeletedFalse("PENDING"));
+        summary.put("inProgressTasks", labelTaskRepository.countByStatusAndIsDeletedFalse("IN_PROGRESS"));
+        summary.put("completedTasks", labelTaskRepository.countByStatusAndIsDeletedFalse("COMPLETED"));
+        summary.put("cancelledTasks", labelTaskRepository.countByStatusAndIsDeletedFalse("CANCELLED"));
+        return R.ok(summary);
     }
 
     /**

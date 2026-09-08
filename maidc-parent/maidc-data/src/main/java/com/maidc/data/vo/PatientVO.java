@@ -26,6 +26,10 @@ public class PatientVO {
 
     private Long orgId;
 
+    private String idCardHash;
+
+    private String phoneHash;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

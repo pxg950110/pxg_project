@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,19 @@ public class LocalConceptService {
     private final ConceptRepository conceptRepository;
 
     public Page<LocalConceptEntity> list(Long institutionId, Long codeSystemId, String mappingStatus, int page, int size) {
+        if (codeSystemId == null) {
+            // Use JpaSpecificationExecutor for dynamic filtering when codeSystemId is not provided
+            Specification<LocalConceptEntity> spec = (root, query, cb) -> {
+                var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+                predicates.add(cb.isFalse(root.get("isDeleted")));
+                predicates.add(cb.equal(root.get("institutionId"), institutionId));
+                if (mappingStatus != null && !mappingStatus.isBlank()) {
+                    predicates.add(cb.equal(root.get("mappingStatus"), mappingStatus));
+                }
+                return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+            };
+            return localConceptRepository.findAll(spec, PageRequest.of(page - 1, size));
+        }
         if (mappingStatus != null && !mappingStatus.isBlank()) {
             return localConceptRepository.findByInstitutionIdAndCodeSystemIdAndMappingStatusAndIsDeletedFalse(
                     institutionId, codeSystemId, mappingStatus, PageRequest.of(page - 1, size));

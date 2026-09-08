@@ -17,16 +17,16 @@
     <!-- 4 Metric Cards -->
     <a-row :gutter="16" class="metric-row">
       <a-col :span="6">
-        <MetricCard title="部署实例" :value="45" :icon="RocketOutlined" />
+        <MetricCard title="部署实例" :value="summary.total" :icon="RocketOutlined" :loading="loading" />
       </a-col>
       <a-col :span="6">
-        <MetricCard title="总推理次数" :value="128456" :icon="ThunderboltOutlined" />
+        <MetricCard title="运行中" :value="summary.running" :icon="ThunderboltOutlined" :loading="loading" />
       </a-col>
       <a-col :span="6">
-        <MetricCard title="平均延迟" value="245" suffix="ms" :icon="ClockCircleOutlined" />
+        <MetricCard title="已停止" :value="summary.stopped" :icon="ClockCircleOutlined" :loading="loading" />
       </a-col>
       <a-col :span="6">
-        <MetricCard title="GPU利用率" value="67" suffix="%" :icon="DashboardOutlined" />
+        <MetricCard title="异常" :value="summary.failed" :icon="DashboardOutlined" :loading="loading" />
       </a-col>
     </a-row>
 
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   RocketOutlined,
@@ -88,11 +88,19 @@ import {
 import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
-import { useTable } from '@/hooks/useTable'
 import { getDeployments, scaleDeployment, restartDeployment } from '@/api/model'
 
 // Time range filter
 const timeRange = ref<string>('24h')
+const loading = ref(false)
+const deploymentData = ref<any[]>([])
+
+const summary = reactive({
+  total: 0,
+  running: 0,
+  stopped: 0,
+  failed: 0,
+})
 
 // QPS chart option
 const qpsChartOption = {
@@ -122,26 +130,40 @@ interface DeploymentItem {
   detail: string
 }
 
-const { tableData: deploymentData, loading, fetchData } = useTable<any>(
-  (params) => getDeployments({ page: params.page, page_size: params.pageSize })
-)
-
 const statusColorMap: Record<string, string> = {
-  Running: '#52c41a',
-  Stopped: '#ff4d4f',
-  Error: '#faad14',
+  RUNNING: '#52c41a',
+  STOPPED: '#ff4d4f',
+  FAILED: '#faad14',
+  CREATING: '#1677ff',
+  SCALING: '#1677ff',
+  STOPPING: '#faad14',
 }
 
 const deployments = computed<DeploymentItem[]>(() =>
   deploymentData.value.map((item: any) => ({
     id: item.id,
-    name: item.name || item.deployment_name,
-    version: item.version || item.version_no || '--',
+    name: item.deploymentName || item.name,
+    version: item.version || '--',
     status: item.status,
     color: statusColorMap[item.status] || '#d9d9d9',
-    detail: item.detail || item.qps ? `QPS: ${item.qps || item.detail}` : '--',
+    detail: `${item.environment || '--'} · 副本: ${item.replicas || 1}`,
   }))
 )
+
+async function fetchData() {
+  loading.value = true
+  try {
+    const res = await getDeployments({ page: 1, page_size: 100 })
+    const data = res.data.data
+    deploymentData.value = Array.isArray(data) ? data : (data?.items || [])
+    summary.total = deploymentData.value.length
+    summary.running = deploymentData.value.filter(d => d.status === 'RUNNING').length
+    summary.stopped = deploymentData.value.filter(d => d.status === 'STOPPED').length
+    summary.failed = deploymentData.value.filter(d => d.status === 'FAILED').length
+  } finally {
+    loading.value = false
+  }
+}
 
 // Alert table columns
 const alertColumns = [

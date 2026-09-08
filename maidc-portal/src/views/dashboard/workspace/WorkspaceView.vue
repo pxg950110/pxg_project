@@ -63,8 +63,12 @@ function handleComplete(id: number) {
   store.completeTask(id)
 }
 
-function handleMarkAllRead() {
-  store.markAllNotificationsRead()
+async function handleMarkAllRead() {
+  try {
+    await store.markAllNotificationsRead()
+  } catch {
+    // error handled by store or request interceptor
+  }
 }
 
 function handleNotifyClick(item: NotificationItem) {

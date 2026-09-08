@@ -61,6 +61,59 @@ export function getClinicalNotes(patientId: string, encounterId: string, params?
   return request.get<ApiResponse<any>>(`/cdr/patients/${patientId}/encounters/${encounterId}/notes`, { params })
 }
 
+export function searchClinicalNotes(params: {
+  encounterId?: number; patientId?: number; noteType?: string; noteCategory?: string;
+  signStatus?: string; urgency?: string; source?: string; keyword?: string;
+  page?: number; size?: number
+}) {
+  return request.get<ApiResponse<any>>('/cdr/clinical-notes/search', { params })
+}
+
+export function listClinicalNotesByEncounter(encounterId: number, params?: { page?: number; size?: number }) {
+  return request.get<ApiResponse<any>>('/cdr/clinical-notes/by-encounter', { params: { encounterId, ...params } })
+}
+
+export function createClinicalNote(data: any) {
+  return request.post<ApiResponse<any>>('/cdr/clinical-notes', data)
+}
+
+export function updateClinicalNote(id: number, data: any) {
+  return request.put<ApiResponse<any>>(`/cdr/clinical-notes/${id}`, data)
+}
+
+export function signClinicalNote(id: number, signedBy: string) {
+  return request.post<ApiResponse<any>>(`/cdr/clinical-notes/${id}/sign`, null, { params: { signedBy } })
+}
+
+export function countersignClinicalNote(id: number, signedBy: string) {
+  return request.post<ApiResponse<any>>(`/cdr/clinical-notes/${id}/countersign`, null, { params: { signedBy } })
+}
+
+export function deleteClinicalNote(id: number) {
+  return request.delete(`/cdr/clinical-notes/${id}`)
+}
+
+// Document Templates
+export function getDocumentTemplates(params?: { noteType?: string; page?: number; size?: number }) {
+  return request.get<ApiResponse<any>>('/cdr/document-templates', { params })
+}
+
+export function getDocumentTemplate(id: number) {
+  return request.get<ApiResponse<any>>(`/cdr/document-templates/${id}`)
+}
+
+export function createDocumentTemplate(data: any) {
+  return request.post<ApiResponse<any>>('/cdr/document-templates', data)
+}
+
+export function updateDocumentTemplate(id: number, data: any) {
+  return request.put<ApiResponse<any>>(`/cdr/document-templates/${id}`, data)
+}
+
+export function deleteDocumentTemplate(id: number) {
+  return request.delete(`/cdr/document-templates/${id}`)
+}
+
 // ========== Data Source APIs ==========
 export function getDataSources(params: { page?: number; page_size?: number; keyword?: string; type?: string; status?: string }) {
   return request.get<ApiResponse<PageResult<any>>>('/cdr/datasources', { params })
@@ -315,4 +368,13 @@ export function searchDiseaseTemplates(q: string) {
 
 export function aiSuggestDiseaseRules(diseaseName: string) {
   return request.post<ApiResponse<{ groups: any[]; confidence: number; source: string }>>('/cdr/disease-cohorts/ai-suggest', { disease_name: diseaseName })
+}
+
+// ========== Statistics APIs ==========
+export function getDataGrowthTrend(params?: { months?: number }) {
+  return request.get<ApiResponse<any>>('/cdr/statistics/data-growth-trend', { params })
+}
+
+export function getDataSourceDistribution() {
+  return request.get<ApiResponse<any>>('/cdr/statistics/source-distribution')
 }

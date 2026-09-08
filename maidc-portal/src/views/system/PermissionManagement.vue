@@ -42,6 +42,7 @@
         row-key="id"
         :default-expand-all-rows="true"
         :indent-size="0"
+        :loading="loading"
         children-column-name="children"
         class="perm-table"
         :row-class-name="getRowClassName"
@@ -85,23 +86,51 @@
 
       <!-- Pagination Row -->
       <div class="perm-pagination-row">
-        <span class="perm-total-text">共 48 个权限项</span>
-        <a-pagination
-          v-model:current="pagination.current"
-          :total="48"
-          :page-size="pagination.pageSize"
-          :show-size-changer="false"
-          size="small"
-        />
+        <span class="perm-total-text">共 {{ totalCount }} 个权限项</span>
       </div>
+
+      <!-- Add/Edit Permission Modal -->
+      <a-modal
+        v-model:open="modalVisible"
+        :title="editingRecord ? '编辑权限' : '新增权限'"
+        @ok="handleModalOk"
+        :confirm-loading="modalLoading"
+        width="520px"
+      >
+        <a-form layout="vertical" ref="formRef" :model="formData">
+          <a-form-item label="权限名称" name="name" :rules="[{ required: true, message: '请输入权限名称' }]">
+            <a-input v-model:value="formData.name" placeholder="例如：用户管理" />
+          </a-form-item>
+          <a-form-item label="权限编码" name="code" :rules="[{ required: true, message: '请输入权限编码' }]">
+            <a-input v-model:value="formData.code" placeholder="例如：user:manage" />
+          </a-form-item>
+          <a-form-item label="权限类型" name="type" :rules="[{ required: true, message: '请选择权限类型' }]">
+            <a-select v-model:value="formData.type" placeholder="选择类型">
+              <a-select-option value="MENU">MENU</a-select-option>
+              <a-select-option value="API">API</a-select-option>
+              <a-select-option value="DATA">DATA</a-select-option>
+              <a-select-option value="BUTTON">BUTTON</a-select-option>
+            </a-select>
+          </a-form-item>
+          <a-form-item label="上级权限">
+            <a-select v-model:value="formData.parentId" allow-clear placeholder="无（顶级权限）">
+              <a-select-option v-for="p in permissions" :key="p.id" :value="p.id">
+                {{ p.name }}
+              </a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-form>
+      </a-modal>
     </template>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
+import { getPermissionTree, createPermission, updatePermission } from '@/api/system'
 
 interface PermissionItem {
   id: number
@@ -113,53 +142,21 @@ interface PermissionItem {
   children?: PermissionItem[]
 }
 
+const loading = ref(false)
+const permissions = ref<PermissionItem[]>([])
+
 // Filters
 const filterType = ref<string | undefined>(undefined)
 const filterKeyword = ref('')
 
-// Pagination
-const pagination = ref({
-  current: 1,
-  pageSize: 50,
+// Total count
+const totalCount = computed(() => {
+  let count = 0
+  for (const parent of permissions.value) {
+    count += (parent.children?.length || 0)
+  }
+  return count
 })
-
-// Mock hierarchical data
-const mockPermissions: PermissionItem[] = [
-  {
-    id: 1,
-    name: '模型管理',
-    code: '',
-    type: 'MENU',
-    roleCount: 0,
-    isParent: true,
-    children: [
-      { id: 11, name: '模型列表', code: 'model:list', type: 'MENU', roleCount: 6, isParent: false },
-      { id: 12, name: '注册模型', code: 'model:create', type: 'API', roleCount: 3, isParent: false },
-      { id: 13, name: '删除模型', code: 'model:delete', type: 'API', roleCount: 2, isParent: false },
-    ],
-  },
-  {
-    id: 2,
-    name: '数据管理',
-    code: '',
-    type: 'DATA',
-    roleCount: 0,
-    isParent: true,
-    children: [
-      { id: 21, name: '患者数据查看', code: 'data:patient:read', type: 'DATA', roleCount: 4, isParent: false },
-      { id: 22, name: '数据导出', code: 'data:export', type: 'BUTTON', roleCount: 2, isParent: false },
-    ],
-  },
-  {
-    id: 3,
-    name: '系统设置',
-    code: '',
-    type: 'MENU',
-    roleCount: 0,
-    isParent: true,
-    children: [],
-  },
-]
 
 // Filter data by type and keyword
 const filteredData = computed(() => {
@@ -167,9 +164,9 @@ const filteredData = computed(() => {
   const hasTypeFilter = !!filterType.value
   const hasKeyword = !!keyword
 
-  if (!hasTypeFilter && !hasKeyword) return mockPermissions
+  if (!hasTypeFilter && !hasKeyword) return permissions.value
 
-  return mockPermissions
+  return permissions.value
     .map((parent) => {
       const parentNameMatch = parent.name.toLowerCase().includes(keyword)
 
@@ -179,7 +176,6 @@ const filteredData = computed(() => {
         return true
       })
 
-      // Keep parent if it matches keyword or has matching children
       if (parentNameMatch || filteredChildren.length > 0) {
         return {
           ...parent,
@@ -203,19 +199,83 @@ const columns = [
   { title: '操作', key: 'action', width: 80, align: 'right' as const },
 ]
 
-// Row class name for styling parent vs child rows
+async function fetchPermissions() {
+  loading.value = true
+  try {
+    const res = await getPermissionTree()
+    permissions.value = res.data.data || []
+  } finally {
+    loading.value = false
+  }
+}
+
 function getRowClassName(record: PermissionItem) {
   return record.isParent ? 'perm-row-parent' : 'perm-row-child'
 }
 
-// Handlers
+const modalVisible = ref(false)
+const modalLoading = ref(false)
+const editingRecord = ref<PermissionItem | null>(null)
+const formRef = ref()
+const formData = reactive({
+  name: '',
+  code: '',
+  type: '' as string,
+  parentId: undefined as number | undefined,
+})
+
 function handleAdd() {
-  // placeholder for add permission action
+  editingRecord.value = null
+  formData.name = ''
+  formData.code = ''
+  formData.type = ''
+  formData.parentId = undefined
+  modalVisible.value = true
 }
 
-function handleEdit(_record: PermissionItem) {
-  // placeholder for edit permission action
+function handleEdit(record: PermissionItem) {
+  editingRecord.value = record
+  formData.name = record.name
+  formData.code = record.code
+  formData.type = record.type
+  formData.parentId = undefined
+  modalVisible.value = true
 }
+
+async function handleModalOk() {
+  try {
+    await formRef.value?.validateFields()
+  } catch {
+    return
+  }
+  modalLoading.value = true
+  try {
+    if (editingRecord.value) {
+      await updatePermission(editingRecord.value.id, {
+        name: formData.name,
+        code: formData.code,
+        type: formData.type,
+        parent_id: formData.parentId,
+      })
+    } else {
+      await createPermission({
+        name: formData.name,
+        code: formData.code,
+        type: formData.type,
+        parent_id: formData.parentId,
+      })
+    }
+    message.success(editingRecord.value ? '权限已更新' : '权限已创建')
+    modalVisible.value = false
+    fetchPermissions()
+  } finally {
+    modalLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchPermissions()
+})
 </script>
 
 <style scoped>

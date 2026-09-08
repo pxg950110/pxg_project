@@ -72,7 +72,7 @@
                 <template #icon><MoreOutlined /></template>
               </a-button>
               <template #overlay>
-                <a-menu @click="({ key }: { key: string }) => handleMenuClick(key, record)">
+                <a-menu @click="(e: any) => handleMenuClick(e.key, record)">
                   <a-menu-item key="toggleStatus">
                     {{ record.status === 'ACTIVE' ? '禁用' : '启用' }}
                   </a-menu-item>

@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface DataAccessLogRepository extends JpaRepository<DataAccessLogEntity, String>, JpaSpecificationExecutor<DataAccessLogEntity> {
+public interface DataAccessLogRepository extends JpaRepository<DataAccessLogEntity, Long>, JpaSpecificationExecutor<DataAccessLogEntity> {
 }

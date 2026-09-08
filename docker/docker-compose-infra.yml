@@ -34,13 +34,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: maidc-redis
-    command: redis-server --requirepass maidc_redis --appendonly yes
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "maidc_redis", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

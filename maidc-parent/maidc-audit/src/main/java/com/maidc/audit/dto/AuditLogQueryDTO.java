@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class AuditLogQueryDTO {
 
-    private String module;
+    private String serviceName;
 
     private String operation;
 
@@ -17,7 +17,7 @@ public class AuditLogQueryDTO {
 
     private LocalDateTime endTime;
 
-    private Short status;
+    private String status;
 
     private Integer page = 1;
 

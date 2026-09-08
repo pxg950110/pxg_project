@@ -7,11 +7,19 @@ declare namespace API {
   }
 
   interface PageResult<T = any> {
-    items: T[]
-    total: number
-    page: number
-    pageSize: number
+    content: T[]
+    totalElements: number
     totalPages: number
+    number: number
+    size: number
+    first: boolean
+    last: boolean
+    empty: boolean
+    // Legacy fields for backward compatibility
+    items?: T[]
+    total?: number
+    page?: number
+    pageSize?: number
   }
 
   interface PageParams {
