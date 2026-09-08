@@ -55,7 +55,7 @@ maidc-portal/src/api/export.ts + views/system/ExportApproval*.vue [新建]
 **Files:**
 - Create: `docker/init-db/17-permission-system.sql`
 
-- [ ] **Step 1: 写迁移 SQL**
+- [x] **Step 1: 写迁移 SQL**
 
 ```sql
 -- 17-permission-system.sql  MAIDC 权限系统（RBAC扩展+数据范围+脱敏豁免）
@@ -243,7 +243,7 @@ COMMIT;
 
 > 注：`r_desensitize_rule` 列已核实（`DesensitizeRuleEntity`：`field_type`/`strategy`/`params`/`enabled`）。脱敏行为完全由本表驱动：`enabled=false` → 明文；`enabled=true` 且角色命中 `exempt_role_codes` → 明文；否则脱敏；无规则行 → 安全默认脱敏。
 
-- [ ] **Step 2: 空库验证 SQL 语法**
+- [x] **Step 2: 空库验证 SQL 语法**
 
 Run: `cd e:/pxg_project/docker && docker compose -f docker-compose-infra.yml exec -T postgres psql -U maidc -d maidc -c "\i /docker-entrypoint-initdb.d/17-permission-system.sql" 2>&1 | tail -5`（若库已有数据则直接执行；新库需先跑 01-16）
 Expected: 输出 `COMMIT`，无 ERROR
@@ -261,12 +261,12 @@ CROSS JOIN (SELECT strategy FROM cdr.r_desensitize_rule LIMIT 1) r2
 WHERE NOT EXISTS (SELECT 1 FROM cdr.r_desensitize_rule r WHERE r.field_type = t.ft);
 ```
 
-- [ ] **Step 3: 验证矩阵行数**
+- [x] **Step 3: 验证矩阵行数**
 
 Run: `docker compose -f docker-compose-infra.yml exec -T postgres psql -U maidc -d maidc -t -c "SELECT r.role_code, count(*) FROM system.s_role_permission rp JOIN system.s_role r ON r.id=rp.role_id GROUP BY 1 ORDER BY 1;"`
 Expected: `admin` = 55（权限总数），doctor=13, nurse=10, researcher_pi=18, researcher=11, data_admin=29, ai_engineer=20, auditor=10（admin=全部；若与预期差 1-2 先核对权限种子行数再判定失败）
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docker/init-db/17-permission-system.sql
@@ -285,7 +285,7 @@ git commit -m "feat(db): permission system migration - data scope, 55 permission
 - Create: `maidc-parent/common/common-security/src/main/java/com/maidc/common/security/context/CurrentUser.java`
 - Test: `maidc-parent/common/common-security/src/test/java/com/maidc/common/security/context/CurrentUserTest.java`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```java
 package com.maidc.common.security.context;
@@ -326,12 +326,12 @@ class CurrentUserTest {
 
 > 若 common-security 无 `spring-test` 依赖，在其 `pom.xml` 加 `<dependency><groupId>org.springframework</groupId><artifactId>spring-test</artifactId><scope>test</scope></dependency>`
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `cd e:/pxg_project/maidc-parent && mvn -pl common/common-security test -Dtest=CurrentUserTest -q`
 Expected: 编译失败 `CurrentUser` 不存在
 
-- [ ] **Step 3: 实现 5 个类**
+- [x] **Step 3: 实现 5 个类**
 
 ```java
 // scope/DataScope.java
@@ -455,12 +455,12 @@ public @interface PublicEndpoint {
 }
 ```
 
-- [ ] **Step 4: 运行测试通过**
+- [x] **Step 4: 运行测试通过**
 
 Run: `mvn -pl common/common-security test -Dtest=CurrentUserTest -q`
 Expected: BUILD SUCCESS, Tests run: 2
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add maidc-parent/common/common-security
@@ -477,7 +477,7 @@ git commit -m "feat(security): permission annotations, PermissionContext, DataSc
 - Modify: `maidc-parent/common/common-security/pom.xml`（加 jackson-databind、spring-boot-starter-web 提供 RestTemplate/RestClient；common-security 已依赖 spring-security/web，核对后仅补缺项）
 - Test: `maidc-parent/common/common-security/src/test/java/com/maidc/common/security/aspect/PermissionAspectTest.java`
 
-- [ ] **Step 1: pom 补依赖（已有则跳过）**
+- [x] **Step 1: pom 补依赖（已有则跳过）**
 
 在 `common/common-security/pom.xml` `<dependencies>` 中核对/添加：
 
@@ -494,7 +494,7 @@ git commit -m "feat(security): permission annotations, PermissionContext, DataSc
 
 （若已存在则不重复；common-security 现依赖 common-core/jjwt/spring-security，Redis 访问用各服务已有的 `StringRedisTemplate` bean）
 
-- [ ] **Step 2: 写失败测试**
+- [x] **Step 2: 写失败测试**
 
 ```java
 package com.maidc.common.security.aspect;
@@ -542,12 +542,12 @@ class PermissionAspectTest {
 }
 ```
 
-- [ ] **Step 3: 运行确认失败**
+- [x] **Step 3: 运行确认失败**
 
 Run: `mvn -pl common/common-security test -Dtest=PermissionAspectTest -q`
 Expected: 编译失败 PermissionAspect/PermissionStore 不存在
 
-- [ ] **Step 4: 实现 Store 与 Aspect**
+- [x] **Step 4: 实现 Store 与 Aspect**
 
 ```java
 // store/PermissionStore.java
@@ -658,12 +658,12 @@ public class PermissionAspect {
 }
 ```
 
-- [ ] **Step 5: 运行测试通过**
+- [x] **Step 5: 运行测试通过**
 
 Run: `mvn -pl common/common-security test -Dtest=PermissionAspectTest -q`
 Expected: BUILD SUCCESS, Tests run: 3
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add maidc-parent/common/common-security
