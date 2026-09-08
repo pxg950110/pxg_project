@@ -2,6 +2,10 @@ package com.maidc.data.service;
 
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
+import com.maidc.common.security.context.CurrentUser;
+import com.maidc.common.security.context.PermissionContext;
+import com.maidc.common.security.scope.DataScopeHelper;
+import com.maidc.common.security.store.PermissionStore;
 import com.maidc.data.dto.*;
 import com.maidc.data.entity.*;
 import com.maidc.data.repository.*;
@@ -35,6 +39,8 @@ public class PatientEncounterService {
     private final ImagingExamRepository imagingExamRepository;
     private final MedicationRepository medicationRepository;
     private final OperationRepository operationRepository;
+    private final PermissionStore permissionStore;
+    private final InstitutionRepository institutionRepository;
 
     /**
      * 获取患者就诊列表
@@ -43,6 +49,10 @@ public class PatientEncounterService {
         // 获取患者信息
         PatientEntity patient = patientRepository.findByIdAndIsDeletedFalse(patientId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATIENT_NOT_FOUND));
+
+        // DEPT 数据范围校验：该患者任一就诊科室 ∉ 用户科室 → 404（fail-closed，不暴露存在性）
+        checkDeptScope(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(patientId)
+                .stream().map(EncounterEntity::getDepartment).toList());
 
         // 获取就诊列表（分页）
         Page<EncounterEntity> encounterPage = encounterRepository.findByPatientId(patientId, pageable);
@@ -80,6 +90,9 @@ public class PatientEncounterService {
         // 获取就诊基本信息
         EncounterEntity encounter = encounterRepository.findByIdAndIsDeletedFalse(encounterId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENCOUNTER_NOT_FOUND));
+
+        // DEPT 数据范围校验：就诊科室 ∉ 用户科室 → 404（fail-closed，不暴露存在性）
+        checkDeptScope(Collections.singletonList(encounter.getDepartment()));
 
         // 获取主诊断
         List<DiagnosisEntity> diagnoses = diagnosisRepository.findByEncounterIdAndIsDeletedFalse(encounterId);
@@ -127,6 +140,30 @@ public class PatientEncounterService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * DEPT 数据范围校验（fail-closed）：任一就诊科室与用户科室不匹配 → 404"患者不存在"，不暴露资源存在性。
+     * <p>s_user.dept_id 指向机构表ID，而 c_encounter.department 存科室名称，
+     * 需经机构表 name 转换后按字符串比对。
+     */
+    private void checkDeptScope(List<String> departments) {
+        Long userId = CurrentUser.userId();
+        if (userId == null) {
+            // 无用户上下文（内部调用），认证与接口级权限由网关/权限切面负责
+            return;
+        }
+        PermissionContext ctx = permissionStore.load(userId);
+        if (!DataScopeHelper.needDeptFilter(ctx)) {
+            return;
+        }
+        Long deptId = DataScopeHelper.deptId(ctx);
+        String deptName = deptId == null ? null
+                : institutionRepository.findById(deptId).map(InstitutionEntity::getName).orElse(null);
+        // deptId 为空 / 机构不存在 / 任一科室不匹配（含 department 为 null）：宁可拒绝不可放行
+        if (deptName == null || departments.stream().anyMatch(dept -> !deptName.equals(dept))) {
+            throw new BusinessException(404, "患者不存在");
+        }
+    }
 
     /**
      * 获取主诊断映射（就诊ID -> 主诊断名称）
