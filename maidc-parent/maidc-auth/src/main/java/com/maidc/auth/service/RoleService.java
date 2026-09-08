@@ -28,6 +28,7 @@ public class RoleService {
     private final RolePermissionRepository rolePermissionRepository;
     private final PermissionRepository permissionRepository;
     private final UserRoleRepository userRoleRepository;
+    private final PermissionCacheService permissionCacheService;
 
     public List<RoleVO> listRoles() {
         List<RoleEntity> roles = roleRepository.findByIsDeletedFalse();
@@ -111,6 +112,8 @@ public class RoleService {
                 rolePermissionRepository.save(rp);
             }
         }
+        // 角色权限增删后失效持有者缓存（提交后执行；createRole 调用此方法时新角色无用户，失效为空操作）
+        permissionCacheService.evictByRoleAfterCommit(roleId);
     }
 
     public List<PermissionTreeVO> getPermissionTree() {

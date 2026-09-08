@@ -33,4 +33,8 @@ public class RoleEntity extends BaseEntity {
 
     @Column(name = "is_system", nullable = false)
     private Boolean isSystem = false;
+
+    /** 数据范围 ALL/DEPT/SELF/PROJECT，枚举存字符串（system.s_role.data_scope，DB 默认 'SELF'） */
+    @Column(name = "data_scope", nullable = false, length = 16)
+    private String dataScope = "SELF";
 }

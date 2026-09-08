@@ -56,6 +56,8 @@ public class SecurityConfig {
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh",
                                     "/api/v1/auth/captcha", "/actuator/**").permitAll()
+                            // 服务间内部端点（权限缓存懒加载），网关不路由此前缀，仅内网直连
+                            .requestMatchers("/api/v1/internal/**").permitAll()
                             .anyRequest().permitAll());
             return http.build();
         }
@@ -77,6 +79,8 @@ public class SecurityConfig {
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh",
                                     "/api/v1/auth/captcha", "/actuator/**").permitAll()
+                            // 服务间内部端点（权限缓存懒加载），网关不路由此前缀，仅内网直连
+                            .requestMatchers("/api/v1/internal/**").permitAll()
                             .anyRequest().authenticated());
             return http.build();
         }

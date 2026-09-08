@@ -10,6 +10,8 @@ import com.maidc.auth.repository.UserRepository;
 import com.maidc.auth.repository.UserRoleRepository;
 import com.maidc.auth.vo.LoginVO;
 import com.maidc.common.core.exception.BusinessException;
+import com.maidc.common.security.context.PermissionContext;
+import com.maidc.common.security.scope.DataScope;
 import com.maidc.common.security.util.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +56,9 @@ class AuthServiceTest {
 
     @Mock
     private ValueOperations<String, String> valueOperations;
+
+    @Mock
+    private PermissionCacheService permissionCacheService;
 
     @InjectMocks
     private AuthService authService;
@@ -101,6 +107,13 @@ class AuthServiceTest {
         when(jwtUtils.generateAccessToken(1L, "admin", List.of("ADMIN"), 0L)).thenReturn("access-token");
         when(jwtUtils.generateRefreshToken(1L, "admin")).thenReturn("refresh-token");
         when(userRepository.save(activeUser)).thenReturn(activeUser);
+        when(permissionCacheService.build(1L)).thenReturn(PermissionContext.builder()
+                .userId(1L)
+                .permissions(Set.of("cdr:patient:read"))
+                .dataScope(DataScope.DEPT)
+                .deptId(30L)
+                .roles(List.of("ADMIN"))
+                .build());
 
         // Act
         LoginVO result = authService.login(loginDTO);
@@ -113,9 +126,12 @@ class AuthServiceTest {
         assertThat(result.getUser()).isNotNull();
         assertThat(result.getUser().getUsername()).isEqualTo("admin");
         assertThat(result.getUser().getRoles()).containsExactly("ADMIN");
+        assertThat(result.getUser().getPermissions()).containsExactly("cdr:patient:read");
+        assertThat(result.getUser().getDataScope()).isEqualTo("DEPT");
 
         verify(redisTemplate).delete("maidc:auth:attempts:1");
         verify(userRepository).save(activeUser);
+        verify(permissionCacheService).build(1L);
     }
 
     @Test
@@ -202,6 +218,9 @@ class AuthServiceTest {
 
         // Assert
         assertThat(result.getUser().getRoles()).isEmpty();
+        // 权限缓存构建返回 null（未打桩）时兜底：空权限集 + SELF
+        assertThat(result.getUser().getPermissions()).isEmpty();
+        assertThat(result.getUser().getDataScope()).isEqualTo("SELF");
         // AuthService still calls findAllById with empty list when no roles exist
         verify(roleRepository).findAllById(List.of());
     }

@@ -7,6 +7,7 @@ import com.maidc.auth.repository.*;
 import com.maidc.auth.vo.LoginVO;
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
+import com.maidc.common.security.context.PermissionContext;
 import com.maidc.common.security.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -31,6 +33,7 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
+    private final PermissionCacheService permissionCacheService;
 
     @Value("${maidc.jwt.access-expiration:7200000}")
     private long accessExpiration;
@@ -84,6 +87,9 @@ public class AuthService {
 
         log.info("用户登录成功: username={}", user.getUsername());
 
+        // 构建权限缓存并随登录响应下发（前端按钮/菜单级控制）
+        PermissionContext permCtx = permissionCacheService.build(user.getId());
+
         return LoginVO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -95,6 +101,8 @@ public class AuthService {
                         .realName(user.getRealName())
                         .roles(roleCodes)
                         .orgId(user.getOrgId())
+                        .permissions(permCtx != null ? permCtx.getPermissions() : Set.of())
+                        .dataScope(permCtx != null ? permCtx.getDataScope().name() : "SELF")
                         .build())
                 .build();
     }
@@ -115,6 +123,9 @@ public class AuthService {
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+
+        // token 轮换后预热权限缓存（响应不含 UserInfo，仅保证缓存新鲜）
+        permissionCacheService.build(userId);
 
         String accessToken = jwtUtils.generateAccessToken(userId, username, roleCodes, user.getOrgId());
 
