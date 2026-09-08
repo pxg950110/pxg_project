@@ -50,9 +50,9 @@ public class PatientEncounterService {
         PatientEntity patient = patientRepository.findByIdAndIsDeletedFalse(patientId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATIENT_NOT_FOUND));
 
-        // DEPT 数据范围校验：该患者任一就诊科室 ∉ 用户科室 → 404（fail-closed，不暴露存在性）
+        // DEPT 数据范围校验（∃ 语义）：至少一条就诊科室 == 用户科室 → 可见；零就诊/无匹配 → 与患者未找到同响应
         checkDeptScope(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(patientId)
-                .stream().map(EncounterEntity::getDepartment).toList());
+                .stream().map(EncounterEntity::getDepartment).toList(), ErrorCode.PATIENT_NOT_FOUND);
 
         // 获取就诊列表（分页）
         Page<EncounterEntity> encounterPage = encounterRepository.findByPatientId(patientId, pageable);
@@ -91,8 +91,8 @@ public class PatientEncounterService {
         EncounterEntity encounter = encounterRepository.findByIdAndIsDeletedFalse(encounterId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
-        // DEPT 数据范围校验：就诊科室 ∉ 用户科室 → 404（fail-closed，不暴露存在性）
-        checkDeptScope(Collections.singletonList(encounter.getDepartment()));
+        // DEPT 数据范围校验：就诊科室 ∉ 用户科室 → 与就诊未找到同响应（fail-closed，不暴露存在性）
+        checkDeptScope(Collections.singletonList(encounter.getDepartment()), ErrorCode.ENCOUNTER_NOT_FOUND);
 
         // 获取主诊断
         List<DiagnosisEntity> diagnoses = diagnosisRepository.findByEncounterIdAndIsDeletedFalse(encounterId);
@@ -142,11 +142,12 @@ public class PatientEncounterService {
     // ==================== 私有辅助方法 ====================
 
     /**
-     * DEPT 数据范围校验（fail-closed）：任一就诊科室与用户科室不匹配 → 404"患者不存在"，不暴露资源存在性。
+     * DEPT 数据范围校验（fail-closed，∃ 语义）：至少一条就诊科室与用户科室匹配 → 可见；
+     * 零就诊记录或全部不匹配 → 抛与真实"未找到"完全相同的异常（同 code 同 message，不暴露存在性）。
      * <p>s_user.dept_id 指向机构表ID，而 c_encounter.department 存科室名称，
-     * 需经机构表 name 转换后按字符串比对。
+     * 需经机构表 name 转换后按字符串比对；null 科室不计为匹配。
      */
-    private void checkDeptScope(List<String> departments) {
+    private void checkDeptScope(List<String> departments, ErrorCode notFound) {
         Long userId = CurrentUser.userId();
         if (userId == null) {
             // 无用户上下文（内部调用），认证与接口级权限由网关/权限切面负责
@@ -159,9 +160,9 @@ public class PatientEncounterService {
         Long deptId = DataScopeHelper.deptId(ctx);
         String deptName = deptId == null ? null
                 : institutionRepository.findById(deptId).map(InstitutionEntity::getName).orElse(null);
-        // deptId 为空 / 机构不存在 / 任一科室不匹配（含 department 为 null）：宁可拒绝不可放行
-        if (deptName == null || departments.stream().anyMatch(dept -> !deptName.equals(dept))) {
-            throw new BusinessException(404, "患者不存在");
+        // deptId 为空 / 机构不存在 / 无任何匹配科室（含零就诊、null 科室）：宁可拒绝不可放行
+        if (deptName == null || departments.stream().noneMatch(dept -> deptName.equals(dept))) {
+            throw new BusinessException(notFound);
         }
     }
 
