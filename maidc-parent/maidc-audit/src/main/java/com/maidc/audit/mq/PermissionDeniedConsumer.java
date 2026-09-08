@@ -17,17 +17,17 @@ import java.util.Map;
 /**
  * 越权拒绝事件消费：PERMISSION_DENIED → audit.a_system_event 落库。
  *
- * 注意：a_system_event.event_type 列有 CHECK 约束
- * （仅允许 SERVICE_START/SERVICE_STOP/CONFIG_CHANGE/DEPLOY/ALERT，不含 PERMISSION_DENIED），
- * 故统一以 ALERT + WARN 入库，原始事件类型与完整 payload 保留在 event_data(JSONB) 中。
+ * event_type CHECK 约束已由 docker/init-db/18-audit-event-type.sql 扩展，
+ * 原生 PERMISSION_DENIED 类型合法（语义保真，审计可按类型检索）；
+ * event_level 用 WARN（约束原生允许），完整 payload 保留在 event_data(JSONB)。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class PermissionDeniedConsumer extends BaseMessageConsumer {
 
-    /** a_system_event.event_type CHECK 允许值 */
-    static final String DB_EVENT_TYPE = "ALERT";
+    /** a_system_event.event_type CHECK 允许值（18-audit-event-type.sql 已扩展） */
+    static final String DB_EVENT_TYPE = "PERMISSION_DENIED";
     /** a_system_event.event_level CHECK 允许值 */
     static final String DB_EVENT_LEVEL = "WARN";
     /** org_id 列 NOT NULL，payload 缺失时兜底 0（未知机构） */
