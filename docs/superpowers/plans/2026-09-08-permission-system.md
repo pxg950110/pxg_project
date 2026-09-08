@@ -684,7 +684,7 @@ git commit -m "feat(security): PermissionAspect with Redis-backed PermissionStor
 - Modify: `maidc-parent/maidc-auth/src/main/java/com/maidc/auth/config/SecurityConfig.java`（放行 internal 端点）
 - Test: `maidc-parent/maidc-auth/src/test/java/com/maidc/auth/service/PermissionCacheServiceTest.java`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```java
 package com.maidc.auth.service;
@@ -764,12 +764,12 @@ class PermissionCacheServiceTest {
 }
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `cd e:/pxg_project/maidc-parent && mvn -pl maidc-auth -am test -Dtest=PermissionCacheServiceTest -q`
 Expected: 编译失败 PermissionCacheService 不存在；同时确认 `RoleEntity` 是否已有 `dataScope` 字段（Task 4 需给实体加列映射，见 Step 3 第一段）
 
-- [ ] **Step 3: 实体补列 + PermissionCacheService**
+- [x] **Step 3: 实体补列 + PermissionCacheService**
 
 给 `RoleEntity` 增加字段（若没有）：
 
@@ -865,7 +865,7 @@ public class PermissionCacheService {
 
 > 实施时按 `UserRoleRepository`/`RolePermissionRepository` 实际方法名调整（若已有 `findByUserIdAndStatus` 等变体，用现有方法；没有则补这两个派生查询方法：`List<UserRoleEntity> findByUserId(Long userId);` 和 `List<RolePermissionEntity> findByRoleIdIn(List<Long> roleIds);`、`List<UserRoleEntity> findByRoleId(Long roleId);`）
 
-- [ ] **Step 4: 内部端点 + SecurityConfig 放行**
+- [x] **Step 4: 内部端点 + SecurityConfig 放行**
 
 ```java
 // controller/InternalPermissionController.java
@@ -904,7 +904,7 @@ public class InternalPermissionController {
 
 > 网关不路由 `/api/v1/internal/**`（gateway 路由按服务前缀转发，internal 路径不对外暴露；实施时核对 gateway 路由配置，若 `auth` 路由是全量转发则在 AuthFilter WHITE_LIST 之外确保该路径返回 404——在网关路由 predicates 中排除 `/api/v1/internal/**`）。
 
-- [ ] **Step 5: 登录增强**
+- [x] **Step 5: 登录增强**
 
 `LoginVO.UserInfo` 增加两个字段：
 
@@ -924,7 +924,7 @@ com.maidc.common.security.context.PermissionContext permCtx = permissionCacheSer
 
 构造器注入 `private final PermissionCacheService permissionCacheService;`。`refreshToken()` 同样处理。
 
-- [ ] **Step 6: 变更失效钩子**
+- [x] **Step 6: 变更失效钩子**
 
 `RoleService`（更新角色/分配权限的方法末尾）与 `UserService`（分配角色的方法末尾）追加：
 
@@ -935,12 +935,12 @@ permissionCacheService.evictByRole(roleId);
 permissionCacheService.evictUser(userId);
 ```
 
-- [ ] **Step 7: 运行全部 auth 测试**
+- [x] **Step 7: 运行全部 auth 测试**
 
 Run: `mvn -pl maidc-auth -am test -q`
 Expected: BUILD SUCCESS（新旧测试全过）
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add maidc-parent/maidc-auth
