@@ -32,7 +32,6 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,7 +39,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * DEPT 数据范围过滤（fail-closed，∃ 语义）：至少一条就诊科室 == 用户科室 → 可见；
- * 无匹配/零就诊 → 抛与真实"未找到"相同的异常（同 code 同 message，不暴露存在性）
+ * 无匹配/零就诊/权限集不可得 → 抛与真实"未找到"相同的异常（同 code 同 message，不暴露存在性）
  */
 @ExtendWith(MockitoExtension.class)
 class PatientEncounterServiceTest {
@@ -78,10 +77,14 @@ class PatientEncounterServiceTest {
         RequestContextHolder.resetRequestAttributes();
     }
 
-    private void mockUser(DataScope scope, Long deptId) {
+    private void loginAsUser() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("X-User-Id", String.valueOf(USER_ID));
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    }
+
+    private void mockUser(DataScope scope, Long deptId) {
+        loginAsUser();
         lenient().when(permissionStore.load(USER_ID)).thenReturn(PermissionContext.builder()
                 .userId(USER_ID).dataScope(scope).deptId(deptId).build());
     }
@@ -98,6 +101,13 @@ class PatientEncounterServiceTest {
         e.setId(id);
         e.setDepartment(department);
         return e;
+    }
+
+    private PatientEntity patient(Long id) {
+        PatientEntity patient = new PatientEntity();
+        patient.setId(id);
+        patient.setName("张三");
+        return patient;
     }
 
     // ==================== getEncounterDetail ====================
@@ -133,6 +143,22 @@ class PatientEncounterServiceTest {
     }
 
     @Test
+    void getEncounterDetail_deptScope_nullCtx_sameAsNotFound() {
+        // 缓存 miss 且懒加载失败 → 权限集不可得：fail-closed
+        loginAsUser();
+        when(permissionStore.load(USER_ID)).thenReturn(null);
+        when(encounterRepository.findByIdAndIsDeletedFalse(10L))
+                .thenReturn(Optional.of(encounter(10L, DEPT_NAME)));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> patientEncounterService.getEncounterDetail(10L));
+
+        assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getCode(), ex.getCode());
+        assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getMessage(), ex.getMessage());
+        verifyNoInteractions(institutionRepository, diagnosisRepository);
+    }
+
+    @Test
     void getEncounterDetail_deptScope_nullDeptId_sameAsNotFound() {
         mockUser(DataScope.DEPT, null);
         when(encounterRepository.findByIdAndIsDeletedFalse(10L))
@@ -142,6 +168,7 @@ class PatientEncounterServiceTest {
                 () -> patientEncounterService.getEncounterDetail(10L));
 
         assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getCode(), ex.getCode());
+        assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getMessage(), ex.getMessage());
         verifyNoInteractions(institutionRepository, diagnosisRepository);
     }
 
@@ -156,6 +183,7 @@ class PatientEncounterServiceTest {
                 () -> patientEncounterService.getEncounterDetail(10L));
 
         assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getCode(), ex.getCode());
+        assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getMessage(), ex.getMessage());
         verifyNoInteractions(diagnosisRepository);
     }
 
@@ -171,6 +199,7 @@ class PatientEncounterServiceTest {
                 () -> patientEncounterService.getEncounterDetail(10L));
 
         assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getCode(), ex.getCode());
+        assertEquals(ErrorCode.ENCOUNTER_NOT_FOUND.getMessage(), ex.getMessage());
         verifyNoInteractions(diagnosisRepository);
     }
 
@@ -201,36 +230,13 @@ class PatientEncounterServiceTest {
     // ==================== getPatientEncounterList ====================
 
     @Test
-    void getPatientEncounterList_deptScope_allEncountersInDept_returnsList() {
+    void getPatientEncounterList_deptScope_deptEncounterExists_returnsList() {
         mockUser(DataScope.DEPT, DEPT_ID);
         mockInstitution(DEPT_NAME);
-        PatientEntity patient = new PatientEntity();
-        patient.setId(1L);
-        patient.setName("张三");
-        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient));
-        when(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(1L))
-                .thenReturn(List.of(encounter(10L, DEPT_NAME), encounter(11L, DEPT_NAME)));
-        Pageable pageable = PageRequest.of(0, 10);
-        when(encounterRepository.findByPatientId(1L, pageable)).thenReturn(Page.empty());
-
-        PatientEncounterListDTO dto = patientEncounterService.getPatientEncounterList(1L, pageable);
-
-        assertNotNull(dto);
-        assertEquals(1L, dto.getPatientId());
-        assertEquals("张**", dto.getPatientName());
-    }
-
-    @Test
-    void getPatientEncounterList_deptScope_mixedEncounters_visible() {
-        mockUser(DataScope.DEPT, DEPT_ID);
-        mockInstitution(DEPT_NAME);
-        PatientEntity patient = new PatientEntity();
-        patient.setId(1L);
-        patient.setName("张三");
-        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient));
-        // ∃ 语义：[本科室, 其他科室] 混合就诊 → 可见（转科患者不消失）
-        when(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(1L))
-                .thenReturn(List.of(encounter(10L, DEPT_NAME), encounter(11L, "外科")));
+        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient(1L)));
+        // ∃ 语义：混合就诊 [本科室, 其他科室] → exists 命中 → 可见（转科患者不消失）
+        when(encounterRepository.existsByPatientIdAndDepartmentAndIsDeletedFalse(1L, DEPT_NAME))
+                .thenReturn(true);
         Pageable pageable = PageRequest.of(0, 10);
         when(encounterRepository.findByPatientId(1L, pageable)).thenReturn(Page.empty());
 
@@ -243,16 +249,13 @@ class PatientEncounterServiceTest {
     }
 
     @Test
-    void getPatientEncounterList_deptScope_noEncounterInDept_sameAsNotFound() {
+    void getPatientEncounterList_deptScope_noDeptEncounter_sameAsNotFound() {
         mockUser(DataScope.DEPT, DEPT_ID);
         mockInstitution(DEPT_NAME);
-        PatientEntity patient = new PatientEntity();
-        patient.setId(1L);
-        patient.setName("张三");
-        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient));
-        // 一条就诊都不在用户科室 → 拒绝
-        when(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(1L))
-                .thenReturn(List.of(encounter(10L, "外科"), encounter(11L, "儿科")));
+        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient(1L)));
+        // 零就诊记录或全部就诊不在用户科室 → exists=false → 拒绝
+        when(encounterRepository.existsByPatientIdAndDepartmentAndIsDeletedFalse(1L, DEPT_NAME))
+                .thenReturn(false);
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> patientEncounterService.getPatientEncounterList(1L, PageRequest.of(0, 10)));
@@ -264,22 +267,46 @@ class PatientEncounterServiceTest {
     }
 
     @Test
-    void getPatientEncounterList_deptScope_noEncounters_sameAsNotFound() {
-        mockUser(DataScope.DEPT, DEPT_ID);
-        mockInstitution(DEPT_NAME);
-        PatientEntity patient = new PatientEntity();
-        patient.setId(1L);
-        patient.setName("张三");
-        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient));
-        // 零就诊记录：无科室证据，fail-closed → 拒绝
-        when(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(1L))
-                .thenReturn(List.of());
+    void getPatientEncounterList_deptScope_nullCtx_sameAsNotFound() {
+        // 缓存 miss 且懒加载失败 → 权限集不可得：fail-closed
+        loginAsUser();
+        when(permissionStore.load(USER_ID)).thenReturn(null);
+        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient(1L)));
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> patientEncounterService.getPatientEncounterList(1L, PageRequest.of(0, 10)));
 
         assertEquals(ErrorCode.PATIENT_NOT_FOUND.getCode(), ex.getCode());
         assertEquals(ErrorCode.PATIENT_NOT_FOUND.getMessage(), ex.getMessage());
-        verify(encounterRepository, never()).findByPatientId(anyLong(), any(Pageable.class));
+        verifyNoInteractions(institutionRepository);
+        verify(encounterRepository, never()).existsByPatientIdAndDepartmentAndIsDeletedFalse(anyLong(), any());
+    }
+
+    @Test
+    void getPatientEncounterList_allScope_noFilter() {
+        assertListNotFiltered(DataScope.ALL);
+    }
+
+    @Test
+    void getPatientEncounterList_selfScope_noFilter() {
+        assertListNotFiltered(DataScope.SELF);
+    }
+
+    @Test
+    void getPatientEncounterList_projectScope_noFilter() {
+        assertListNotFiltered(DataScope.PROJECT);
+    }
+
+    private void assertListNotFiltered(DataScope scope) {
+        mockUser(scope, DEPT_ID);
+        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient(1L)));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(encounterRepository.findByPatientId(1L, pageable)).thenReturn(Page.empty());
+
+        PatientEncounterListDTO dto = patientEncounterService.getPatientEncounterList(1L, pageable);
+
+        assertNotNull(dto);
+        verify(encounterRepository, never()).existsByPatientIdAndDepartmentAndIsDeletedFalse(anyLong(), any());
+        verifyNoInteractions(institutionRepository);
     }
 }

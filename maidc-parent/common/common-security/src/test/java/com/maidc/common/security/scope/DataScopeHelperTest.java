@@ -3,6 +3,8 @@ package com.maidc.common.security.scope;
 import com.maidc.common.security.context.PermissionContext;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class DataScopeHelperTest {
@@ -14,6 +16,12 @@ class DataScopeHelperTest {
     @Test
     void allScope_noFilter() {
         assertFalse(DataScopeHelper.needDeptFilter(ctx(DataScope.ALL, 1L)));
+    }
+
+    @Test
+    void selfAndProjectScopes_noDeptFilter() {
+        assertFalse(DataScopeHelper.needDeptFilter(ctx(DataScope.SELF, null)));
+        assertFalse(DataScopeHelper.needDeptFilter(ctx(DataScope.PROJECT, null)));
     }
 
     @Test
@@ -31,7 +39,15 @@ class DataScopeHelperTest {
     void projectScope_idsFromContext() {
         PermissionContext c = PermissionContext.builder()
                 .userId(9L).dataScope(DataScope.PROJECT)
-                .projectIds(java.util.List.of(1L, 2L)).build();
-        assertEquals(java.util.List.of(1L, 2L), DataScopeHelper.projectIds(c));
+                .projectIds(List.of(1L, 2L)).build();
+        assertEquals(List.of(1L, 2L), DataScopeHelper.projectIds(c));
+    }
+
+    @Test
+    void nullCtx_safeDefaults() {
+        assertFalse(DataScopeHelper.needDeptFilter(null));
+        assertNull(DataScopeHelper.deptId(null));
+        assertNull(DataScopeHelper.selfUserId(null));
+        assertTrue(DataScopeHelper.projectIds(null).isEmpty());
     }
 }

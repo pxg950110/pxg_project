@@ -22,6 +22,6 @@ public final class DataScopeHelper {
     }
 
     public static List<Long> projectIds(PermissionContext ctx) {
-        return ctx == null || ctx.getProjectIds() == null ? List.of() : ctx.getProjectIds();
+        return ctx == null || ctx.getProjectIds() == null ? List.of() : List.copyOf(ctx.getProjectIds());
     }
 }

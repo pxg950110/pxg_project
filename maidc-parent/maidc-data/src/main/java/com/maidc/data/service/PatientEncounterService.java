@@ -21,6 +21,7 @@ import java.time.Period;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -51,8 +52,7 @@ public class PatientEncounterService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATIENT_NOT_FOUND));
 
         // DEPT 数据范围校验（∃ 语义）：至少一条就诊科室 == 用户科室 → 可见；零就诊/无匹配 → 与患者未找到同响应
-        checkDeptScope(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(patientId)
-                .stream().map(EncounterEntity::getDepartment).toList(), ErrorCode.PATIENT_NOT_FOUND);
+        checkDeptScope(patientId, ErrorCode.PATIENT_NOT_FOUND);
 
         // 获取就诊列表（分页）
         Page<EncounterEntity> encounterPage = encounterRepository.findByPatientId(patientId, pageable);
@@ -142,28 +142,64 @@ public class PatientEncounterService {
     // ==================== 私有辅助方法 ====================
 
     /**
-     * DEPT 数据范围校验（fail-closed，∃ 语义）：至少一条就诊科室与用户科室匹配 → 可见；
+     * DEPT 数据范围校验——列表入口（fail-closed，∃ 语义）：∃ 任一就诊科室 == 用户科室 → 可见；
      * 零就诊记录或全部不匹配 → 抛与真实"未找到"完全相同的异常（同 code 同 message，不暴露存在性）。
-     * <p>s_user.dept_id 指向机构表ID，而 c_encounter.department 存科室名称，
-     * 需经机构表 name 转换后按字符串比对；null 科室不计为匹配。
+     * <p>用 exists 派生查询判定，避免为科室校验全量加载患者就诊实体。
+     */
+    private void checkDeptScope(Long patientId, ErrorCode notFound) {
+        String deptName = resolveDeptFilterName(notFound);
+        if (deptName == null) {
+            return; // 非 DEPT 范围，无需过滤
+        }
+        if (!encounterRepository.existsByPatientIdAndDepartmentAndIsDeletedFalse(patientId, deptName)) {
+            throw new BusinessException(notFound);
+        }
+    }
+
+    /**
+     * DEPT 数据范围校验——详情入口（fail-closed）：就诊科室 == 用户科室 → 可见；
+     * 不匹配（含 null 科室）→ 抛与真实"未找到"完全相同的异常（同 code 同 message，不暴露存在性）。
      */
     private void checkDeptScope(List<String> departments, ErrorCode notFound) {
+        String deptName = resolveDeptFilterName(notFound);
+        if (deptName == null) {
+            return; // 非 DEPT 范围，无需过滤
+        }
+        // null 科室不计为匹配：宁可拒绝不可放行
+        if (departments.stream().noneMatch(dept -> deptName.equals(dept))) {
+            throw new BusinessException(notFound);
+        }
+    }
+
+    /**
+     * 解析 DEPT 范围的过滤科室名：返回 null 表示无需过滤（无用户上下文=内部调用，或范围非 DEPT）。
+     * <p>s_user.dept_id 指向机构表ID，而 c_encounter.department 存科室名称，需经机构表 name 转换。
+     * DEPT 范围下 ctx 为 null（缓存 miss 且懒加载失败）/ deptId 为空 / 机构不存在 → fail-closed 抛 notFound。
+     */
+    private String resolveDeptFilterName(ErrorCode notFound) {
         Long userId = CurrentUser.userId();
         if (userId == null) {
             // 无用户上下文（内部调用），认证与接口级权限由网关/权限切面负责
-            return;
+            return null;
         }
         PermissionContext ctx = permissionStore.load(userId);
-        if (!DataScopeHelper.needDeptFilter(ctx)) {
-            return;
-        }
-        Long deptId = DataScopeHelper.deptId(ctx);
-        String deptName = deptId == null ? null
-                : institutionRepository.findById(deptId).map(InstitutionEntity::getName).orElse(null);
-        // deptId 为空 / 机构不存在 / 无任何匹配科室（含零就诊、null 科室）：宁可拒绝不可放行
-        if (deptName == null || departments.stream().noneMatch(dept -> deptName.equals(dept))) {
+        if (ctx == null) {
+            // 权限集不可得（缓存 miss 且懒加载失败）：宁可拒绝不可放行
             throw new BusinessException(notFound);
         }
+        if (!DataScopeHelper.needDeptFilter(ctx)) {
+            return null;
+        }
+        Long deptId = DataScopeHelper.deptId(ctx);
+        if (deptId == null) {
+            throw new BusinessException(notFound);
+        }
+        // deptId → 机构名称（与 c_encounter.department 同为科室名字符串）
+        Optional<InstitutionEntity> institution = institutionRepository.findById(deptId);
+        if (institution.isEmpty()) {
+            throw new BusinessException(notFound);
+        }
+        return institution.get().getName();
     }
 
     /**

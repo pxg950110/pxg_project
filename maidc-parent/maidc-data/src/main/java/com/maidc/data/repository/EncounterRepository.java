@@ -19,6 +19,9 @@ public interface EncounterRepository extends JpaRepository<EncounterEntity, Long
 
     Optional<EncounterEntity> findByIdAndIsDeletedFalse(Long id);
 
+    /** 患者是否存在指定科室的就诊（DEPT 数据范围 ∃ 判定，避免全量加载就诊实体） */
+    boolean existsByPatientIdAndDepartmentAndIsDeletedFalse(Long patientId, String department);
+
     List<EncounterEntity> findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(Long patientId);
 
     /**
