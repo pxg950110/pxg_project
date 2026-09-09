@@ -1,6 +1,9 @@
 <template>
   <PageContainer :title="cohort.name || '专病详情'" :breadcrumb="breadcrumb">
     <template #extra>
+      <a-button type="primary" ghost @click="goKnowledgeBase">
+        <template #icon><BookOutlined /></template> 专病知识库
+      </a-button>
       <a-button @click="handleSync" :loading="syncing">手动同步</a-button>
       <a-button @click="router.back()">返回</a-button>
     </template>
@@ -93,13 +96,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
+import { BookOutlined } from '@ant-design/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
   getDiseaseCohort, syncDiseaseCohort, getDiseaseCohortPatients,
   removeDiseaseCohortPatient, addDiseaseCohortPatient, getDiseaseCohortStatistics,
   exportDiseaseCohort, updateDiseaseCohort,
 } from '@/api/data'
+import { getSpaceByCohort } from '@/api/diseaseKb'
 
 const route = useRoute()
 const router = useRouter()
@@ -206,6 +211,25 @@ async function handleSync() {
   } catch (e: any) {
     message.error('同步失败')
   } finally { syncing.value = false }
+}
+
+// 队列 → 专病知识库：已关联直接进入，未关联引导创建（FR-04）
+async function goKnowledgeBase() {
+  try {
+    const res = await getSpaceByCohort(cohortId)
+    const space = res.data?.data
+    if (space?.id) {
+      router.push({ name: 'DiseaseKnowledgeDetail', params: { id: space.id } })
+      return
+    }
+  } catch { /* 查询失败按未关联处理 */ }
+  Modal.confirm({
+    title: '该专病尚未关联知识库',
+    content: '是否前往专病知识库创建并关联该专病的知识空间？',
+    okText: '前往创建',
+    cancelText: '取消',
+    onOk: () => router.push({ name: 'DiseaseKnowledgeList' }),
+  })
 }
 
 async function toggleAutoSync(val: boolean) {
