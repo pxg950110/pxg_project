@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
         '/api/v1/etl': { target: 'http://localhost:8082' },
         '/api/v1/quality': { target: 'http://localhost:8082' },
         '/api/v1/dict': { target: 'http://localhost:8082' },
-        '/api/v1/workspace': { target: 'http://localhost:8084' },
+        '/api/v1/workspace': { target: 'http://localhost:8082' },
         '/api/v1/masterdata': { target: 'http://localhost:8082' },
         '/api/v1/task': { target: 'http://localhost:8084' },
         '/api/v1/label': { target: 'http://localhost:8085' },

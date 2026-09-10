@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DiseaseCohortRepository extends JpaRepository<DiseaseCohortEntity, Long>, JpaSpecificationExecutor<DiseaseCohortEntity> {
+
+    long countByOrgId(Long orgId);
 }

@@ -1,7 +1,10 @@
 <template>
   <div class="welcome-section">
     <div class="welcome-info">
-      <h2 class="welcome-greeting">{{ greeting }}，{{ userName }}</h2>
+      <h2 class="welcome-greeting">
+        {{ greeting }}，{{ userName }}
+        <span v-if="role" class="welcome-role">{{ role }}</span>
+      </h2>
       <p class="welcome-date">{{ date }}</p>
     </div>
   </div>
@@ -13,6 +16,7 @@ import { computed } from 'vue'
 const props = defineProps<{
   userName: string
   date: string
+  role?: string
 }>()
 
 const greeting = computed(() => {
@@ -36,6 +40,17 @@ const greeting = computed(() => {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 4px;
+}
+
+.welcome-role {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
 }
 
 .welcome-date {

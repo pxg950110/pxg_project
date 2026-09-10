@@ -4,9 +4,11 @@
       <WelcomeSection
         :user-name="store.dashboard?.welcome?.userName ?? userName"
         :date="store.dashboard?.welcome?.date ?? ''"
+        :role="store.dashboard?.welcome?.role ?? ''"
       />
 
       <MetricCards
+        :cards="store.dashboard?.cards ?? null"
         :metrics="store.dashboard?.metrics ?? null"
         :loading="store.loading"
       />
@@ -15,6 +17,7 @@
         <a-col :span="14">
           <TodoSection
             :todos="store.dashboard?.todos ?? []"
+            :stats="store.dashboard?.todoStats ?? null"
             :loading="store.loading"
             @complete="handleComplete"
           />

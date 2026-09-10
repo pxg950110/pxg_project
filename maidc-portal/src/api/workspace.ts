@@ -5,6 +5,8 @@ export interface WelcomeInfo {
   userName: string
   date: string
   role: string
+  /** CLINICAL / RESEARCH / DATA / GOVERNANCE */
+  roleGroup?: string
 }
 
 export interface MetricsInfo {
@@ -14,18 +16,40 @@ export interface MetricsInfo {
   pendingApprovals: number
 }
 
-export interface PersonalTaskVO {
+/** 角色化指标卡，服务端按角色组下发 */
+export interface MetricCard {
+  key: string
+  label: string
+  value: number
+  suffix: string
+  icon: string
+  route?: string
+  /** primary / danger / success / warning */
+  tone?: string
+}
+
+export interface TodoStats {
+  today: number
+  overdue: number
+  total: number
+}
+
+/** 工作台待办：通用待办 + 随访待办（随访扩展字段仅 taskType=FOLLOWUP 时有值） */
+export interface WorkspaceTodo {
   id: number
-  title: string
-  description: string
   taskType: string
+  title: string
   priority: string
   status: string
-  assigneeId: number
-  sourceId: number
-  sourceType: string
-  dueDate: string
-  createdAt: string
+  sourceId?: number
+  sourceType?: string
+  dueDate?: string
+  createdAt?: string
+  patientId?: number
+  patientName?: string
+  stageName?: string
+  scales?: string[]
+  overdueDays?: number
 }
 
 export interface NotificationItem {
@@ -44,14 +68,33 @@ export interface QuickAction {
   label: string
   icon: string
   route: string
+  /** 前端 hasPermission 兜底过滤用 */
+  permission?: string
 }
 
 export interface WorkspaceDashboardVO {
   welcome: WelcomeInfo
   metrics: MetricsInfo
-  todos: PersonalTaskVO[]
+  /** v2 角色化卡片；旧响应无此字段时前端回退 metrics 渲染 */
+  cards?: MetricCard[] | null
+  todos: WorkspaceTodo[]
+  todoStats?: TodoStats | null
   notifications: NotificationItem[]
   quickActions: QuickAction[]
+}
+
+export interface PersonalTaskVO {
+  id: number
+  title: string
+  description: string
+  taskType: string
+  priority: string
+  status: string
+  assigneeId: number
+  sourceId: number
+  sourceType: string
+  dueDate: string
+  createdAt: string
 }
 
 export function getWorkspaceDashboard() {
