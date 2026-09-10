@@ -45,6 +45,9 @@ export const asyncRoutes: RouteRecordRaw[] = [
           { path: 'cdr/disease/:id', name: 'DiseaseDetail', meta: { title: '专病详情', hidden: true }, component: () => import('@/views/data-cdr/DiseaseDetail.vue') },
           { path: 'cdr/disease-kb', name: 'DiseaseKnowledgeList', meta: { title: '专病知识库' }, component: () => import('@/views/data-cdr/DiseaseKnowledgeList.vue') },
           { path: 'cdr/disease-kb/:id', name: 'DiseaseKnowledgeDetail', meta: { title: '专病知识库详情', hidden: true }, component: () => import('@/views/data-cdr/DiseaseKnowledgeDetail.vue') },
+          { path: 'cdr/scales', name: 'ScaleManagement', meta: { title: '量表管理', permission: 'disease:followup:work' }, component: () => import('@/views/data-cdr/followup/ScaleManagement.vue') },
+          { path: 'cdr/scales/design', name: 'ScaleDesigner', meta: { title: '量表设计器', hidden: true, permission: 'disease:scale:manage' }, component: () => import('@/views/data-cdr/followup/ScaleDesigner.vue') },
+          { path: 'cdr/followup/:fid', name: 'FollowupArchiveDetail', meta: { title: '随访档案详情', hidden: true, permission: 'disease:followup:work' }, component: () => import('@/views/data-cdr/followup/FollowupArchiveDetail.vue') },
           { path: 'cdr/patients', name: 'PatientList', meta: { title: '患者管理' }, component: () => import('@/views/data-cdr/PatientList.vue') },
           { path: 'cdr/patients/:id', name: 'PatientDetail', meta: { title: '患者详情', hidden: true }, component: () => import('@/views/data-cdr/PatientDetail.vue') },
           { path: 'cdr/patient/:patientId', name: 'PatientEncounter360', meta: { title: '患者就诊360视图', hidden: true }, component: () => import('@/views/data-cdr/patient/PatientEncounter360.vue') },
@@ -53,6 +56,15 @@ export const asyncRoutes: RouteRecordRaw[] = [
           { path: 'cdr/quality-results', name: 'QualityResultList', meta: { title: '质量检测' }, component: () => import('@/views/data-cdr/QualityResultList.vue') },
           { path: 'rdr/projects', name: 'ProjectList', meta: { title: '研究项目' }, component: () => import('@/views/data-rdr/ProjectList.vue') },
           { path: 'rdr/datasets', name: 'DatasetList', meta: { title: '数据集' }, component: () => import('@/views/data-rdr/DatasetList.vue') },
+        ],
+      },
+      {
+        path: 'followup',
+        name: 'Followup',
+        meta: { title: '随访工作台', icon: 'MedicineBoxOutlined', sort: 3, permission: 'disease:followup:work' },
+        redirect: '/followup/workbench',
+        children: [
+          { path: 'workbench', name: 'FollowupWorkbench', meta: { title: '随访工作台', permission: 'disease:followup:work' }, component: () => import('@/views/followup/FollowupWorkbench.vue') },
         ],
       },
       {

@@ -96,6 +96,7 @@ public class MessageService {
         message.setIsRead(false);
         message.setBizId(bizId);
         message.setBizType(bizType);
+        if (message.getOrgId() == null) message.setOrgId(0L);
 
         message = messageRepository.save(message);
         log.info("消息创建成功: id={}, userId={}, type={}", message.getId(), userId, type);

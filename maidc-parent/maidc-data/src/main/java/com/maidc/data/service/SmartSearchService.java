@@ -179,9 +179,9 @@ public class SmartSearchService {
                 WHERE e.fts @@ q AND e.is_deleted = false""";
             case "DIAGNOSIS" -> """
                 SELECT 'DIAGNOSIS' AS domain, d.id, d.patient_id,
-                       d.diagnosis_name AS title, d.diagnosis_code AS subtitle,
+                       d.icd_name AS title, d.icd_code AS subtitle,
                        ts_rank_cd(d.fts, q) AS score,
-                       ts_headline('simple', coalesce(d.diagnosis_name,'') || ' ' || coalesce(d.diagnosis_code,''), q) AS headline
+                       ts_headline('simple', coalesce(d.icd_name,'') || ' ' || coalesce(d.icd_code,''), q) AS headline
                 FROM cdr.c_diagnosis d, tsq
                 WHERE d.fts @@ q AND d.is_deleted = false""";
             case "LAB" -> """
