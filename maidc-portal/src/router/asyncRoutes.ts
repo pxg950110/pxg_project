@@ -152,14 +152,14 @@ export const asyncRoutes: RouteRecordRaw[] = [
           {
             path: 'dictionaries',
             name: 'MedicalDictionaries',
-            meta: { title: '常用字典' },
+            meta: { title: '常用字典', permission: 'masterdata:read' },
             redirect: '/system/dictionaries/drugs',
             children: [
-              { path: 'drugs', name: 'DrugList', meta: { title: '药品字典' }, component: () => import('@/views/masterdata/dictionary/DrugList.vue') },
-              { path: 'diagnoses', name: 'DiagnosisList', meta: { title: '诊断字典' }, component: () => import('@/views/masterdata/dictionary/DiagnosisList.vue') },
-              { path: 'fee-items', name: 'FeeItemList', meta: { title: '收费项目' }, component: () => import('@/views/masterdata/dictionary/FeeItemList.vue') },
-              { path: 'lab-items', name: 'LabItemList', meta: { title: '检验项目' }, component: () => import('@/views/masterdata/dictionary/LabItemList.vue') },
-              { path: 'exam-items', name: 'ExamItemList', meta: { title: '检查项目' }, component: () => import('@/views/masterdata/dictionary/ExamItemList.vue') },
+              { path: 'drugs', name: 'DrugList', meta: { permission: 'masterdata:read', title: '药品字典' }, component: () => import('@/views/masterdata/dictionary/DrugList.vue') },
+              { path: 'diagnoses', name: 'DiagnosisList', meta: { permission: 'masterdata:read', title: '诊断字典' }, component: () => import('@/views/masterdata/dictionary/DiagnosisList.vue') },
+              { path: 'fee-items', name: 'FeeItemList', meta: { permission: 'masterdata:read', title: '收费项目' }, component: () => import('@/views/masterdata/dictionary/FeeItemList.vue') },
+              { path: 'lab-items', name: 'LabItemList', meta: { permission: 'masterdata:read', title: '检验项目' }, component: () => import('@/views/masterdata/dictionary/LabItemList.vue') },
+              { path: 'exam-items', name: 'ExamItemList', meta: { permission: 'masterdata:read', title: '检查项目' }, component: () => import('@/views/masterdata/dictionary/ExamItemList.vue') },
             ],
           },
           {
