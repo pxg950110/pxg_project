@@ -1,5 +1,5 @@
 <template>
-  <div :class="embedded ? 'dict-list-view dict-list-view--embedded dict-skin-dark' : 'dict-list-view'">
+  <div :class="embedded ? 'dict-list-view dict-list-view--embedded' : 'dict-list-view'">
     <div v-if="!embedded" class="dict-header">
       <h2 class="dict-title">{{ schema.title }}</h2>
       <a-space>

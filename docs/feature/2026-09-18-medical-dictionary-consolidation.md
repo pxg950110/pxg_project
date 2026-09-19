@@ -86,3 +86,13 @@
 - 实现：引擎单文件双皮肤（浅色默认 + `.dict-skin-dark` 深色作用域），侧栏组件（DrugCategoryTree/IcdChapterMenu）回归浅色默认，深色覆盖全部由引擎 :deep 接管。
 - 部署注意：portal 镜像曾出现 `COPY . .` 层被错误缓存命中（Docker Desktop 文件共享元数据未感知源码变更），需 `docker compose build --no-cache portal` 强制重建；浏览器端需强刷穿透旧 index.html 缓存。
 - 验证：药品/诊断/检查三页浅色截图核验（与全站一体、分页裁切消失）；内嵌深色皮肤经 DOM computed style 验证（masterdata 页特效较多导致截图超时，以计算样式为准）。
+
+## 后续调整：主数据管理页浅色化（2026-09-19）
+
+用户要求主数据管理页同样改浅色。范围 = hub 页 + 全部内嵌视图：
+
+- **MasterDataManagement.vue**：弃用 dark-tech-container/tech-card/tech-gradient-text/tech-btn；标题深色文字、WS/T 303 徽章浅蓝 pill、快速新建改 type="primary" 蓝色按钮、指标卡/标签栏/目录树侧栏/预览面板白卡化、tab 激活态浅蓝。
+- **内嵌子视图**：ConceptDomainList/ValueDomainList/DataElementConceptList/MasterDataMetrics/DictionaryHub 同步浅色化（白卡 + #1677ff 蓝色点缀 + antd 默认表格）；这些组件的独立路由页随之变浅色，风格一致。
+- **字典引擎**：内嵌实例不再挂 dict-skin-dark，深色皮肤 CSS 保留但无引用（可随时回退）。
+- 验证：hub 首屏（指标卡 + 概念域列表）与常用字典 tab（子标签 + 分类树 + 表格）截图核验，全站浅色风格统一。
+- 未动的兄弟页：CodeSystems/MappingManager/ClinicalRules/DomainManager/KnowledgeList/DataElementList 等 hidden 路由页仍为深色，如需统一另行处理。

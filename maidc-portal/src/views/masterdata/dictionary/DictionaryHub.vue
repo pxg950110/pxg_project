@@ -1,7 +1,7 @@
 <template>
   <div class="dict-hub-container">
     <!-- Sub-navigation tabs -->
-    <div class="dict-nav-bar tech-card">
+    <div class="dict-nav-bar">
       <div class="dict-tab-group">
         <button
           v-for="tab in dictTabs"
@@ -63,9 +63,11 @@ const dictTabs = [
 
 .dict-nav-bar {
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
+  background: #fff;
+  border: 1px solid #f0f0f0;
 }
 
 .dict-tab-group {
@@ -79,9 +81,9 @@ const dictTabs = [
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(15, 26, 46, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  color: var(--tech-text-muted);
+  background: transparent;
+  border: 1px solid #f0f0f0;
+  color: rgba(0, 0, 0, 0.65);
   font-size: 13px;
   font-weight: 500;
   padding: 6px 14px;
@@ -94,17 +96,16 @@ const dictTabs = [
   }
 
   &:hover {
-    background: rgba(34, 211, 238, 0.08);
-    border-color: rgba(34, 211, 238, 0.3);
-    color: var(--tech-primary);
+    background: #f0f7ff;
+    border-color: #91caff;
+    color: #1677ff;
   }
 
   &.active {
-    background: rgba(34, 211, 238, 0.16);
-    border-color: var(--tech-primary);
-    color: var(--tech-primary);
+    background: #e6f4ff;
+    border-color: #1677ff;
+    color: #1677ff;
     font-weight: 600;
-    box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
   }
 }
 
