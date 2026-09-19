@@ -75,25 +75,10 @@ onMounted(fetchChapters)
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--tech-panel-bg);
-  border: 1px solid var(--tech-panel-border);
-  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
   padding: 14px;
-
-  :deep(.ant-input-affix-wrapper),
-  :deep(.ant-input) {
-    background: var(--tech-input-bg) !important;
-    border-color: var(--tech-input-border) !important;
-    color: var(--tech-text-body) !important;
-  }
-
-  :deep(.ant-input::placeholder) {
-    color: var(--tech-text-dim);
-  }
-
-  :deep(.ant-input-search-button .anticon) {
-    color: var(--tech-text-muted);
-  }
 }
 
 .chapter-list {
@@ -102,7 +87,6 @@ onMounted(fetchChapters)
   border-radius: 6px;
 
   :deep(.ant-menu) {
-    background: transparent;
     border-inline-end: none !important;
 
     .ant-menu-item {
@@ -111,17 +95,6 @@ onMounted(fetchChapters)
       padding: 8px 12px;
       margin: 4px 0;
       border-radius: 6px;
-      color: var(--tech-text-body);
-
-      &:hover {
-        background: rgba(34, 211, 238, 0.08);
-        color: var(--tech-primary);
-      }
-
-      &-selected {
-        background: rgba(34, 211, 238, 0.16);
-        color: var(--tech-primary);
-      }
     }
   }
 }
@@ -134,12 +107,12 @@ onMounted(fetchChapters)
 
 .chapter-code {
   font-size: 11px;
-  color: #38bdf8;
+  color: #1677ff;
   font-family: 'JetBrains Mono', Consolas, monospace;
 }
 
 .chapter-name {
   font-size: 13px;
-  color: #f1f5f9;
+  color: rgba(0, 0, 0, 0.88);
 }
 </style>

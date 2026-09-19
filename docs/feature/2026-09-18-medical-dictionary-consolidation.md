@@ -76,3 +76,13 @@
 
 - [ ] 代码提交（git-merge）与 PR
 - [ ] 存量库若曾用旧接口物理删除过数据，无迁移需求（物理删行本就无痕）；此前误标 RETIRED 的行如需恢复另行处理
+
+## 后续调整：配色改浅色（2026-09-19）
+
+用户评审后要求字典页配色「符合整体」：全站内容页为浅色风格（参照数据字典页），独立路由的深色大块与整体反差过大。
+
+- **独立路由五页改浅色**（默认皮肤）：白卡片（#fff + #f0f0f0 边框 + 8px 圆角）、antd 默认浅色表格/表单、蓝色主按钮（type="primary"）、默认蓝色链接；弃用 dark-tech-container。
+- **内嵌模式保留深色**：主数据管理页本身为深色科技风，DictionaryHub 内嵌的引擎实例挂 `dict-skin-dark` 类，深色面板/表格/输入样式收敛至该类作用域（DOM 验证：侧栏 rgba(15,26,46,0.68)、表头 rgba(15,26,46,0.8)）。
+- 实现：引擎单文件双皮肤（浅色默认 + `.dict-skin-dark` 深色作用域），侧栏组件（DrugCategoryTree/IcdChapterMenu）回归浅色默认，深色覆盖全部由引擎 :deep 接管。
+- 部署注意：portal 镜像曾出现 `COPY . .` 层被错误缓存命中（Docker Desktop 文件共享元数据未感知源码变更），需 `docker compose build --no-cache portal` 强制重建；浏览器端需强刷穿透旧 index.html 缓存。
+- 验证：药品/诊断/检查三页浅色截图核验（与全站一体、分页裁切消失）；内嵌深色皮肤经 DOM computed style 验证（masterdata 页特效较多导致截图超时，以计算样式为准）。

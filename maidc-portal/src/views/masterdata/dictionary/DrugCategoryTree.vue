@@ -96,48 +96,10 @@ onMounted(fetchTree)
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--tech-panel-bg);
-  border: 1px solid var(--tech-panel-border);
-  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
   padding: 14px;
-
-  :deep(.ant-input-affix-wrapper),
-  :deep(.ant-input) {
-    background: var(--tech-input-bg) !important;
-    border-color: var(--tech-input-border) !important;
-    color: var(--tech-text-body) !important;
-  }
-
-  :deep(.ant-input::placeholder) {
-    color: var(--tech-text-dim);
-  }
-
-  :deep(.ant-input-search-button .anticon) {
-    color: var(--tech-text-muted);
-  }
-
-  :deep(.ant-tree) {
-    background: transparent;
-    color: var(--tech-text-body);
-
-    .ant-tree-node-content-wrapper:hover {
-      background: rgba(34, 211, 238, 0.08);
-      color: var(--tech-primary);
-    }
-
-    .ant-tree-node-content-wrapper.ant-tree-node-selected {
-      background: rgba(34, 211, 238, 0.16) !important;
-      color: var(--tech-primary);
-    }
-
-    .ant-tree-switcher {
-      color: var(--tech-text-muted);
-    }
-
-    .ant-tree-indent-unit::before {
-      border-color: rgba(148, 163, 184, 0.2);
-    }
-  }
 }
 
 .category-tree {
@@ -148,7 +110,7 @@ onMounted(fetchTree)
 }
 
 .category-code {
-  color: var(--tech-text-dim);
+  color: rgba(0, 0, 0, 0.45);
   font-size: 12px;
   margin-left: 8px;
 }

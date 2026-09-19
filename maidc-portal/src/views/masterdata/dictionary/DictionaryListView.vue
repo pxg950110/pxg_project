@@ -1,13 +1,13 @@
 <template>
-  <div :class="embedded ? 'dict-list-view dict-list-view--embedded' : ['dict-list-view', 'dark-tech-container']">
+  <div :class="embedded ? 'dict-list-view dict-list-view--embedded dict-skin-dark' : 'dict-list-view'">
     <div v-if="!embedded" class="dict-header">
       <h2 class="dict-title">{{ schema.title }}</h2>
       <a-space>
-        <a-button v-if="schema.showImport" class="tech-btn-secondary" @click="handleImport">
+        <a-button v-if="schema.showImport" @click="handleImport">
           <template #icon><UploadOutlined /></template>
           导入
         </a-button>
-        <a-button v-if="canCreate" class="tech-btn-primary" @click="handleCreate">
+        <a-button v-if="canCreate" type="primary" @click="handleCreate">
           <template #icon><PlusOutlined /></template>
           {{ schema.newLabel }}
         </a-button>
@@ -46,9 +46,10 @@
         </a-card>
 
         <!-- 数据表格 -->
-        <a-table class="tech-table" :columns="schema.columns" :data-source="tableData" :loading="loading"
-          :pagination="pagination" @change="handleTableChange" row-key="id"
-          :scroll="{ x: schema.scrollX, y: 'calc(100vh - 360px)' }" size="small">
+        <div class="table-card">
+          <a-table class="dict-table" :columns="schema.columns" :data-source="tableData" :loading="loading"
+            :pagination="pagination" @change="handleTableChange" row-key="id"
+            :scroll="{ x: schema.scrollX, y: 'calc(100vh - 360px)' }" size="small">
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'name'">
               <a @click="openDetail(record)">{{ record.name }}</a>
@@ -78,8 +79,9 @@
               </a-space>
             </template>
             <template v-else>{{ record[column.dataIndex ?? column.key] ?? '-' }}</template>
-          </template>
-        </a-table>
+            </template>
+          </a-table>
+        </div>
       </div>
     </div>
 
@@ -393,6 +395,7 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+/* ==================== 浅色皮肤（默认，与全站内容页一致） ==================== */
 .dict-list-view {
   min-height: 100%;
 }
@@ -411,8 +414,7 @@ onMounted(() => {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: var(--tech-text-title, #e6edf6);
-    letter-spacing: 0.5px;
+    color: rgba(0, 0, 0, 0.88);
   }
 }
 
@@ -433,15 +435,44 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
 
-  :deep(.ant-card) {
+:deep(.filter-card) {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+
+:deep(.table-card) {
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.danger-link {
+  color: #ff4d4f;
+}
+
+/* ==================== 深色皮肤（仅内嵌主数据管理页时） ==================== */
+.dict-skin-dark {
+  :deep(.dict-type-panel),
+  :deep(.filter-card),
+  :deep(.table-card) {
     background: var(--tech-panel-bg);
-    border: 1px solid var(--tech-panel-border);
-    border-radius: 12px;
+    border-color: var(--tech-panel-border);
   }
 
-  /* 深色科技风表格（scoped :deep 确保编译生效） */
-  :deep(.tech-table) {
+  :deep(.dict-header .dict-title),
+  :deep(.table-card),
+  :deep(.filter-card) {
+    color: var(--tech-text-body, #e6edf6);
+  }
+
+  /* 深色表格 */
+  :deep(.dict-table) {
     background: transparent;
 
     .ant-table {
@@ -502,7 +533,7 @@ onMounted(() => {
     }
   }
 
-  /* 筛选栏深色输入 */
+  /* 深色筛选输入 */
   :deep(.filter-card) {
     .ant-select .ant-select-selector,
     .ant-input-affix-wrapper,
@@ -528,9 +559,79 @@ onMounted(() => {
       color: var(--tech-text-body, #e6edf6);
     }
   }
-}
 
-.danger-link {
-  color: #ff4d4f;
+  /* 深色侧栏（分类树 / ICD 章节菜单） */
+  :deep(.dict-type-panel) {
+    color: var(--tech-text-body, #e6edf6);
+
+    .ant-input-affix-wrapper,
+    .ant-input {
+      background: var(--tech-input-bg, rgba(6, 11, 22, 0.6)) !important;
+      border-color: var(--tech-input-border, rgba(148, 163, 184, 0.2)) !important;
+      color: var(--tech-text-body, #e6edf6) !important;
+    }
+
+    .ant-input::placeholder {
+      color: var(--tech-text-dim, #64748b);
+    }
+
+    .ant-input-search-button .anticon {
+      color: var(--tech-text-muted, #94a3b8);
+    }
+
+    .category-code {
+      color: var(--tech-text-dim, #64748b);
+    }
+
+    .ant-tree {
+      background: transparent;
+      color: var(--tech-text-body, #e6edf6);
+
+      .ant-tree-node-content-wrapper:hover {
+        background: rgba(34, 211, 238, 0.08);
+        color: var(--tech-primary, #22d3ee);
+      }
+
+      .ant-tree-node-content-wrapper.ant-tree-node-selected {
+        background: rgba(34, 211, 238, 0.16) !important;
+        color: var(--tech-primary, #22d3ee);
+      }
+
+      .ant-tree-switcher {
+        color: var(--tech-text-muted, #94a3b8);
+      }
+
+      .ant-tree-indent-unit::before {
+        border-color: rgba(148, 163, 184, 0.2);
+      }
+    }
+
+    .chapter-list .ant-menu {
+      background: transparent;
+      border-inline-end: none !important;
+
+      .ant-menu-item {
+        color: var(--tech-text-body, #cbd5e1);
+
+        &:hover {
+          background: rgba(34, 211, 238, 0.08);
+          color: var(--tech-primary, #22d3ee);
+        }
+
+        &-selected {
+          background: rgba(34, 211, 238, 0.16);
+          color: var(--tech-primary, #22d3ee);
+        }
+      }
+    }
+
+    .chapter-code {
+      color: #38bdf8;
+    }
+
+    .chapter-name {
+      color: #f1f5f9;
+    }
+  }
 }
 </style>
