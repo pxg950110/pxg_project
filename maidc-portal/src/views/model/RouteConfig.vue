@@ -1,84 +1,92 @@
 <template>
   <PageContainer title="流量路由管理" subtitle="管理模型部署的流量分配与路由策略">
     <template #extra>
-      <a-button type="primary" @click="openCreateModal">
-        <PlusOutlined /> 新建路由
-      </a-button>
+      <el-button type="primary" @click="openCreateModal">
+        <el-icon class="mr-1"><Plus /></el-icon>新建路由
+      </el-button>
     </template>
 
     <!-- Route Cards -->
-    <a-row :gutter="[16, 16]">
-      <a-col :span="24" v-for="route in displayRoutes" :key="route.id">
-        <a-card :class="['route-card', { 'route-card-disabled': route.status === 'disabled' }]" hoverable>
-          <!-- Card Header -->
-          <div class="route-card-header">
-            <div class="route-card-title-row">
-              <span class="route-card-name">{{ route.name }}</span>
-              <a-tag :color="typeBadgeColor(route.type)">{{ typeBadgeLabel(route.type) }}</a-tag>
-              <a-tag :color="route.status === 'active' ? 'success' : 'error'">
-                {{ route.status === 'active' ? '启用' : '禁用' }}
-              </a-tag>
-            </div>
-            <div class="route-card-model">{{ route.model }}</div>
+    <div class="flex flex-col gap-4">
+      <el-card
+        v-for="route in displayRoutes"
+        :key="route.id"
+        :class="['route-card', { 'route-card-disabled': route.status === 'disabled' }]"
+        class="!rounded-xl !border-slate-200/80"
+        shadow="hover"
+      >
+        <!-- Card Header -->
+        <div class="route-card-header">
+          <div class="route-card-title-row">
+            <span class="route-card-name">{{ route.name }}</span>
+            <el-tag
+              size="small"
+              :type="typeTagType(route.type)"
+              :style="typeTagStyle(route.type)"
+            >{{ typeBadgeLabel(route.type) }}</el-tag>
+            <el-tag size="small" :type="route.status === 'active' ? 'success' : 'danger'">
+              {{ route.status === 'active' ? '启用' : '禁用' }}
+            </el-tag>
           </div>
+          <div class="route-card-model">{{ route.model }}</div>
+        </div>
 
-          <!-- Traffic Distribution Bar -->
-          <div class="route-card-traffic">
-            <div class="traffic-bar">
-              <div
-                v-for="(rule, i) in route.rules"
-                :key="i"
-                class="traffic-bar-segment"
-                :style="{ width: rule.weight + '%', backgroundColor: rule.color }"
-              />
-            </div>
-            <div class="traffic-bar-labels">
-              <div v-for="(rule, i) in route.rules" :key="i" class="traffic-bar-label">
-                <span class="traffic-bar-dot" :style="{ backgroundColor: rule.color }" />
-                <span class="traffic-bar-percent">{{ rule.weight }}%</span>
-                <span class="traffic-bar-version">{{ rule.version }}</span>
-              </div>
+        <!-- Traffic Distribution Bar -->
+        <div class="route-card-traffic">
+          <div class="traffic-bar">
+            <div
+              v-for="(rule, i) in route.rules"
+              :key="i"
+              class="traffic-bar-segment"
+              :style="{ width: rule.weight + '%', backgroundColor: rule.color }"
+            />
+          </div>
+          <div class="traffic-bar-labels">
+            <div v-for="(rule, i) in route.rules" :key="i" class="traffic-bar-label">
+              <span class="traffic-bar-dot" :style="{ backgroundColor: rule.color }" />
+              <span class="traffic-bar-percent">{{ rule.weight }}%</span>
+              <span class="traffic-bar-version">{{ rule.version }}</span>
             </div>
           </div>
+        </div>
 
-          <!-- Card Footer -->
-          <div class="route-card-footer">
-            <a-space>
-              <a-button type="link" size="small" @click="editRoute(route)">编辑</a-button>
-              <a-button type="link" size="small" @click="showDetail(route)">详情</a-button>
-            </a-space>
+        <!-- Card Footer -->
+        <div class="route-card-footer">
+          <div class="flex items-center gap-2">
+            <el-button link type="primary" size="small" @click="editRoute(route)">编辑</el-button>
+            <el-button link type="primary" size="small" @click="showDetail(route)">详情</el-button>
           </div>
-        </a-card>
-      </a-col>
-    </a-row>
+        </div>
+      </el-card>
+    </div>
 
     <!-- Route Detail Section -->
     <div v-if="selectedRoute" class="route-detail-section">
-      <a-divider />
+      <el-divider />
       <div class="route-detail-header">
         <h3 class="route-detail-title">路由配置详情 — {{ selectedRoute.name }}</h3>
-        <a-button type="text" size="small" @click="selectedRoute = null">
-          <CloseOutlined /> 关闭
-        </a-button>
+        <el-button text size="small" @click="selectedRoute = null">
+          <el-icon class="mr-1"><Close /></el-icon>关闭
+        </el-button>
       </div>
 
-      <a-descriptions :column="2" bordered size="small" class="route-detail-desc">
-        <a-descriptions-item label="默认部署">
+      <el-descriptions :column="2" border size="small" class="route-detail-desc">
+        <el-descriptions-item label="默认部署">
           {{ selectedRoute.config.defaultDeployment }}
-        </a-descriptions-item>
-        <a-descriptions-item v-if="selectedRoute.config.canaryPercent != null" label="金丝雀百分比">
+        </el-descriptions-item>
+        <el-descriptions-item v-if="selectedRoute.config.canaryPercent != null" label="金丝雀百分比">
           {{ selectedRoute.config.canaryPercent }}%
-        </a-descriptions-item>
-        <a-descriptions-item v-if="selectedRoute.config.weights" label="权重配比">
+        </el-descriptions-item>
+        <el-descriptions-item v-if="selectedRoute.config.weights" label="权重配比">
           {{ selectedRoute.config.weights }}
-        </a-descriptions-item>
-        <a-descriptions-item label="成功率阈值">
+        </el-descriptions-item>
+        <el-descriptions-item label="成功率阈值">
           {{ selectedRoute.config.successThreshold }}
-        </a-descriptions-item>
-        <a-descriptions-item label="自动提升">
+        </el-descriptions-item>
+        <el-descriptions-item label="自动提升">
           {{ selectedRoute.config.autoPromote ? '开启' : '关闭' }}
-        </a-descriptions-item>
-      </a-descriptions>
+        </el-descriptions-item>
+      </el-descriptions>
 
       <!-- Traffic Visualization -->
       <div class="route-detail-traffic">
@@ -108,36 +116,38 @@
     </div>
 
     <!-- Create/Edit Route Modal -->
-    <a-modal
-      v-model:open="createModal.visible"
+    <el-dialog
+      v-model="createModal.visible"
       :title="editingId ? '编辑路由' : '新建路由'"
-      @ok="handleSave"
-      :confirm-loading="submitting"
       width="700px"
     >
-      <a-form layout="vertical">
-        <a-form-item label="路由名称" required>
-          <a-input v-model:value="routeForm.name" placeholder="请输入路由名称" />
-        </a-form-item>
-        <a-form-item label="路由类型">
-          <a-select v-model:value="routeForm.type" placeholder="请选择路由类型">
-            <a-select-option value="CANARY">金丝雀发布 (CANARY)</a-select-option>
-            <a-select-option value="AB_TEST">AB测试 (AB_TEST)</a-select-option>
-            <a-select-option value="WEIGHTED">加权路由 (WEIGHTED)</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="流量规则">
+      <el-form label-width="100px">
+        <el-form-item label="路由名称" required>
+          <el-input v-model="routeForm.name" placeholder="请输入路由名称" />
+        </el-form-item>
+        <el-form-item label="路由类型">
+          <el-select v-model="routeForm.type" placeholder="请选择路由类型">
+            <el-option label="金丝雀发布 (CANARY)" value="CANARY" />
+            <el-option label="AB测试 (AB_TEST)" value="AB_TEST" />
+            <el-option label="加权路由 (WEIGHTED)" value="WEIGHTED" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="流量规则">
           <TrafficRuleEditor v-model="routeForm.rules" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSave">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus, Close } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import TrafficRuleEditor from '@/components/TrafficRuleEditor/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -185,11 +195,22 @@ const routeForm = reactive({
 
 function typeBadgeColor(type: string): string {
   const map: Record<string, string> = {
-    CANARY: 'blue',
-    AB_TEST: 'green',
+    CANARY: 'primary',
+    AB_TEST: 'success',
     WEIGHTED: 'purple',
   }
-  return map[type] || 'default'
+  return map[type] || 'info'
+}
+
+const purpleTagStyle = { color: '#8b5cf6', backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' }
+
+function typeTagType(type: string): string {
+  const c = typeBadgeColor(type)
+  return c === 'purple' ? 'primary' : c
+}
+
+function typeTagStyle(type: string) {
+  return typeBadgeColor(type) === 'purple' ? purpleTagStyle : undefined
 }
 
 function typeBadgeLabel(type: string): string {
@@ -244,12 +265,12 @@ async function handleSave() {
     } else {
       await createRoute(routeForm)
     }
-    message.success('路由保存成功')
+    ElMessage.success('路由保存成功')
     createModal.close()
     editingId.value = null
     loadRoutes()
   } catch {
-    message.error('路由保存失败')
+    ElMessage.error('路由保存失败')
   } finally {
     submitting.value = false
   }
@@ -281,12 +302,12 @@ onMounted(loadRoutes)
 .route-card-name {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .route-card-model {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-top: 2px;
 }
 
@@ -300,7 +321,7 @@ onMounted(loadRoutes)
   height: 20px;
   border-radius: 4px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #f8fafc;
 }
 
 .traffic-bar-large {
@@ -336,11 +357,11 @@ onMounted(loadRoutes)
 
 .traffic-bar-percent {
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .traffic-bar-version {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 /* Card Footer */
@@ -348,7 +369,7 @@ onMounted(loadRoutes)
   display: flex;
   justify-content: flex-end;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
 }
 
 /* Detail Section */
@@ -366,7 +387,7 @@ onMounted(loadRoutes)
 .route-detail-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 
@@ -382,21 +403,21 @@ onMounted(loadRoutes)
 .route-detail-json h4 {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin-bottom: 12px;
 }
 
 /* JSON Preview */
 .json-preview {
-  background: #f6f8fa;
-  border: 1px solid #e8e8e8;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   padding: 16px;
   overflow-x: auto;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
   font-size: 13px;
   line-height: 1.6;
-  color: #24292e;
+  color: #0f172a;
   margin: 0;
 }
 </style>

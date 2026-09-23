@@ -1,135 +1,142 @@
 <template>
-  <div v-if="!modelId" style="text-align: center; padding: 60px 0; color: #999">
+  <div v-if="!modelId" style="text-align: center; padding: 60px 0; color: #94a3b8">
     <p style="font-size: 16px; margin-bottom: 8px">请从模型详情页进入版本管理</p>
-    <a-button type="primary" @click="$router.push('/model/list')">前往模型列表</a-button>
+    <el-button type="primary" @click="$router.push('/model/list')">前往模型列表</el-button>
   </div>
   <template v-else>
     <div style="margin-bottom: 16px; display: flex; justify-content: space-between">
-      <a-space>
-        <a-button @click="loadVersions">刷新</a-button>
-        <a-button type="primary" @click="compareVisible = true">版本对比</a-button>
-      </a-space>
-      <a-button type="primary" @click="uploadModal.open()">
-        <UploadOutlined /> 上传新版本
-      </a-button>
+      <div class="flex items-center gap-2">
+        <el-button @click="loadVersions">刷新</el-button>
+        <el-button type="primary" @click="compareVisible = true">版本对比</el-button>
+      </div>
+      <el-button type="primary" @click="uploadModal.open()">
+        <el-icon class="mr-1"><Upload /></el-icon>上传新版本
+      </el-button>
     </div>
 
-    <a-table :columns="columns" :data-source="versions" :loading="loading" row-key="id" size="small">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <StatusBadge :status="record.status" type="version" />
+    <el-table :data="versions" v-loading="loading" row-key="id" size="small">
+      <el-table-column label="版本号" prop="version_no" />
+      <el-table-column label="状态" prop="status">
+        <template #default="{ row }">
+          <StatusBadge :status="row.status" type="version" />
         </template>
-        <template v-if="column.key === 'created_at'">
-          {{ formatDateTime(record.created_at) }}
+      </el-table-column>
+      <el-table-column label="文件大小" prop="file_size" />
+      <el-table-column label="变更说明" prop="changelog" show-overflow-tooltip />
+      <el-table-column label="创建时间" prop="created_at">
+        <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="120">
+        <template #default="{ row }">
+          <div class="flex items-center gap-2">
+            <el-button link type="primary" @click="viewDetail(row)">查看</el-button>
+            <el-button link type="primary" @click="startCompare(row)">对比</el-button>
+          </div>
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="viewDetail(record)">查看</a>
-            <a @click="startCompare(record)">对比</a>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
 
     <!-- Version Comparison Section -->
-    <a-card title="版本对比" style="margin-top: 24px">
-      <a-row :gutter="16" align="middle" style="margin-bottom: 16px">
-        <a-col :span="8">
-          <a-select v-model:value="compareLeft" placeholder="选择版本1" style="width: 100%">
-            <a-select-option v-for="v in versions" :key="v.id" :value="v.id">{{ v.version_no }}</a-select-option>
-          </a-select>
-        </a-col>
-        <a-col :span="8">
-          <a-select v-model:value="compareRight" placeholder="选择版本2" style="width: 100%">
-            <a-select-option v-for="v in versions" :key="v.id" :value="v.id">{{ v.version_no }}</a-select-option>
-          </a-select>
-        </a-col>
-        <a-col :span="4">
-          <a-button type="primary" @click="showComparisonResult" :disabled="!compareLeft || !compareRight">对比</a-button>
-        </a-col>
-      </a-row>
+    <el-card shadow="never" class="mt-6 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+      <template #header>
+        <span class="font-semibold text-slate-900">版本对比</span>
+      </template>
+      <div class="flex items-center gap-4" style="margin-bottom: 16px">
+        <el-select v-model="compareLeft" placeholder="选择版本1" class="flex-1">
+          <el-option v-for="v in versions" :key="v.id" :value="v.id" :label="v.version_no" />
+        </el-select>
+        <el-select v-model="compareRight" placeholder="选择版本2" class="flex-1">
+          <el-option v-for="v in versions" :key="v.id" :value="v.id" :label="v.version_no" />
+        </el-select>
+        <el-button type="primary" @click="showComparisonResult" :disabled="!compareLeft || !compareRight">对比</el-button>
+      </div>
 
       <template v-if="showComparison">
         <!-- 超参数对比 -->
-        <a-table
-          :columns="getCompareColumns('超参数对比')"
-          :data-source="comparisonData.hyperparams"
-          :pagination="false"
-          bordered
+        <el-table
+          :data="comparisonData.hyperparams"
+          border
           size="small"
           style="margin-bottom: 16px"
-        />
+        >
+          <el-table-column label="指标" prop="metric" width="180" />
+          <el-table-column :label="compareLabels.label1" prop="v1" />
+          <el-table-column :label="compareLabels.label2" prop="v2" />
+        </el-table>
 
         <!-- 训练指标对比 -->
-        <a-table
-          :columns="getCompareColumns('训练指标对比')"
-          :data-source="comparisonData.training"
-          :pagination="false"
-          bordered
+        <el-table
+          :data="comparisonData.training"
+          border
           size="small"
           style="margin-bottom: 16px"
-        />
+        >
+          <el-table-column label="指标" prop="metric" width="180" />
+          <el-table-column :label="compareLabels.label1" prop="v1" />
+          <el-table-column :label="compareLabels.label2" prop="v2" />
+        </el-table>
 
         <!-- 评估指标对比 -->
-        <a-table
-          :columns="evaluationColumns"
-          :data-source="comparisonData.evaluation"
-          :pagination="false"
-          bordered
+        <el-table
+          :data="comparisonData.evaluation"
+          border
           size="small"
         >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'diff'">
-              <span :style="{ color: getDiffColor(record.diff) }">{{ record.diff }}</span>
+          <el-table-column label="指标" prop="metric" width="180" />
+          <el-table-column :label="compareLabels.label1" prop="v1" />
+          <el-table-column :label="compareLabels.label2" prop="v2" />
+          <el-table-column label="差异" prop="diff" width="120">
+            <template #default="{ row }">
+              <span :style="{ color: getDiffColor(row.diff) }">{{ row.diff }}</span>
             </template>
-          </template>
-        </a-table>
+          </el-table-column>
+        </el-table>
       </template>
-    </a-card>
+    </el-card>
 
     <!-- Upload Modal -->
-    <a-modal v-model:open="uploadModal.visible" title="上传新版本" @ok="handleUpload" :confirm-loading="uploading" width="600px">
-      <a-form layout="vertical">
-        <a-form-item label="版本号" required>
-          <a-input v-model:value="uploadForm.version_no" placeholder="例如: v1.0.0" />
-        </a-form-item>
-        <a-form-item label="模型文件" required>
+    <el-dialog v-model="uploadModal.visible" title="上传新版本" width="600px">
+      <el-form label-width="100px">
+        <el-form-item label="版本号" required>
+          <el-input v-model="uploadForm.version_no" placeholder="例如: v1.0.0" />
+        </el-form-item>
+        <el-form-item label="模型文件" required>
           <FileUploader accept=".pt,.onnx,.pb,.pkl,.zip" :max-size="2048" bucket="maidc-models" @success="onFileUploaded" />
-        </a-form-item>
-        <a-form-item label="变更说明">
-          <a-textarea v-model:value="uploadForm.changelog" :rows="3" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        </el-form-item>
+        <el-form-item label="变更说明">
+          <el-input v-model="uploadForm.changelog" type="textarea" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="uploadModal.close()">取消</el-button>
+        <el-button type="primary" :loading="uploading" @click="handleUpload">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- Compare Modal -->
-    <a-modal v-model:open="compareVisible" title="版本对比" :footer="null" width="800px">
-      <a-row :gutter="16" style="margin-bottom: 16px">
-        <a-col :span="12">
-          <a-select v-model:value="compareV1" placeholder="选择版本1" style="width: 100%">
-            <a-select-option v-for="v in versions" :key="v.id" :value="v.id">{{ v.version_no }}</a-select-option>
-          </a-select>
-        </a-col>
-        <a-col :span="12">
-          <a-select v-model:value="compareV2" placeholder="选择版本2" style="width: 100%">
-            <a-select-option v-for="v in versions" :key="v.id" :value="v.id">{{ v.version_no }}</a-select-option>
-          </a-select>
-        </a-col>
-      </a-row>
-      <a-button type="primary" @click="doCompare" :loading="comparing" :disabled="!compareV1 || !compareV2">开始对比</a-button>
-      <div v-if="compareResult" style="margin-top: 16px">
-        <a-descriptions bordered size="small" :column="1">
-          <a-descriptions-item v-for="(val, key) in compareResult" :key="key" :label="key">{{ val }}</a-descriptions-item>
-        </a-descriptions>
+    <el-dialog v-model="compareVisible" title="版本对比" width="800px">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" style="margin-bottom: 16px">
+        <el-select v-model="compareV1" placeholder="选择版本1" style="width: 100%">
+          <el-option v-for="v in versions" :key="v.id" :value="v.id" :label="v.version_no" />
+        </el-select>
+        <el-select v-model="compareV2" placeholder="选择版本2" style="width: 100%">
+          <el-option v-for="v in versions" :key="v.id" :value="v.id" :label="v.version_no" />
+        </el-select>
       </div>
-    </a-modal>
+      <el-button type="primary" @click="doCompare" :loading="comparing" :disabled="!compareV1 || !compareV2">开始对比</el-button>
+      <div v-if="compareResult" style="margin-top: 16px">
+        <el-descriptions border size="small" :column="1">
+          <el-descriptions-item v-for="(val, key) in compareResult" :key="key" :label="key">{{ val }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
+    </el-dialog>
   </template>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue'
-import { UploadOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Upload } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -145,21 +152,12 @@ const uploadedFile = ref<any>(null)
 
 const uploadForm = reactive({ version_no: '', changelog: '' })
 
-const columns = [
-  { title: '版本号', dataIndex: 'version_no', key: 'version_no' },
-  { title: '状态', dataIndex: 'status', key: 'status' },
-  { title: '文件大小', dataIndex: 'file_size', key: 'file_size' },
-  { title: '变更说明', dataIndex: 'changelog', key: 'changelog', ellipsis: true },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
-  { title: '操作', key: 'action', width: 120 },
-]
-
 async function loadVersions() {
   if (!props.modelId) return
   loading.value = true
   try {
     const res = await getVersions(props.modelId, { page: 1, page_size: 100 })
-    versions.value = res.data.data.items
+    versions.value = res.data.data.items ?? []
   } finally { loading.value = false }
 }
 
@@ -168,15 +166,15 @@ function onFileUploaded(fileInfo: any) {
 }
 
 async function handleUpload() {
-  if (!uploadForm.version_no) { message.warning('请输入版本号'); return }
+  if (!uploadForm.version_no) { ElMessage.warning('请输入版本号'); return }
   uploading.value = true
   try {
     const formData = new FormData()
     formData.append('version_no', uploadForm.version_no)
     formData.append('changelog', uploadForm.changelog)
     if (uploadedFile.value) formData.append('file', uploadedFile.value)
-    await createVersion(props.modelId, formData)
-    message.success('版本上传成功')
+    await createVersion(props.modelId!, formData)
+    ElMessage.success('版本上传成功')
     uploadModal.close()
     loadVersions()
   } finally { uploading.value = false }
@@ -196,13 +194,13 @@ function startCompare(record: any) {
 async function doCompare() {
   comparing.value = true
   try {
-    const res = await compareVersions(props.modelId, compareV1.value!, compareV2.value!)
+    const res = await compareVersions(props.modelId!, compareV1.value!, compareV2.value!)
     compareResult.value = res.data.data
   } finally { comparing.value = false }
 }
 
 function viewDetail(record: any) {
-  message.info('查看版本详情: ' + record.version_no)
+  ElMessage.info('查看版本详情: ' + record.version_no)
 }
 
 // --- Inline comparison section ---
@@ -238,39 +236,22 @@ function getCompareLabels() {
   return { label1: v1?.version_no || '版本1', label2: v2?.version_no || '版本2' }
 }
 
-function getCompareColumns(title: string) {
-  const { label1, label2 } = getCompareLabels()
-  return [
-    { title: '指标', dataIndex: 'metric', key: 'metric', width: 180 },
-    { title: label1, dataIndex: 'v1', key: 'v1' },
-    { title: label2, dataIndex: 'v2', key: 'v2' },
-  ]
-}
-
-const evaluationColumns = computed(() => {
-  const { label1, label2 } = getCompareLabels()
-  return [
-    { title: '指标', dataIndex: 'metric', key: 'metric', width: 180 },
-    { title: label1, dataIndex: 'v1', key: 'v1' },
-    { title: label2, dataIndex: 'v2', key: 'v2' },
-    { title: '差异', dataIndex: 'diff', key: 'diff', width: 120 },
-  ]
-})
+const compareLabels = computed(() => getCompareLabels())
 
 function getDiffColor(diff: string): string {
   if (!diff) return ''
-  if (diff.startsWith('+')) return '#52c41a'
-  if (diff.startsWith('-')) return '#f5222d'
+  if (diff.startsWith('+')) return '#10b981'
+  if (diff.startsWith('-')) return '#ef4444'
   return ''
 }
 
 function showComparisonResult() {
   if (!compareLeft.value || !compareRight.value) {
-    message.warning('请选择两个版本进行对比')
+    ElMessage.warning('请选择两个版本进行对比')
     return
   }
   if (compareLeft.value === compareRight.value) {
-    message.warning('请选择不同的版本进行对比')
+    ElMessage.warning('请选择不同的版本进行对比')
     return
   }
   showComparison.value = true

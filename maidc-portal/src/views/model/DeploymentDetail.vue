@@ -1,36 +1,42 @@
 <template>
   <PageContainer title="部署详情" :loading="loading">
     <template #extra>
-      <a-space>
-        <a-button v-if="deployment?.status === 'RUNNING'" danger @click="handleStop">停止</a-button>
-        <a-button @click="router.back()">返回</a-button>
-      </a-space>
+      <div class="flex items-center gap-2">
+        <el-button v-if="deployment?.status === 'RUNNING'" type="danger" @click="handleStop">停止</el-button>
+        <el-button @click="router.back()">返回</el-button>
+      </div>
     </template>
 
     <template v-if="deployment">
-      <a-card title="基本信息" style="margin-bottom: 16px">
-        <a-descriptions :column="3" bordered size="small">
-          <a-descriptions-item label="部署名称">{{ deployment.name }}</a-descriptions-item>
-          <a-descriptions-item label="模型">{{ deployment.model_name }}</a-descriptions-item>
-          <a-descriptions-item label="版本">{{ deployment.version_no }}</a-descriptions-item>
-          <a-descriptions-item label="状态">
+      <el-card shadow="never" class="mb-4 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <template #header>
+          <span class="font-semibold text-slate-900">基本信息</span>
+        </template>
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="部署名称">{{ deployment.name }}</el-descriptions-item>
+          <el-descriptions-item label="模型">{{ deployment.model_name }}</el-descriptions-item>
+          <el-descriptions-item label="版本">{{ deployment.version_no }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
             <StatusBadge :status="deployment.status" type="deploy" />
-          </a-descriptions-item>
-          <a-descriptions-item label="副本数">{{ deployment.replicas }}</a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ formatDateTime(deployment.created_at) }}</a-descriptions-item>
-        </a-descriptions>
-      </a-card>
+          </el-descriptions-item>
+          <el-descriptions-item label="副本数">{{ deployment.replicas }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(deployment.created_at) }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
 
-      <a-row :gutter="16" style="margin-bottom: 16px">
-        <a-col :span="6"><MetricCard title="今日推理" :value="metrics.todayInference" /></a-col>
-        <a-col :span="6"><MetricCard title="平均延迟" :value="metrics.avgLatency" suffix="ms" /></a-col>
-        <a-col :span="6"><MetricCard title="成功率" :value="metrics.successRate" suffix="%" /></a-col>
-        <a-col :span="6"><MetricCard title="GPU利用率" :value="metrics.gpuUsage" suffix="%" /></a-col>
-      </a-row>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <MetricCard title="今日推理" :value="metrics.todayInference" />
+        <MetricCard title="平均延迟" :value="metrics.avgLatency" suffix="ms" />
+        <MetricCard title="成功率" :value="metrics.successRate" suffix="%" />
+        <MetricCard title="GPU利用率" :value="metrics.gpuUsage" suffix="%" />
+      </div>
 
-      <a-card title="推理趋势（24h）">
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <template #header>
+          <span class="font-semibold text-slate-900">推理趋势（24h）</span>
+        </template>
         <MetricChart :option="trendChartOption" height="300px" />
-      </a-card>
+      </el-card>
     </template>
   </PageContainer>
 </template>
@@ -38,7 +44,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
@@ -57,7 +63,7 @@ const trendChartOption = ref({
   tooltip: { trigger: 'axis' as const },
   xAxis: { type: 'category' as const, data: Array.from({ length: 24 }, (_, i) => `${i}:00`) },
   yAxis: { type: 'value' as const },
-  series: [{ type: 'line' as const, data: [] as number[], smooth: true, areaStyle: { opacity: 0.3 }, lineStyle: { color: '#1677ff' }, itemStyle: { color: '#1677ff' } }],
+  series: [{ type: 'line' as const, data: [] as number[], smooth: true, areaStyle: { opacity: 0.3 }, lineStyle: { color: '#0ea5e9' }, itemStyle: { color: '#0ea5e9' } }],
 })
 
 async function loadDeployment() {
@@ -91,12 +97,19 @@ async function loadDeployment() {
   } finally { loading.value = false }
 }
 
-async function handleStop() {
-  Modal.confirm({ title: '确认停止此部署？', async onOk() {
-    await stopDeployment(Number(route.params.id))
-    message.success('停止中...')
-    loadDeployment()
-  }})
+async function confirmStop() {
+  await stopDeployment(Number(route.params.id))
+  ElMessage.success('停止中...')
+  loadDeployment()
+}
+
+function handleStop() {
+  ElMessageBox.confirm('确认停止此部署？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+    confirmButtonClass: 'el-button--danger',
+  }).then(() => confirmStop()).catch(() => {})
 }
 
 onMounted(loadDeployment)

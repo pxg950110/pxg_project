@@ -3,183 +3,184 @@
     <!-- Action Bar -->
     <div class="action-bar">
       <div class="action-bar-left">
-        <a-input-search
-          v-model:value="searchKeyword"
+        <el-input
+          v-model="searchKeyword"
           placeholder="搜索模型名称或编码..."
           style="width: 280px"
-          allow-clear
-          @search="handleSearch"
+          clearable
+          :suffix-icon="Search"
+          @keyup.enter="handleSearch"
         />
-        <a-select
-          v-model:value="sortBy"
+        <el-select
+          v-model="sortBy"
           style="width: 140px"
           @change="handleSortChange"
         >
-          <a-select-option value="updated_at">更新时间</a-select-option>
-          <a-select-option value="created_at">创建时间</a-select-option>
-          <a-select-option value="model_name">模型名称</a-select-option>
-        </a-select>
+          <el-option label="更新时间" value="updated_at" />
+          <el-option label="创建时间" value="created_at" />
+          <el-option label="模型名称" value="model_name" />
+        </el-select>
       </div>
       <div class="action-bar-right">
-        <a-button type="primary" @click="registerModal.open()">
-          <PlusOutlined /> 注册模型
-        </a-button>
+        <el-button type="primary" @click="registerModal.open()">
+          <el-icon class="mr-1"><Plus /></el-icon>注册模型
+        </el-button>
       </div>
     </div>
 
     <!-- Category Filter Tabs -->
     <div class="category-tabs">
-      <a-radio-group v-model:value="activeCategory" button-style="solid" @change="handleCategoryChange">
-        <a-radio-button value="全部">全部</a-radio-button>
-        <a-radio-button value="影像">影像</a-radio-button>
-        <a-radio-button value="NLP">NLP</a-radio-button>
-        <a-radio-button value="结构化">结构化</a-radio-button>
-        <a-radio-button value="多模态">多模态</a-radio-button>
-        <a-radio-button value="基因组">基因组</a-radio-button>
-      </a-radio-group>
+      <el-radio-group v-model="activeCategory" @change="handleCategoryChange">
+        <el-radio-button value="全部">全部</el-radio-button>
+        <el-radio-button value="影像">影像</el-radio-button>
+        <el-radio-button value="NLP">NLP</el-radio-button>
+        <el-radio-button value="结构化">结构化</el-radio-button>
+        <el-radio-button value="多模态">多模态</el-radio-button>
+        <el-radio-button value="基因组">基因组</el-radio-button>
+      </el-radio-group>
     </div>
 
     <!-- Card Grid -->
-    <a-spin :spinning="loading">
-    <a-row :gutter="[16, 16]" class="model-card-grid">
-      <a-col v-for="model in tableData" :key="model.id" :span="8">
-        <a-card class="model-card" hoverable>
-          <!-- Row 1: Name + Category Tag -->
-          <div class="card-header">
-            <span class="model-name">{{ model.model_name }}</span>
-            <a-tag :color="categoryColorMap[model.category]">{{ model.category }}</a-tag>
-          </div>
+    <div class="model-card-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" v-loading="loading">
+      <el-card
+        v-for="model in tableData"
+        :key="model.id"
+        class="model-card !rounded-xl !border-slate-200/80"
+        shadow="hover"
+      >
+        <!-- Row 1: Name + Category Tag -->
+        <div class="card-header">
+          <span class="model-name">{{ model.model_name }}</span>
+          <el-tag
+            size="small"
+            :type="categoryTagType(model.category)"
+            :style="categoryTagStyle(model.category)"
+          >{{ model.category }}</el-tag>
+        </div>
 
-          <!-- Row 2: Description -->
-          <div class="model-desc">{{ model.description || '暂无描述' }}</div>
+        <!-- Row 2: Description -->
+        <div class="model-desc">{{ model.description || '暂无描述' }}</div>
 
-          <!-- Row 3: Framework + Version + Status -->
-          <div class="card-meta-row">
-            <a-tag size="small" class="framework-tag">{{ model.framework }}</a-tag>
-            <span class="version-text">{{ model.version }}</span>
-            <StatusBadge :status="model.status" type="model" />
-          </div>
+        <!-- Row 3: Framework + Version + Status -->
+        <div class="card-meta-row">
+          <el-tag size="small" class="framework-tag">{{ model.framework }}</el-tag>
+          <span class="version-text">{{ model.version }}</span>
+          <StatusBadge :status="model.status" type="model" />
+        </div>
 
-          <!-- Row 4: QPS (only for PUBLISHED) -->
-          <div v-if="model.status === 'PUBLISHED' && model.qps !== null" class="qps-row">
-            <span class="qps-label">QPS:</span>
-            <span class="qps-value">{{ model.qps }}</span>
-          </div>
+        <!-- Row 4: QPS (only for PUBLISHED) -->
+        <div v-if="model.status === 'PUBLISHED' && model.qps !== null" class="qps-row">
+          <span class="qps-label">QPS:</span>
+          <span class="qps-value">{{ model.qps }}</span>
+        </div>
 
-          <!-- Row 5: View Details Link -->
-          <div class="card-footer">
-            <a class="detail-link" @click="router.push(`/model/${model.id}`)">
-              查看详情 <RightOutlined />
-            </a>
-          </div>
-        </a-card>
-      </a-col>
-    </a-row>
-    </a-spin>
+        <!-- Row 5: View Details Link -->
+        <div class="card-footer">
+          <a class="detail-link" @click="router.push(`/model/${model.id}`)">
+            查看详情 <el-icon class="ml-0.5"><ArrowRight /></el-icon>
+          </a>
+        </div>
+      </el-card>
+    </div>
 
     <!-- Pagination -->
     <div class="pagination-bar">
       <span class="pagination-total">共 {{ pagination.total }} 个模型</span>
-      <a-pagination
-        v-model:current="pagination.current"
+      <el-pagination
+        background
+        layout="sizes, prev, pager, next, jumper"
         :total="pagination.total"
+        :current-page="pagination.current"
         :page-size="pagination.pageSize"
-        show-quick-jumper
-        show-size-changer
-        size="small"
-        @change="(page: number, pageSize: number) => fetchData({ page, pageSize })"
+        :page-sizes="[10, 20, 50, 100]"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
       />
     </div>
 
     <!-- Register Modal -->
-    <a-modal
-      v-model:open="registerModal.visible"
+    <el-dialog
+      v-model="registerModal.visible"
       title="注册模型"
-      @ok="handleRegister"
-      :confirm-loading="submitting"
       width="640px"
     >
-      <a-form :model="registerForm" :rules="registerRules" ref="registerFormRef" layout="vertical">
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="模型名称" name="modelName">
-              <a-input v-model:value="registerForm.modelName" placeholder="请输入模型名称" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="模型编码" name="modelCode">
-              <a-input v-model:value="registerForm.modelCode" placeholder="自动生成或手动输入" />
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="模型类型" name="modelType">
-              <a-select v-model:value="registerForm.modelType" placeholder="请选择">
-                <a-select-option value="IMAGING">影像</a-select-option>
-                <a-select-option value="NLP">NLP</a-select-option>
-                <a-select-option value="STRUCTURED">结构化</a-select-option>
-                <a-select-option value="MULTIMODAL">多模态</a-select-option>
-                <a-select-option value="GENOMIC">基因组</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="任务类型" name="taskType">
-              <a-select v-model:value="registerForm.taskType" placeholder="请选择">
-                <a-select-option value="CLASSIFICATION">分类</a-select-option>
-                <a-select-option value="SEGMENTATION">分割</a-select-option>
-                <a-select-option value="OBJECT_DETECTION">目标检测</a-select-option>
-                <a-select-option value="REGRESSION">回归</a-select-option>
-                <a-select-option value="NER">命名实体识别</a-select-option>
-                <a-select-option value="TEXT_CLASSIFICATION">文本分类</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="框架" name="framework">
-              <a-select v-model:value="registerForm.framework" placeholder="请选择">
-                <a-select-option value="PYTORCH">PyTorch</a-select-option>
-                <a-select-option value="TENSORFLOW">TensorFlow</a-select-option>
-                <a-select-option value="SKLEARN">SKLearn</a-select-option>
-                <a-select-option value="XGBOOST">XGBoost</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-form-item label="描述" name="description">
-          <a-textarea v-model:value="registerForm.description" :rows="3" placeholder="请输入模型描述" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+      <el-form :model="registerForm" :rules="registerRules" ref="registerFormRef" label-width="100px">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+          <el-form-item label="模型名称" prop="modelName">
+            <el-input v-model="registerForm.modelName" placeholder="请输入模型名称" />
+          </el-form-item>
+          <el-form-item label="模型编码" prop="modelCode">
+            <el-input v-model="registerForm.modelCode" placeholder="自动生成或手动输入" />
+          </el-form-item>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+          <el-form-item label="模型类型" prop="modelType">
+            <el-select v-model="registerForm.modelType" placeholder="请选择">
+              <el-option label="影像" value="IMAGING" />
+              <el-option label="NLP" value="NLP" />
+              <el-option label="结构化" value="STRUCTURED" />
+              <el-option label="多模态" value="MULTIMODAL" />
+              <el-option label="基因组" value="GENOMIC" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="任务类型" prop="taskType">
+            <el-select v-model="registerForm.taskType" placeholder="请选择">
+              <el-option label="分类" value="CLASSIFICATION" />
+              <el-option label="分割" value="SEGMENTATION" />
+              <el-option label="目标检测" value="OBJECT_DETECTION" />
+              <el-option label="回归" value="REGRESSION" />
+              <el-option label="命名实体识别" value="NER" />
+              <el-option label="文本分类" value="TEXT_CLASSIFICATION" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+          <el-form-item label="框架" prop="framework">
+            <el-select v-model="registerForm.framework" placeholder="请选择">
+              <el-option label="PyTorch" value="PYTORCH" />
+              <el-option label="TensorFlow" value="TENSORFLOW" />
+              <el-option label="SKLearn" value="SKLEARN" />
+              <el-option label="XGBoost" value="XGBOOST" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="registerForm.description" type="textarea" :rows="3" placeholder="请输入模型描述" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="registerModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleRegister">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- Edit Modal -->
-    <a-modal
-      v-model:open="editModal.visible"
+    <el-dialog
+      v-model="editModal.visible"
       title="编辑模型"
-      @ok="handleEdit"
-      :confirm-loading="submitting"
       width="640px"
     >
-      <a-form :model="editForm" layout="vertical">
-        <a-form-item label="描述" name="description">
-          <a-textarea v-model:value="editForm.description" :rows="3" />
-        </a-form-item>
-        <a-form-item label="标签">
-          <a-input v-model:value="editForm.tags" placeholder="用逗号分隔标签" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+      <el-form :model="editForm" label-width="100px">
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="editForm.description" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-input v-model="editForm.tags" placeholder="用逗号分隔标签" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleEdit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { PlusOutlined, RightOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus, ArrowRight, Search } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -202,11 +203,25 @@ const modelTypeLabel: Record<string, string> = {
 
 // --- Category color map ---
 const categoryColorMap: Record<string, string> = {
-  '影像': 'blue',
-  'NLP': 'green',
-  '结构化': 'orange',
+  '影像': 'primary',
+  'NLP': 'success',
+  '结构化': 'warning',
   '多模态': 'purple',
   '基因组': 'cyan',
+}
+
+const customTagStyles: Record<string, Record<string, string>> = {
+  purple: { color: '#8b5cf6', backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' },
+  cyan: { color: '#0e7490', backgroundColor: '#ecfeff', borderColor: '#a5f3fc' },
+}
+
+function categoryTagType(category: string) {
+  const t = categoryColorMap[category]
+  return customTagStyles[t] ? 'primary' : (t || 'info')
+}
+
+function categoryTagStyle(category: string) {
+  return customTagStyles[categoryColorMap[category]]
 }
 
 // --- Filter / search state ---
@@ -228,7 +243,7 @@ const categoryToType: Record<string, string | undefined> = {
 const { tableData: rawTableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getModels({
     page: params.page,
-    pageSize: params.pageSize,
+    page_size: params.pageSize,
     model_type: categoryToType[activeCategory.value],
     keyword: searchKeyword.value.trim() || undefined,
   })
@@ -260,6 +275,17 @@ function handleSortChange() {
   fetchData({ page: 1 })
 }
 
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
+
 onMounted(() => fetchData())
 
 // --- Register form ---
@@ -282,14 +308,14 @@ const registerFormRef = ref()
 
 async function handleRegister() {
   try {
-    await registerFormRef.value?.validateFields()
+    await registerFormRef.value?.validate()
   } catch {
     return
   }
   submitting.value = true
   try {
     await createModel(registerForm)
-    message.success('模型注册成功')
+    ElMessage.success('模型注册成功')
     registerModal.close()
     fetchData()
   } finally {
@@ -319,7 +345,7 @@ async function handleEdit() {
   submitting.value = true
   try {
     await updateModel(editingId, editForm)
-    message.success('模型更新成功')
+    ElMessage.success('模型更新成功')
     editModal.close()
     fetchData()
   } finally {
@@ -361,7 +387,7 @@ async function handleEdit() {
   flex-direction: column;
 }
 
-.model-card :deep(.ant-card-body) {
+.model-card :deep(.el-card__body) {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -378,13 +404,13 @@ async function handleEdit() {
 .model-name {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   line-height: 1.5;
 }
 
 .model-desc {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   line-height: 1.6;
   margin-bottom: 12px;
   display: -webkit-box;
@@ -408,17 +434,17 @@ async function handleEdit() {
 
 .version-text {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 
 .qps-row {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   margin-bottom: 8px;
 }
 
 .qps-label {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-right: 4px;
 }
 
@@ -429,19 +455,21 @@ async function handleEdit() {
 .card-footer {
   margin-top: auto;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
   text-align: right;
 }
 
 .detail-link {
-  color: #1677ff;
+  color: #0ea5e9;
   cursor: pointer;
   font-size: 14px;
   transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
 }
 
 .detail-link:hover {
-  color: #4096ff;
+  color: #38bdf8;
 }
 
 .pagination-bar {
@@ -450,11 +478,11 @@ async function handleEdit() {
   justify-content: space-between;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
 }
 
 .pagination-total {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 </style>
