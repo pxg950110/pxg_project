@@ -1,50 +1,57 @@
 <template>
-  <a-modal
-    :open="open"
+  <el-dialog
+    :model-value="open"
     title="患者建档"
-    :confirm-loading="submitting"
-    ok-text="确认建档"
-    @ok="handleOk"
-    @cancel="$emit('update:open', false)"
+    width="520px"
+    @update:model-value="(v: boolean) => emit('update:open', v)"
   >
-    <a-alert
+    <el-alert
       type="info"
       show-icon
+      :closable="false"
       style="margin-bottom: 16px"
-      message="建档后将按随访方案全量生成阶段任务（基线 / 3月 / 6月 / 12月），任务到期日 = 建档日 + 阶段偏移天数"
+      title="建档后将按随访方案全量生成阶段任务（基线 / 3月 / 6月 / 12月），任务到期日 = 建档日 + 阶段偏移天数"
     />
-    <a-form layout="vertical">
-      <a-form-item label="患者" required>
-        <a-select
-          v-model:value="form.patientId"
+    <el-form label-position="top">
+      <el-form-item label="患者" required>
+        <el-select
+          v-model="form.patientId"
           placeholder="仅显示队列内患者"
-          show-search
-          :options="patientOptions"
-          :field-names="{ label: 'patientName', value: 'patientId' }"
-          option-filter-prop="patientName"
+          filterable
           :loading="loadingPatients"
-        />
-      </a-form-item>
-      <a-form-item label="随访方案">
-        <a-input :value="protocolLabel" disabled />
-      </a-form-item>
-      <a-form-item label="负责医生" required>
-        <a-select v-model:value="form.doctorId" :options="doctorOptions" :loading="loadingUsers" placeholder="选择医生" />
-      </a-form-item>
-      <a-form-item label="随访护士">
-        <a-select v-model:value="form.nurseId" :options="nurseOptions" :loading="loadingUsers" placeholder="可空 = 暂未分配" allow-clear />
-      </a-form-item>
-      <a-form-item label="建档日期" required>
-        <a-date-picker v-model:value="form.enrollDate" style="width: 100%" />
-      </a-form-item>
-    </a-form>
-  </a-modal>
+          style="width: 100%"
+        >
+          <el-option v-for="p in patientOptions" :key="p.patientId" :value="p.patientId" :label="p.patientName" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="随访方案">
+        <el-input :model-value="protocolLabel" disabled />
+      </el-form-item>
+      <el-form-item label="负责医生" required>
+        <el-select v-model="form.doctorId" :loading="loadingUsers" placeholder="选择医生" style="width: 100%">
+          <el-option v-for="o in doctorOptions" :key="o.value" :value="o.value" :label="o.label" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="随访护士">
+        <el-select v-model="form.nurseId" :loading="loadingUsers" placeholder="可空 = 暂未分配" clearable style="width: 100%">
+          <el-option v-for="o in nurseOptions" :key="o.value" :value="o.value" :label="o.label" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="建档日期" required>
+        <el-date-picker v-model="form.enrollDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="emit('update:open', false)">取消</el-button>
+      <el-button type="primary" :loading="submitting" @click="handleOk">确认建档</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch } from 'vue'
-import { message } from 'ant-design-vue'
-import dayjs, { type Dayjs } from 'dayjs'
+import { reactive, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 import { getUsers } from '@/api/system'
 import { getDiseaseCohortPatients } from '@/api/data'
 import { enrollFollowup, getLatestProtocol } from '@/api/followup'
@@ -62,11 +69,11 @@ const loadingPatients = ref(false)
 const loadingUsers = ref(false)
 const protocolLabel = ref('—')
 
-const form = reactive<{ patientId: number | null; doctorId: number | null; nurseId?: number | null; enrollDate: Dayjs | null }>({
+const form = reactive<{ patientId: number | null; doctorId: number | null; nurseId?: number | null; enrollDate: string | null }>({
   patientId: null,
   doctorId: null,
   nurseId: null,
-  enrollDate: dayjs(),
+  enrollDate: dayjs().format('YYYY-MM-DD'),
 })
 
 const submitting = ref(false)
@@ -74,7 +81,7 @@ const submitting = ref(false)
 watch(() => props.open, async (open) => {
   if (!open) return
   form.patientId = null
-  form.enrollDate = dayjs()
+  form.enrollDate = dayjs().format('YYYY-MM-DD')
   await Promise.all([loadPatients(), loadUsers(), loadProtocol()])
 })
 
@@ -85,7 +92,7 @@ async function loadPatients() {
     patientOptions.value = (res.data?.data?.items || []).map((p: any) => ({
       patientId: p.patientId, patientName: `${p.patientName ?? '患者#' + p.patientId}（${p.gender ?? '?'}）`,
     }))
-  } catch { message.error('队列患者加载失败') }
+  } catch { ElMessage.error('队列患者加载失败') }
   finally { loadingPatients.value = false }
 }
 
@@ -98,7 +105,7 @@ async function loadUsers() {
     }))
     doctorOptions.value = users.filter((u: any) => u.roles.includes('doctor') || u.roles.includes('admin'))
     nurseOptions.value = users.filter((u: any) => u.roles.includes('nurse'))
-  } catch { message.error('用户列表加载失败') }
+  } catch { ElMessage.error('用户列表加载失败') }
   finally { loadingUsers.value = false }
 }
 
@@ -111,23 +118,23 @@ async function loadProtocol() {
 }
 
 async function handleOk() {
-  if (!form.patientId) { message.warning('请选择患者'); return }
-  if (!form.doctorId) { message.warning('请选择负责医生'); return }
-  if (!form.enrollDate) { message.warning('请选择建档日期'); return }
+  if (!form.patientId) { ElMessage.warning('请选择患者'); return }
+  if (!form.doctorId) { ElMessage.warning('请选择负责医生'); return }
+  if (!form.enrollDate) { ElMessage.warning('请选择建档日期'); return }
   submitting.value = true
   try {
     const res = await enrollFollowup(Number(props.cohortId), {
       patientId: form.patientId,
       doctorId: form.doctorId,
       nurseId: form.nurseId ?? undefined,
-      enrollDate: form.enrollDate.format('YYYY-MM-DD'),
+      enrollDate: form.enrollDate,
     })
     const d = res.data?.data
-    message.success(`建档成功：已按方案 v${d?.protocolVersion} 生成 ${d?.taskCount} 个阶段任务`)
+    ElMessage.success(`建档成功：已按方案 v${d?.protocolVersion} 生成 ${d?.taskCount} 个阶段任务`)
     emit('update:open', false)
     emit('created')
   } catch (e: any) {
-    message.error(e.response?.data?.message || '建档失败')
+    ElMessage.error(e.response?.data?.message || '建档失败')
   } finally { submitting.value = false }
 }
 </script>
