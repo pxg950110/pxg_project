@@ -3,187 +3,251 @@
     <!-- Filter bar -->
     <div class="filter-bar">
       <div class="filter-controls">
-        <a-select v-model:value="filters.module" placeholder="模块" style="width: 140px" allow-clear>
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option value="auth">认证服务</a-select-option>
-          <a-select-option value="data">数据服务</a-select-option>
-          <a-select-option value="model">模型服务</a-select-option>
-          <a-select-option value="label">标注服务</a-select-option>
-          <a-select-option value="task">任务服务</a-select-option>
-          <a-select-option value="audit">审计服务</a-select-option>
-        </a-select>
+        <el-select v-model="filters.module" placeholder="模块" clearable style="width: 140px">
+          <el-option label="全部" value="" />
+          <el-option label="认证服务" value="auth" />
+          <el-option label="数据服务" value="data" />
+          <el-option label="模型服务" value="model" />
+          <el-option label="标注服务" value="label" />
+          <el-option label="任务服务" value="task" />
+          <el-option label="审计服务" value="audit" />
+        </el-select>
 
-        <a-select v-model:value="filters.operation" placeholder="操作类型" style="width: 140px" allow-clear>
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option value="login">登录</a-select-option>
-          <a-select-option value="logout">登出</a-select-option>
-          <a-select-option value="refresh">刷新令牌</a-select-option>
-        </a-select>
+        <el-select v-model="filters.operation" placeholder="操作类型" clearable style="width: 140px">
+          <el-option label="全部" value="" />
+          <el-option label="登录" value="login" />
+          <el-option label="登出" value="logout" />
+          <el-option label="刷新令牌" value="refresh" />
+        </el-select>
 
-        <a-select v-model:value="filters.status" placeholder="状态" style="width: 120px" allow-clear>
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option :value="1">成功</a-select-option>
-          <a-select-option :value="0">失败</a-select-option>
-        </a-select>
+        <el-select v-model="filters.status" placeholder="状态" clearable style="width: 120px">
+          <el-option label="全部" value="" />
+          <el-option label="成功" value="SUCCESS" />
+          <el-option label="失败" value="FAILURE" />
+        </el-select>
 
-        <a-range-picker v-model:value="filters.dateRange" style="width: 260px" />
+        <el-date-picker
+          v-model="filters.dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width: 260px"
+        />
 
-        <a-input-search
-          v-model:value="filters.keyword"
+        <el-input
+          v-model="filters.keyword"
           placeholder="搜索操作人..."
+          clearable
           style="width: 200px"
-          allow-clear
+        />
+
+        <el-input
+          v-model="filters.traceId"
+          placeholder="Trace ID 全链路检索"
+          clearable
+          style="width: 230px"
         />
       </div>
-      <a-button type="primary" @click="handleExport">导出</a-button>
+      <el-button type="primary" @click="handleExport">导出</el-button>
     </div>
 
     <!-- Table -->
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
+    <el-table
+      :data="tableData"
+      v-loading="loading"
       row-key="id"
       size="small"
-      :scroll="{ x: 1260 }"
-      @change="handleTableChange"
     >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'createdAt'">
-          {{ formatDateTime(record.createdAt) }}
+      <el-table-column label="时间" width="170">
+        <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+      </el-table-column>
+      <el-table-column label="Trace ID" width="130">
+        <template #default="{ row }">
+          <el-tooltip v-if="row.traceId" :content="`${row.traceId}（点击复制）`">
+            <span class="trace-id" @click="copyTraceId(row.traceId)">{{ shortTraceId(row.traceId) }}</span>
+          </el-tooltip>
+          <span v-else>-</span>
         </template>
-        <template v-if="column.key === 'module'">
-          <a-tag :color="moduleColors[record.module as keyof typeof moduleColors] || 'default'">{{ record.module }}</a-tag>
+      </el-table-column>
+      <el-table-column label="操作人" prop="username" width="100" />
+      <el-table-column label="模块" width="110">
+        <template #default="{ row }">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2 w-2 rounded-full" :style="{ background: moduleDots[row.serviceName] || '#94a3b8' }" />
+            {{ row.serviceName }}
+          </span>
         </template>
-        <template v-if="column.key === 'requestMethod'">
-          <a-badge :color="methodColors[record.requestMethod as keyof typeof methodColors] || 'default'" :text="record.requestMethod" />
+      </el-table-column>
+      <el-table-column label="操作" prop="operation" width="100" />
+      <el-table-column label="请求方法" width="100">
+        <template #default="{ row }">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2 w-2 rounded-full" :style="{ background: methodDots[row.requestMethod] || '#94a3b8' }" />
+            {{ row.requestMethod }}
+          </span>
         </template>
-        <template v-if="column.key === 'duration'">
-          <span :style="{ color: durationColor(record.duration), fontWeight: 500 }">{{ record.duration }}ms</span>
+      </el-table-column>
+      <el-table-column label="请求路径" prop="requestUrl" width="220" show-overflow-tooltip />
+      <el-table-column label="IP" prop="ipAddress" width="130" />
+      <el-table-column label="耗时" width="90">
+        <template #default="{ row }">
+          <span :style="{ color: durationColor(row.durationMs), fontWeight: 500 }">{{ row.durationMs }}ms</span>
         </template>
-        <template v-if="column.key === 'status'">
-          <a-badge v-if="record.status === 1" status="success" text="成功" />
-          <a-badge v-else status="error" text="失败" />
+      </el-table-column>
+      <el-table-column label="状态" width="90">
+        <template #default="{ row }">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2 w-2 rounded-full" :style="{ background: statusMeta(row.status).color }" />
+            {{ statusMeta(row.status).text }}
+          </span>
         </template>
-        <template v-if="column.key === 'action'">
-          <a @click="openDetail(record)">详情</a>
+      </el-table-column>
+      <el-table-column label="操作" width="70" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" @click="openDetail(row)">详情</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- Detail Drawer -->
-    <a-drawer
-      v-model:open="detailVisible"
+    <el-drawer
+      v-model="detailVisible"
       title="操作详情"
-      width="640"
+      size="640px"
       :destroy-on-close="true"
     >
       <template v-if="currentRecord">
         <!-- Section 1: Basic info -->
-        <a-descriptions title="操作基本信息" :column="2" bordered size="small">
-          <a-descriptions-item label="操作类型">{{ currentRecord.operation }}</a-descriptions-item>
-          <a-descriptions-item label="操作人">{{ currentRecord.username }}</a-descriptions-item>
-          <a-descriptions-item label="时间">{{ formatDateTime(currentRecord.createdAt) }}</a-descriptions-item>
-          <a-descriptions-item label="IP地址">{{ currentRecord.ip }}</a-descriptions-item>
-          <a-descriptions-item label="模块">{{ currentRecord.module }}</a-descriptions-item>
-          <a-descriptions-item label="请求路径">
+        <el-descriptions title="操作基本信息" :column="2" border size="small">
+          <el-descriptions-item label="操作类型">{{ currentRecord.operation }}</el-descriptions-item>
+          <el-descriptions-item label="操作人">{{ currentRecord.username }}</el-descriptions-item>
+          <el-descriptions-item label="时间">{{ formatDateTime(currentRecord.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="IP地址">{{ currentRecord.ipAddress }}</el-descriptions-item>
+          <el-descriptions-item label="Trace ID" :span="2">
+            <span v-if="currentRecord.traceId" class="trace-id trace-id-full" @click="copyTraceId(currentRecord.traceId)">{{ currentRecord.traceId }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="模块">{{ currentRecord.serviceName }}</el-descriptions-item>
+          <el-descriptions-item label="请求路径">
             <span style="font-family: monospace; font-size: 13px">{{ currentRecord.requestUrl }}</span>
-          </a-descriptions-item>
-          <a-descriptions-item label="请求方法">{{ currentRecord.requestMethod }}</a-descriptions-item>
-          <a-descriptions-item label="调用方法">
-            <span style="font-family: monospace; font-size: 13px">{{ currentRecord.method }}</span>
-          </a-descriptions-item>
-          <a-descriptions-item label="耗时">
-            <span :style="{ color: durationColor(currentRecord.duration), fontWeight: 500 }">{{ currentRecord.duration }}ms</span>
-          </a-descriptions-item>
-          <a-descriptions-item label="操作结果">
-            <a-badge v-if="currentRecord.status === 1" status="success" text="成功" />
-            <a-badge v-else status="error" text="失败" />
-          </a-descriptions-item>
-        </a-descriptions>
+          </el-descriptions-item>
+          <el-descriptions-item label="请求方法">{{ currentRecord.requestMethod }}</el-descriptions-item>
+          <el-descriptions-item label="耗时">
+            <span :style="{ color: durationColor(currentRecord.durationMs), fontWeight: 500 }">{{ currentRecord.durationMs }}ms</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="操作结果">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="inline-block h-2 w-2 rounded-full" :style="{ background: statusMeta(currentRecord.status).color }" />
+              {{ statusMeta(currentRecord.status).text }}
+            </span>
+          </el-descriptions-item>
+        </el-descriptions>
 
         <!-- Section 2: Request params -->
-        <div v-if="currentRecord.params" class="drawer-section">
+        <div v-if="currentRecord.requestParams" class="drawer-section">
           <div class="section-title">请求参数</div>
           <div class="json-card json-card-gray">
-            <pre><code>{{ currentRecord.params }}</code></pre>
+            <pre><code>{{ formatJson(currentRecord.requestParams) }}</code></pre>
           </div>
         </div>
 
         <!-- Section 3: Error detail (only on failure) -->
-        <div v-if="currentRecord.status === 0 && currentRecord.errorMsg" class="drawer-section">
+        <div v-if="currentRecord.status !== 'SUCCESS' && currentRecord.errorMessage" class="drawer-section">
           <div class="section-title">错误详情</div>
           <div class="json-card json-card-red">
-            <pre><code>{{ currentRecord.errorMsg }}</code></pre>
+            <pre><code>{{ currentRecord.errorMessage }}</code></pre>
           </div>
         </div>
       </template>
-    </a-drawer>
+    </el-drawer>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { formatDateTime } from '@/utils/date'
 import { getAuditLogs, exportAuditLogs } from '@/api/audit'
 
-// --- Columns ---
-const columns = [
-  { title: '时间', dataIndex: 'createdAt', key: 'createdAt', width: 170 },
-  { title: '操作人', dataIndex: 'username', key: 'username', width: 100 },
-  { title: '模块', dataIndex: 'module', key: 'module', width: 100 },
-  { title: '操作', dataIndex: 'operation', key: 'operation', width: 100 },
-  { title: '请求方法', dataIndex: 'requestMethod', key: 'requestMethod', width: 90 },
-  { title: '请求路径', dataIndex: 'requestUrl', key: 'requestUrl', width: 220, ellipsis: true },
-  { title: 'IP', dataIndex: 'ip', key: 'ip', width: 130 },
-  { title: '耗时', dataIndex: 'duration', key: 'duration', width: 90 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
-  { title: '操作', key: 'action', width: 60, fixed: 'right' as const },
-]
-
 // --- Filters ---
 const filters = reactive({
   module: undefined as string | undefined,
   operation: undefined as string | undefined,
-  status: undefined as number | undefined,
+  status: undefined as string | undefined,
   dateRange: null as any,
   keyword: '',
+  traceId: '',
 })
 
-// --- Method badge colors ---
-const methodColors: Record<string, string> = {
-  GET: 'blue',
-  POST: 'green',
-  PUT: 'orange',
-  DELETE: 'red',
+// --- Method / module dot colors ---
+const methodDots: Record<string, string> = {
+  GET: '#0ea5e9',
+  POST: '#10b981',
+  PUT: '#f59e0b',
+  DELETE: '#ef4444',
 }
 
-// --- Module tag colors ---
-const moduleColors: Record<string, string> = {
-  auth: 'purple',
-  data: 'cyan',
-  model: 'blue',
-  label: 'geekblue',
-  task: 'orange',
-  audit: 'gold',
-  msg: 'green',
-  gateway: 'volcano',
+const moduleDots: Record<string, string> = {
+  auth: '#8b5cf6',
+  data: '#06b6d4',
+  model: '#0ea5e9',
+  label: '#6366f1',
+  task: '#f59e0b',
+  audit: '#eab308',
+  msg: '#10b981',
+  gateway: '#f97316',
 }
 
 // --- Duration color ---
 function durationColor(ms: number): string {
-  if (ms < 100) return '#52c41a'
-  if (ms < 500) return 'rgba(0,0,0,0.65)'
-  if (ms < 1000) return '#faad14'
-  return '#ff4d4f'
+  if (ms < 100) return '#10b981'
+  if (ms < 500) return '#475569'
+  if (ms < 1000) return '#f59e0b'
+  return '#ef4444'
+}
+
+// --- Status dot/text ---
+function statusMeta(status: string) {
+  return status === 'SUCCESS' ? { color: '#10b981', text: '成功' } : { color: '#ef4444', text: '失败' }
+}
+
+// --- Trace ID helpers ---
+function shortTraceId(id: string): string {
+  return id.length > 14 ? `${id.slice(0, 8)}…${id.slice(-4)}` : id
+}
+
+async function copyTraceId(id: string) {
+  try {
+    await navigator.clipboard.writeText(id)
+    ElMessage.success('已复制 Trace ID')
+  } catch {
+    const input = document.createElement('textarea')
+    input.value = id
+    document.body.appendChild(input)
+    input.select()
+    document.execCommand('copy')
+    document.body.removeChild(input)
+    ElMessage.success('已复制 Trace ID')
+  }
 }
 
 // --- API integration ---
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getAuditLogs({
     page: params.page,
     pageSize: params.pageSize,
@@ -191,10 +255,22 @@ const { tableData, loading, pagination, fetchData, handleTableChange } = useTabl
     operation: filters.operation,
     username: filters.keyword,
     status: filters.status,
+    traceId: filters.traceId || undefined,
     startTime: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
     endTime: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined
   })
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 watch(filters, () => fetchData({ page: 1 }))
 
@@ -229,6 +305,7 @@ async function handleExport() {
       operation: filters.operation,
       username: filters.keyword || undefined,
       status: filters.status,
+      traceId: filters.traceId || undefined,
       startTime: filters.dateRange?.[0] ? formatDateTime(filters.dateRange[0]) : undefined,
       endTime: filters.dateRange?.[1] ? formatDateTime(filters.dateRange[1]) : undefined,
     })
@@ -239,7 +316,7 @@ async function handleExport() {
     a.download = 'operation_logs.csv'
     a.click()
     window.URL.revokeObjectURL(url)
-  } catch { message.error('导出失败') }
+  } catch { ElMessage.error('导出失败') }
 }
 </script>
 
@@ -260,9 +337,25 @@ async function handleExport() {
   flex-wrap: wrap;
 }
 
-/* URL column monospace */
-:deep(.ant-table) {
+:deep(.el-table .cell) {
+  white-space: nowrap;
+}
+
+/* Trace ID：monospace + 青色调（呼应深色科技风主色），可点击复制 */
+.trace-id {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: #08979c;
+  cursor: pointer;
+}
+
+.trace-id:hover {
+  text-decoration: underline;
+}
+
+.trace-id-full {
   font-size: 13px;
+  word-break: break-all;
 }
 
 .drawer-section {
@@ -272,7 +365,7 @@ async function handleExport() {
 .section-title {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: #1e293b;
   margin-bottom: 8px;
 }
 
@@ -295,22 +388,12 @@ async function handleExport() {
 }
 
 .json-card-gray {
-  background: #f5f5f5;
-  border: 1px solid #d9d9d9;
-}
-
-.json-card-green {
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .json-card-red {
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
-}
-
-/* Ensure fixed action column alignment */
-:deep(.ant-table-cell) {
-  white-space: nowrap;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
 }
 </style>
