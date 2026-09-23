@@ -1,10 +1,10 @@
 <template>
-  <div class="error-page">
-    <a-result status="500" title="500" sub-title="抱歉，服务器出现了错误。">
+  <div class="flex min-h-screen items-center justify-center bg-slate-50">
+    <el-result icon="error" title="500" sub-title="抱歉，服务器出现了错误。">
       <template #extra>
-        <a-button type="primary" @click="router.push('/')">返回首页</a-button>
+        <el-button type="primary" @click="router.push('/')">返回首页</el-button>
       </template>
-    </a-result>
+    </el-result>
   </div>
 </template>
 
@@ -12,13 +12,3 @@
 import { useRouter } from 'vue-router'
 const router = useRouter()
 </script>
-
-<style scoped>
-.error-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #f0f2f5;
-}
-</style>
