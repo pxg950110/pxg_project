@@ -15,7 +15,9 @@
     />
 
     <div class="etl-node-header" :style="{ background: headerBg }">
-      <component :is="iconComp" class="etl-node-icon" :style="{ color: categoryColor }" />
+      <el-icon :size="14" class="etl-node-icon" :style="{ color: categoryColor }">
+        <component :is="iconComp" />
+      </el-icon>
       <span class="etl-node-label">{{ data.label }}</span>
     </div>
 
@@ -37,19 +39,19 @@
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 import {
-  DatabaseOutlined,
-  FileTextOutlined,
-  SwapOutlined,
-  CodeOutlined,
-  CalendarOutlined,
-  NumberOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  MergeCellsOutlined,
-  GroupOutlined,
-  CloudUploadOutlined,
-  ExportOutlined,
-} from '@ant-design/icons-vue'
+  Coin,
+  Document,
+  Switch,
+  Memo,
+  Calendar,
+  Histogram,
+  Search,
+  Filter,
+  Grid,
+  Collection,
+  UploadFilled,
+  Promotion,
+} from '@element-plus/icons-vue'
 import {
   type EtlNodeData,
   type EtlComponentDef,
@@ -67,7 +69,7 @@ const def = computed<EtlComponentDef | undefined>(() =>
   getComponentDef(props.data.nodeType),
 )
 
-const categoryColor = computed(() => CATEGORY_COLORS[props.data.category] || '#d9d9d9')
+const categoryColor = computed(() => CATEGORY_COLORS[props.data.category] || '#e2e8f0')
 const headerBg = computed(() => `${categoryColor.value}18`)
 
 const inputPorts = computed(() => def.value?.inputPorts || [])
@@ -94,23 +96,23 @@ const summary = computed(() => {
 })
 
 const iconMap: Record<string, any> = {
-  DatabaseOutlined,
-  FileTextOutlined,
-  SwapOutlined,
-  CodeOutlined,
-  CalendarOutlined,
-  NumberOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  MergeCellsOutlined,
-  GroupOutlined,
-  CloudUploadOutlined,
-  ExportOutlined,
+  Coin,
+  Document,
+  Switch,
+  Memo,
+  Calendar,
+  Histogram,
+  Search,
+  Filter,
+  Grid,
+  Collection,
+  UploadFilled,
+  Promotion,
 }
 
 const iconComp = computed(() => {
-  const name = def.value?.icon || 'DatabaseOutlined'
-  return iconMap[name] || DatabaseOutlined
+  const name = def.value?.icon || 'Coin'
+  return iconMap[name] || Coin
 })
 
 function handleTop(portId: string): string {
@@ -124,25 +126,25 @@ function handleTop(portId: string): string {
   min-width: 160px;
   max-width: 220px;
   background: #fff;
-  border: 2px solid #d9d9d9;
+  border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   position: relative;
   transition: box-shadow 0.2s;
 }
 
 .etl-node:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
 }
 
 .etl-node.selected {
-  box-shadow: 0 0 0 2px #1890ff, 0 4px 12px rgba(24, 144, 255, 0.2);
+  box-shadow: 0 0 0 2px #0ea5e9, 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
-.etl-node--draft { border-color: #d9d9d9; }
-.etl-node--ready { border-color: #52c41a; }
-.etl-node--error { border-color: #ff4d4f; }
+.etl-node--draft { border-color: #e2e8f0; }
+.etl-node--ready { border-color: #10b981; }
+.etl-node--error { border-color: #ef4444; }
 
 .etl-node-header {
   display: flex;
@@ -153,7 +155,9 @@ function handleTop(portId: string): string {
   font-weight: 500;
 }
 
-.etl-node-icon { font-size: 14px; }
+.etl-node-icon {
+  flex-shrink: 0;
+}
 
 .etl-node-label {
   flex: 1;
@@ -165,24 +169,24 @@ function handleTop(portId: string): string {
 
 .etl-node-summary {
   padding: 6px 12px 8px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
 }
 
 .etl-handle {
   width: 10px;
   height: 10px;
   background: #fff;
-  border: 2px solid #999;
+  border: 2px solid #94a3b8;
   border-radius: 50%;
 }
 
 .etl-handle:hover {
-  border-color: #1890ff;
-  background: #e6f7ff;
+  border-color: #0ea5e9;
+  background: #f0f9ff;
 }
 </style>

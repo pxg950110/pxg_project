@@ -15,7 +15,7 @@
           draggable="true"
           @dragstart="handleDragStart($event, comp.nodeType)"
         >
-          <component :is="iconMap[comp.icon]" class="etl-palette__item-icon" />
+          <el-icon :size="14" class="etl-palette__item-icon"><component :is="iconMap[comp.icon]" /></el-icon>
           <span>{{ comp.label }}</span>
         </div>
       </div>
@@ -25,19 +25,19 @@
 
 <script setup lang="ts">
 import {
-  DatabaseOutlined,
-  FileTextOutlined,
-  SwapOutlined,
-  CodeOutlined,
-  CalendarOutlined,
-  NumberOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  MergeCellsOutlined,
-  GroupOutlined,
-  CloudUploadOutlined,
-  ExportOutlined,
-} from '@ant-design/icons-vue'
+  Coin,
+  Document,
+  Switch,
+  Memo,
+  Calendar,
+  Histogram,
+  Search,
+  Filter,
+  Grid,
+  Collection,
+  UploadFilled,
+  Promotion,
+} from '@element-plus/icons-vue'
 import {
   type EtlComponentCategory,
   type EtlNodeType,
@@ -53,18 +53,18 @@ const emit = defineEmits<{
 const categories: EtlComponentCategory[] = ['INPUT', 'TRANSFORM', 'PROCESSOR', 'OUTPUT']
 
 const iconMap: Record<string, any> = {
-  DatabaseOutlined,
-  FileTextOutlined,
-  SwapOutlined,
-  CodeOutlined,
-  CalendarOutlined,
-  NumberOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  MergeCellsOutlined,
-  GroupOutlined,
-  CloudUploadOutlined,
-  ExportOutlined,
+  Coin,
+  Document,
+  Switch,
+  Memo,
+  Calendar,
+  Histogram,
+  Search,
+  Filter,
+  Grid,
+  Collection,
+  UploadFilled,
+  Promotion,
 }
 
 function handleDragStart(event: DragEvent, nodeType: EtlNodeType) {
@@ -77,24 +77,24 @@ function handleDragStart(event: DragEvent, nodeType: EtlNodeType) {
 <style scoped>
 .etl-palette { padding: 12px; }
 .etl-palette__header {
-  font-size: 14px; font-weight: 600; color: rgba(0,0,0,0.85);
-  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;
+  font-size: 14px; font-weight: 600; color: #0f172a;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;
 }
 .etl-palette__group { margin-bottom: 16px; }
 .etl-palette__group-title {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.65);
+  font-size: 12px; font-weight: 600; color: #64748b;
   margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
 }
 .etl-palette__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .etl-palette__items { display: flex; flex-direction: column; gap: 4px; }
 .etl-palette__item {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border: 1px solid #f0f0f0; border-radius: 6px;
+  padding: 8px 10px; border: 1px solid #f1f5f9; border-radius: 6px;
   cursor: grab; font-size: 13px; transition: all 0.2s;
   background: #fff; user-select: none;
 }
-.etl-palette__item:hover { border-color: #4096ff; background: #f0f5ff; }
-.etl-palette__item:active { cursor: grabbing; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-.etl-palette__item-icon { font-size: 14px; color: rgba(0,0,0,0.65); }
+.etl-palette__item:hover { border-color: #38bdf8; background: #f0f9ff; }
+.etl-palette__item:active { cursor: grabbing; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12); }
+.etl-palette__item-icon { color: #64748b; }
 </style>

@@ -13,8 +13,8 @@ export function useDesignerGraph() {
   const edges = ref<EtlEdge[]>([])
   const selectedNodeId = ref<string | null>(null)
 
-  const selectedNode = computed(() =>
-    nodes.value.find(n => n.id === selectedNodeId.value) || null,
+  const selectedNode = computed((): EtlNode | null =>
+    nodes.value.find(n => n.id === selectedNodeId.value) ?? null,
   )
 
   function addNode(nodeType: EtlNodeType, position: { x: number; y: number }): EtlNode {
@@ -36,9 +36,9 @@ export function useDesignerGraph() {
   }
 
   function updateNodeConfig(nodeId: string, config: Record<string, any>) {
-    nodes.value = nodes.value.map(n =>
+    nodes.value = nodes.value.map((n): EtlNode =>
       n.id === nodeId
-        ? { ...n, data: { ...n.data, config: { ...n.data.config, ...config } } }
+        ? { ...n, data: { ...n.data!, config: { ...n.data!.config, ...config } } }
         : n,
     )
   }
@@ -72,9 +72,9 @@ export function useDesignerGraph() {
 
   function getNodeStatus(nodeId: string): 'draft' | 'ready' | 'error' {
     const node = nodes.value.find(n => n.id === nodeId)
-    if (!node) return 'error'
-    const cfg = node.data.config
-    switch (node.data.nodeType) {
+    if (!node?.data) return 'error'
+    const { config: cfg, nodeType } = node.data
+    switch (nodeType) {
       case 'TABLE_INPUT':
       case 'TABLE_OUTPUT':
         return cfg?.schema && cfg?.table ? 'ready' : 'draft'
@@ -89,9 +89,9 @@ export function useDesignerGraph() {
   }
 
   function refreshAllNodeStatuses() {
-    nodes.value = nodes.value.map(n => ({
+    nodes.value = nodes.value.map((n): EtlNode => ({
       ...n,
-      data: { ...n.data, status: getNodeStatus(n.id) },
+      data: { ...n.data!, status: getNodeStatus(n.id) },
     }))
   }
 

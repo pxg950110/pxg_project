@@ -1,99 +1,116 @@
 <template>
-  <a-modal
-    :open="open"
+  <el-dialog
+    v-model="dialogVisible"
     title="字段映射配置"
-    :width="720"
-    @ok="handleSave"
-    @cancel="handleCancel"
-    destroy-on-close
+    width="720px"
+    :destroy-on-close="true"
   >
-    <div v-if="edge" style="margin-bottom: 12px">
-      <a-space>
-        <a-tag color="blue">{{ edge.source }}</a-tag>
-        <span>&rarr;</span>
-        <a-tag color="green">{{ edge.target }}</a-tag>
-      </a-space>
+    <div v-if="edge" class="mb-3 flex items-center gap-2">
+      <el-tag type="primary">{{ edge.source }}</el-tag>
+      <span>&rarr;</span>
+      <el-tag type="success">{{ edge.target }}</el-tag>
     </div>
 
-    <div style="margin-bottom: 12px">
-      <a-space>
-        <a-button size="small" @click="handleAutoMap">
-          <template #icon><ThunderboltOutlined /></template>
-          自动映射
-        </a-button>
-        <a-button size="small" @click="addRow">
-          <template #icon><PlusOutlined /></template>
-          添加行
-        </a-button>
-        <a-popconfirm title="确定清空所有映射？" @confirm="clearRows">
-          <a-button size="small" danger>清空</a-button>
-        </a-popconfirm>
-      </a-space>
+    <div class="mb-3 flex items-center gap-2">
+      <el-button size="small" @click="handleAutoMap">
+        <el-icon class="mr-1"><MagicStick /></el-icon>
+        自动映射
+      </el-button>
+      <el-button size="small" @click="addRow">
+        <el-icon class="mr-1"><Plus /></el-icon>
+        添加行
+      </el-button>
+      <el-popconfirm title="确定清空所有映射？" @confirm="clearRows">
+        <template #reference>
+          <el-button size="small" type="danger" plain>清空</el-button>
+        </template>
+      </el-popconfirm>
     </div>
 
-    <a-table
-      :columns="columns"
-      :data-source="mappings"
-      :pagination="false"
-      size="small"
-      row-key="_rowKey"
-      :scroll="{ y: 320 }"
-    >
-      <template #bodyCell="{ column, record, index }">
-        <template v-if="column.key === 'sourceColumn'">
-          <a-select v-model:value="record.sourceColumn" placeholder="选择源字段" style="width: 100%" size="small" show-search :filter-option="filterOption">
-            <a-select-option v-for="c in sourceColumns" :key="c.columnName || c" :value="c.columnName || c">
+    <el-table :data="mappings" size="small" row-key="_rowKey" max-height="320">
+      <el-table-column label="源字段" width="180">
+        <template #default="{ row }">
+          <el-select v-model="row.sourceColumn" placeholder="选择源字段" style="width: 100%" size="small" filterable>
+            <el-option
+              v-for="c in sourceColumns"
+              :key="c.columnName || c"
+              :value="c.columnName || c"
+              :label="c.columnName || c"
+            >
               {{ c.columnName || c }}
-              <span v-if="c.dataType" style="color: rgba(0,0,0,0.35); margin-left: 4px; font-size: 12px">{{ c.dataType }}</span>
-            </a-select-option>
-          </a-select>
+              <span v-if="c.dataType" class="option-type">{{ c.dataType }}</span>
+            </el-option>
+          </el-select>
         </template>
-        <template v-if="column.key === 'transformType'">
-          <a-select v-model:value="record.transformType" placeholder="转换类型" style="width: 100%" size="small">
-            <a-select-option value="DIRECT">直接映射</a-select-option>
-            <a-select-option value="MAP">值映射</a-select-option>
-            <a-select-option value="EXPRESSION">表达式</a-select-option>
-            <a-select-option value="CONSTANT">常量</a-select-option>
-            <a-select-option value="DATE_FMT">日期格式</a-select-option>
-          </a-select>
+      </el-table-column>
+      <el-table-column label="转换" width="120">
+        <template #default="{ row }">
+          <el-select v-model="row.transformType" placeholder="转换类型" style="width: 100%" size="small">
+            <el-option value="DIRECT" label="直接映射" />
+            <el-option value="MAP" label="值映射" />
+            <el-option value="EXPRESSION" label="表达式" />
+            <el-option value="CONSTANT" label="常量" />
+            <el-option value="DATE_FMT" label="日期格式" />
+          </el-select>
         </template>
-        <template v-if="column.key === 'transformRule'">
-          <a-input v-model:value="record.transformRule" :placeholder="rulePlaceholder(record.transformType)" size="small" />
+      </el-table-column>
+      <el-table-column label="转换规则" width="180">
+        <template #default="{ row }">
+          <el-input v-model="row.transformRule" :placeholder="rulePlaceholder(row.transformType)" size="small" />
         </template>
-        <template v-if="column.key === 'targetColumn'">
-          <a-select v-model:value="record.targetColumn" placeholder="选择目标字段" style="width: 100%" size="small" show-search :filter-option="filterOption">
-            <a-select-option v-for="c in targetColumns" :key="c.columnName || c" :value="c.columnName || c">
+      </el-table-column>
+      <el-table-column label="目标字段" width="180">
+        <template #default="{ row }">
+          <el-select v-model="row.targetColumn" placeholder="选择目标字段" style="width: 100%" size="small" filterable>
+            <el-option
+              v-for="c in targetColumns"
+              :key="c.columnName || c"
+              :value="c.columnName || c"
+              :label="c.columnName || c"
+            >
               {{ c.columnName || c }}
-              <span v-if="c.dataType" style="color: rgba(0,0,0,0.35); margin-left: 4px; font-size: 12px">{{ c.dataType }}</span>
-            </a-select-option>
-          </a-select>
+              <span v-if="c.dataType" class="option-type">{{ c.dataType }}</span>
+            </el-option>
+          </el-select>
         </template>
-        <template v-if="column.key === 'action'">
-          <a-button type="text" size="small" danger @click="removeRow(index)">
-            <template #icon><DeleteOutlined /></template>
-          </a-button>
+      </el-table-column>
+      <el-table-column label="操作" width="60" align="center">
+        <template #default="{ $index }">
+          <el-button type="danger" link size="small" @click="removeRow($index)">
+            <el-icon><Delete /></el-icon>
+          </el-button>
         </template>
-      </template>
-    </a-table>
-  </a-modal>
+      </el-table-column>
+    </el-table>
+
+    <template #footer>
+      <el-button @click="handleCancel">取消</el-button>
+      <el-button type="primary" @click="handleSave">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import type { GraphEdge } from '@vue-flow/core'
-import { PlusOutlined, DeleteOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
+import { Plus, Delete, MagicStick } from '@element-plus/icons-vue'
 
 const props = defineProps<{
-  open: boolean
+  modelValue: boolean
   edge: GraphEdge | null
   sourceColumns: any[]
   targetColumns: any[]
 }>()
 
 const emit = defineEmits<{
-  'update:open': [value: boolean]
+  'update:modelValue': [value: boolean]
   'save': [mappings: any[]]
 }>()
+
+const dialogVisible = computed({
+  get: () => props.modelValue,
+  set: (v: boolean) => emit('update:modelValue', v),
+})
 
 let rowKeyCounter = 0
 function newRowKey() { return `_row_${++rowKeyCounter}` }
@@ -101,15 +118,7 @@ function newRowKey() { return `_row_${++rowKeyCounter}` }
 interface MappingRow { _rowKey: string; sourceColumn: string; targetColumn: string; transformType: string; transformRule: string }
 const mappings = reactive<MappingRow[]>([])
 
-const columns = [
-  { title: '源字段', key: 'sourceColumn', width: 180 },
-  { title: '转换', key: 'transformType', width: 120 },
-  { title: '转换规则', key: 'transformRule', width: 180 },
-  { title: '目标字段', key: 'targetColumn', width: 180 },
-  { title: '操作', key: 'action', width: 60, align: 'center' as const },
-]
-
-watch(() => props.open, (val) => {
+watch(() => props.modelValue, (val) => {
   if (val && props.edge?.data?.fieldMappings) {
     mappings.length = 0
     props.edge.data.fieldMappings.forEach((fm: any) => {
@@ -131,9 +140,9 @@ function handleAutoMap() {
 }
 function handleSave() {
   emit('save', mappings.map(m => ({ sourceColumn: m.sourceColumn, targetColumn: m.targetColumn, transformType: m.transformType, transformRule: m.transformRule })))
-  emit('update:open', false)
+  emit('update:modelValue', false)
 }
-function handleCancel() { emit('update:open', false) }
+function handleCancel() { emit('update:modelValue', false) }
 function rulePlaceholder(type: string): string {
   switch (type) {
     case 'EXPRESSION': return '如: source_val * 100'
@@ -142,8 +151,12 @@ function rulePlaceholder(type: string): string {
     default: return '转换规则'
   }
 }
-function filterOption(input: string, option: any) {
-  const text = option.children?.[0]?.children || option.value || ''
-  return String(text).toLowerCase().includes(input.toLowerCase())
-}
 </script>
+
+<style scoped>
+.option-type {
+  color: #94a3b8;
+  margin-left: 4px;
+  font-size: 12px;
+}
+</style>

@@ -3,8 +3,8 @@
     <!-- Left: Palette -->
     <div class="etl-designer__palette" :class="{ collapsed: paletteCollapsed }">
       <div class="etl-designer__palette-toggle" @click="paletteCollapsed = !paletteCollapsed">
-        <LeftOutlined v-if="!paletteCollapsed" />
-        <RightOutlined v-else />
+        <el-icon v-if="!paletteCollapsed"><ArrowLeft /></el-icon>
+        <el-icon v-else><ArrowRight /></el-icon>
       </div>
       <div v-show="!paletteCollapsed" class="etl-designer__palette-content">
         <EtlPalette @drag-start="onDragStart" />
@@ -28,8 +28,8 @@
     <!-- Right: Property Panel -->
     <div class="etl-designer__props" :class="{ collapsed: propsCollapsed }">
       <div class="etl-designer__props-toggle" @click="propsCollapsed = !propsCollapsed">
-        <RightOutlined v-if="!propsCollapsed" />
-        <LeftOutlined v-else />
+        <el-icon v-if="!propsCollapsed"><ArrowRight /></el-icon>
+        <el-icon v-else><ArrowLeft /></el-icon>
       </div>
       <div v-show="!propsCollapsed" class="etl-designer__props-content">
         <EtlPropertyPanel
@@ -42,7 +42,7 @@
 
     <!-- Field Mapping Modal -->
     <FieldMappingModal
-      v-model:open="fieldMappingVisible"
+      v-model="fieldMappingVisible"
       :edge="selectedEdge"
       :source-columns="edgeSourceColumns"
       :target-columns="edgeTargetColumns"
@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { ref, markRaw } from 'vue'
-import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import EtlPalette from './EtlPalette.vue'
 import EtlCanvas from './EtlCanvas.vue'
 import EtlPropertyPanel from './EtlPropertyPanel.vue'
@@ -180,36 +180,36 @@ function onFieldMappingSave(mappings: any[]) {
   display: flex;
   height: calc(100vh - 220px);
   min-height: 500px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #f8fafc;
 }
 .etl-designer__palette {
   width: 240px; position: relative;
-  border-right: 1px solid #e8e8e8; background: #fff;
+  border-right: 1px solid #e2e8f0; background: #fff;
   transition: width 0.2s; flex-shrink: 0;
 }
 .etl-designer__palette.collapsed { width: 24px; }
 .etl-designer__palette-toggle {
   position: absolute; top: 50%; right: -12px; transform: translateY(-50%);
-  width: 24px; height: 48px; background: #fff; border: 1px solid #e8e8e8;
+  width: 24px; height: 48px; background: #fff; border: 1px solid #e2e8f0;
   border-radius: 0 4px 4px 0; display: flex; align-items: center;
-  justify-content: center; cursor: pointer; z-index: 10;
+  justify-content: center; cursor: pointer; z-index: 10; color: #64748b;
 }
 .etl-designer__palette-content { height: 100%; overflow-y: auto; }
 .etl-designer__canvas { flex: 1; min-width: 0; }
 .etl-designer__props {
   width: 320px; position: relative;
-  border-left: 1px solid #e8e8e8; background: #fff;
+  border-left: 1px solid #e2e8f0; background: #fff;
   transition: width 0.2s; flex-shrink: 0;
 }
 .etl-designer__props.collapsed { width: 24px; }
 .etl-designer__props-toggle {
   position: absolute; top: 50%; left: -12px; transform: translateY(-50%);
-  width: 24px; height: 48px; background: #fff; border: 1px solid #e8e8e8;
+  width: 24px; height: 48px; background: #fff; border: 1px solid #e2e8f0;
   border-radius: 4px 0 0 4px; display: flex; align-items: center;
-  justify-content: center; cursor: pointer; z-index: 10;
+  justify-content: center; cursor: pointer; z-index: 10; color: #64748b;
 }
 .etl-designer__props-content { height: 100%; overflow-y: auto; }
 </style>

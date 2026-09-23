@@ -1,168 +1,179 @@
 <template>
   <PageContainer title="管道管理">
     <template #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
+      <el-button type="primary" @click="handleCreate">
+        <el-icon class="mr-1"><Plus /></el-icon>
         新建管道
-      </a-button>
+      </el-button>
     </template>
 
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'name'">
-          <a @click="handleConfig(record)">{{ record.name }}</a>
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="管道名称" min-width="180" show-overflow-tooltip>
+        <template #default="{ row }">
+          <el-link type="primary" :underline="false" @click="handleConfig(row)">{{ row.name }}</el-link>
         </template>
-        <template v-if="column.key === 'engineType'">
-          <a-tag :color="engineColorMap[record.engineType] || 'default'">
-            {{ record.engineType }}
-          </a-tag>
+      </el-table-column>
+      <el-table-column label="引擎" width="100">
+        <template #default="{ row }">
+          <el-tag :type="engineTypeMap[row.engineType] || 'info'">
+            {{ row.engineType }}
+          </el-tag>
         </template>
-        <template v-if="column.key === 'status'">
-          <a-tag :color="statusColorMap[record.status] || 'default'">
-            {{ statusMap[record.status] || record.status }}
-          </a-tag>
+      </el-table-column>
+      <el-table-column label="状态" width="90">
+        <template #default="{ row }">
+          <el-tag :type="statusTypeMap[row.status] || 'info'">
+            {{ statusMap[row.status] || row.status }}
+          </el-tag>
         </template>
-        <template v-if="column.key === 'stepCount'">
-          <a-badge :count="record.stepCount || 0" :number-style="{ backgroundColor: '#1890ff' }" />
+      </el-table-column>
+      <el-table-column label="步骤数" width="90" align="center">
+        <template #default="{ row }">
+          <span class="step-count">{{ row.stepCount || 0 }}</span>
         </template>
-        <template v-if="column.key === 'lastExecutionTime'">
-          {{ record.lastExecutionTime ? formatDateTime(record.lastExecutionTime) : '-' }}
+      </el-table-column>
+      <el-table-column label="最后执行时间" width="170">
+        <template #default="{ row }">
+          {{ row.lastExecutionTime ? formatDateTime(row.lastExecutionTime) : '-' }}
         </template>
-        <template v-if="column.key === 'createdAt'">
-          {{ record.createdAt ? formatDateTime(record.createdAt) : '-' }}
+      </el-table-column>
+      <el-table-column label="创建时间" width="170">
+        <template #default="{ row }">
+          {{ row.createdAt ? formatDateTime(row.createdAt) : '-' }}
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-tooltip title="配置">
-              <a-button type="link" size="small" @click="handleConfig(record)">
-                <template #icon><SettingOutlined /></template>
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="执行">
-              <a-button
-                type="link"
-                size="small"
-                :disabled="record.status !== 'ACTIVE'"
-                @click="handleRun(record)"
-              >
-                <template #icon><PlayCircleOutlined /></template>
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="校验">
-              <a-button type="link" size="small" @click="handleValidate(record)">
-                <template #icon><CheckCircleOutlined /></template>
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="复制">
-              <a-button type="link" size="small" @click="handleCopy(record)">
-                <template #icon><CopyOutlined /></template>
-              </a-button>
-            </a-tooltip>
-            <a-dropdown>
-              <a-button type="link" size="small">
-                <template #icon><MoreOutlined /></template>
-              </a-button>
-              <template #overlay>
-                <a-menu @click="(e: any) => handleMenuClick(e.key, record)">
-                  <a-menu-item key="toggleStatus">
-                    {{ record.status === 'ACTIVE' ? '禁用' : '启用' }}
-                  </a-menu-item>
-                  <a-menu-item key="edit">编辑</a-menu-item>
-                  <a-menu-item key="delete" danger>
-                    <span style="color: #ff4d4f">删除</span>
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="220" fixed="right">
+        <template #default="{ row }">
+          <el-tooltip content="配置" placement="top">
+            <el-button link type="primary" size="small" @click="handleConfig(row)">
+              <el-icon><Setting /></el-icon>
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="执行" placement="top">
+            <el-button
+              link
+              type="primary"
+              size="small"
+              :disabled="row.status !== 'ACTIVE'"
+              @click="handleRun(row)"
+            >
+              <el-icon><VideoPlay /></el-icon>
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="校验" placement="top">
+            <el-button link type="primary" size="small" @click="handleValidate(row)">
+              <el-icon><CircleCheck /></el-icon>
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="复制" placement="top">
+            <el-button link type="primary" size="small" @click="handleCopy(row)">
+              <el-icon><CopyDocument /></el-icon>
+            </el-button>
+          </el-tooltip>
+          <el-dropdown trigger="click" @command="(cmd: string | number | object) => handleMenuClick(String(cmd), row)">
+            <el-button link type="primary" size="small">
+              <el-icon><More /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="toggleStatus">
+                  {{ row.status === 'ACTIVE' ? '禁用' : '启用' }}
+                </el-dropdown-item>
+                <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                <el-dropdown-item command="delete" class="danger-item">删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- 新建/编辑管道弹窗 -->
-    <a-modal
-      v-model:open="modalVisible"
+    <el-dialog
+      v-model="modalVisible"
       :title="editingId !== null ? '编辑管道' : '新建管道'"
-      :confirm-loading="submitLoading"
       :width="640"
-      @ok="handleSubmit"
-      @cancel="handleModalCancel"
-      destroy-on-close
+      :destroy-on-close="true"
     >
-      <a-form
+      <el-form
         ref="formRef"
         :model="formState"
         :rules="formRules"
-        :label-col="{ span: 5 }"
-        :wrapper-col="{ span: 18 }"
+        label-width="100px"
       >
-        <a-form-item label="管道名称" name="name">
-          <a-input v-model:value="formState.name" placeholder="请输入管道名称" />
-        </a-form-item>
+        <el-form-item label="管道名称" prop="name">
+          <el-input v-model="formState.name" placeholder="请输入管道名称" />
+        </el-form-item>
 
-        <a-form-item label="数据源" name="sourceId">
-          <a-select
-            v-model:value="formState.sourceId"
+        <el-form-item label="数据源" prop="sourceId">
+          <el-select
+            v-model="formState.sourceId"
             placeholder="请选择数据源"
             :loading="dataSourceLoading"
+            style="width: 100%"
           >
-            <a-select-option v-for="ds in dataSourceOptions" :key="ds.id" :value="ds.id">
-              {{ ds.name }}
-            </a-select-option>
-          </a-select>
-        </a-form-item>
+            <el-option v-for="ds in dataSourceOptions" :key="ds.id" :value="ds.id" :label="ds.name" />
+          </el-select>
+        </el-form-item>
 
-        <a-form-item label="引擎类型" name="engineType">
-          <a-radio-group v-model:value="formState.engineType">
-            <a-radio value="EMBULK">Embulk</a-radio>
-            <a-radio value="SPARK">Spark</a-radio>
-            <a-radio value="PYTHON">Python</a-radio>
-          </a-radio-group>
-        </a-form-item>
+        <el-form-item label="引擎类型" prop="engineType">
+          <el-radio-group v-model="formState.engineType">
+            <el-radio value="EMBULK">Embulk</el-radio>
+            <el-radio value="SPARK">Spark</el-radio>
+            <el-radio value="PYTHON">Python</el-radio>
+          </el-radio-group>
+        </el-form-item>
 
-        <a-form-item label="同步模式" name="syncMode">
-          <a-radio-group v-model:value="formState.syncMode">
-            <a-radio value="MANUAL">手动</a-radio>
-            <a-radio value="INCREMENTAL">增量</a-radio>
-            <a-radio value="FULL">全量</a-radio>
-          </a-radio-group>
-        </a-form-item>
+        <el-form-item label="同步模式" prop="syncMode">
+          <el-radio-group v-model="formState.syncMode">
+            <el-radio value="MANUAL">手动</el-radio>
+            <el-radio value="INCREMENTAL">增量</el-radio>
+            <el-radio value="FULL">全量</el-radio>
+          </el-radio-group>
+        </el-form-item>
 
-        <a-form-item v-if="formState.syncMode === 'INCREMENTAL'" label="Cron表达式" name="cronExpression">
-          <a-input v-model:value="formState.cronExpression" placeholder="如: 0 0 2 * * ? (每天凌晨2点)" />
+        <el-form-item v-if="formState.syncMode === 'INCREMENTAL'" label="Cron表达式" prop="cronExpression">
+          <el-input v-model="formState.cronExpression" placeholder="如: 0 0 2 * * ? (每天凌晨2点)" />
           <div class="form-help">格式: 秒 分 时 日 月 周</div>
-        </a-form-item>
+        </el-form-item>
 
-        <a-form-item label="描述" name="description">
-          <a-textarea v-model:value="formState.description" placeholder="管道描述（可选）" :rows="3" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="formState.description" type="textarea" placeholder="管道描述（可选）" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleModalCancel">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { message, type MenuInfo } from 'ant-design-vue'
+import { ElMessage, ElMessageBox, ElLoading, type FormInstance, type FormItemRule } from 'element-plus'
 import {
-  PlusOutlined,
-  SettingOutlined,
-  PlayCircleOutlined,
-  CheckCircleOutlined,
-  CopyOutlined,
-  MoreOutlined,
-} from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+  Plus,
+  Setting,
+  VideoPlay,
+  CircleCheck,
+  CopyDocument,
+  More,
+} from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import { useTable } from '@/hooks/useTable'
@@ -190,16 +201,16 @@ const statusMap: Record<string, string> = {
   DISABLED: '禁用',
 }
 
-const statusColorMap: Record<string, string> = {
-  DRAFT: 'default',
-  ACTIVE: 'green',
-  DISABLED: 'red',
+const statusTypeMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  DRAFT: 'info',
+  ACTIVE: 'success',
+  DISABLED: 'danger',
 }
 
-const engineColorMap: Record<string, string> = {
-  EMBULK: 'blue',
-  SPARK: 'orange',
-  PYTHON: 'green',
+const engineTypeMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  EMBULK: 'primary',
+  SPARK: 'warning',
+  PYTHON: 'success',
 }
 
 // ===== 搜索 =====
@@ -232,23 +243,24 @@ function handleReset() {
 }
 
 // ===== 表格 =====
-const columns = [
-  { title: '管道名称', dataIndex: 'pipelineName', key: 'name', width: 180, ellipsis: true },
-  { title: '引擎', key: 'engineType', width: 100 },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '步骤数', key: 'stepCount', width: 90, align: 'center' as const },
-  { title: '最后执行时间', key: 'lastExecutionTime', width: 170 },
-  { title: '创建时间', key: 'createdAt', width: 170 },
-  { title: '操作', key: 'action', width: 220, fixed: 'right' as const },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getEtlPipelines({
     page: params.page,
     page_size: params.pageSize,
     ...currentSearchParams,
   }),
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // ===== 数据源选项 =====
 const dataSourceOptions = ref<any[]>([])
@@ -281,13 +293,13 @@ const formState = reactive({
   description: '',
 })
 
-const formRules: Record<string, Rule[]> = {
+const formRules: Record<string, FormItemRule[]> = {
   name: [{ required: true, message: '请输入管道名称' }],
   sourceId: [{ required: true, message: '请选择数据源' }],
   engineType: [{ required: true, message: '请选择引擎类型' }],
   syncMode: [{ required: true, message: '请选择同步模式' }],
   cronExpression: [{
-    validator: (_rule: Rule, value: string) => {
+    validator: (_rule: FormItemRule, value: string) => {
       if (formState.syncMode === 'INCREMENTAL' && !value) {
         return Promise.reject('增量模式下请填写Cron表达式')
       }
@@ -319,7 +331,7 @@ function handleEdit(record: any) {
 }
 
 async function handleSubmit() {
-  await formRef.value?.validateFields()
+  await formRef.value?.validate()
   submitLoading.value = true
   try {
     const data: Record<string, any> = {
@@ -334,10 +346,10 @@ async function handleSubmit() {
     }
     if (editingId.value !== null) {
       await updateEtlPipeline(editingId.value, data)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createEtlPipeline(data)
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     handleModalCancel()
     fetchData()
@@ -360,7 +372,7 @@ function handleConfig(record: any) {
 async function handleRun(record: any) {
   try {
     await runEtlPipeline(record.id)
-    message.success('管道执行已启动')
+    ElMessage.success('管道执行已启动')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -368,25 +380,25 @@ async function handleRun(record: any) {
 }
 
 async function handleValidate(record: any) {
-  const hide = message.loading('正在校验管道配置...', 0)
+  const loadingInstance = ElLoading.service({ fullscreen: true, text: '正在校验管道配置...' })
   try {
     const res = await validateEtlPipeline(record.id)
-    hide()
+    loadingInstance.close()
     const errors = res.data?.data
     if (errors && errors.length > 0) {
-      message.warning(`校验发现 ${errors.length} 个问题`)
+      ElMessage.warning(`校验发现 ${errors.length} 个问题`)
     } else {
-      message.success('校验通过')
+      ElMessage.success('校验通过')
     }
   } catch {
-    hide()
+    loadingInstance.close()
   }
 }
 
 async function handleCopy(record: any) {
   try {
     await copyEtlPipeline(record.id)
-    message.success('管道已复制')
+    ElMessage.success('管道已复制')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -397,7 +409,7 @@ async function handleToggleStatus(record: any) {
   const newStatus = record.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
   try {
     await updateEtlPipelineStatus(record.id, newStatus)
-    message.success(newStatus === 'ACTIVE' ? '已启用' : '已禁用')
+    ElMessage.success(newStatus === 'ACTIVE' ? '已启用' : '已禁用')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -407,7 +419,7 @@ async function handleToggleStatus(record: any) {
 async function handleDelete(record: any) {
   try {
     await deleteEtlPipeline(record.id)
-    message.success('删除成功')
+    ElMessage.success('删除成功')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -429,17 +441,18 @@ function handleMenuClick(key: string, record: any) {
 }
 
 function handleDeleteWithConfirm(record: any) {
-  // Use Modal.confirm for delete confirmation
-  import('ant-design-vue').then(({ Modal }) => {
-    Modal.confirm({
-      title: '确认删除',
-      content: `确定删除管道「${record.name}」？`,
-      okText: '确定',
-      cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => handleDelete(record),
-    })
-  })
+  ElMessageBox.confirm(
+    `确定删除管道「${record.name}」？`,
+    '确认删除',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+      confirmButtonClass: 'el-button--danger',
+    },
+  )
+    .then(() => handleDelete(record))
+    .catch(() => { /* user cancelled */ })
 }
 
 // ===== 初始化 =====
@@ -453,6 +466,16 @@ onMounted(() => {
 .form-help {
   margin-top: 4px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
+}
+
+.step-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.danger-item {
+  color: #ef4444;
 }
 </style>

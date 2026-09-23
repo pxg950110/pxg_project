@@ -4,42 +4,45 @@
       <span>{{ isEdit ? '编辑管道' : '新建管道' }}</span>
     </template>
     <template #extra>
-      <a-space>
-        <a-button @click="handlePreview" :disabled="!pipelineId">
-          <template #icon><EyeOutlined /></template>
+      <div class="flex items-center gap-2">
+        <el-button @click="handlePreview" :disabled="!pipelineId">
+          <el-icon class="mr-1"><View /></el-icon>
           预览YAML
-        </a-button>
-        <a-button v-if="isEdit" @click="handleValidate">
-          <template #icon><CheckCircleOutlined /></template>
+        </el-button>
+        <el-button v-if="isEdit" @click="handleValidate">
+          <el-icon class="mr-1"><CircleCheck /></el-icon>
           校验
-        </a-button>
-        <a-button type="primary" :loading="saveLoading" @click="handleSave">
-          <template #icon><SaveOutlined /></template>
+        </el-button>
+        <el-button type="primary" :loading="saveLoading" @click="handleSave">
+          <el-icon class="mr-1"><DocumentChecked /></el-icon>
           保存
-        </a-button>
-      </a-space>
+        </el-button>
+      </div>
     </template>
 
     <!-- Pipeline Basic Info -->
-    <a-card title="基本信息" :bordered="false" style="margin-bottom: 12px" size="small">
-      <a-form layout="inline" :model="pipelineForm">
-        <a-form-item label="管道名称">
-          <a-input v-model:value="pipelineForm.name" placeholder="请输入管道名称" style="width: 240px" size="small" />
-        </a-form-item>
-        <a-form-item label="数据源">
-          <a-select v-model:value="pipelineForm.sourceId" placeholder="请选择数据源" :loading="dataSourceLoading" :disabled="isEdit" style="width: 200px" size="small">
-            <a-select-option v-for="ds in dataSourceOptions" :key="ds.id" :value="ds.id">{{ ds.name }}</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="同步模式">
-          <a-radio-group v-model:value="pipelineForm.syncMode" size="small">
-            <a-radio-button value="MANUAL">手动</a-radio-button>
-            <a-radio-button value="INCREMENTAL">增量</a-radio-button>
-            <a-radio-button value="FULL">全量</a-radio-button>
-          </a-radio-group>
-        </a-form-item>
-      </a-form>
-    </a-card>
+    <el-card shadow="never" size="small" class="mb-3 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+      <template #header>
+        <span class="font-semibold text-slate-900">基本信息</span>
+      </template>
+      <el-form :model="pipelineForm" inline>
+        <el-form-item label="管道名称">
+          <el-input v-model="pipelineForm.name" placeholder="请输入管道名称" style="width: 240px" size="small" clearable />
+        </el-form-item>
+        <el-form-item label="数据源">
+          <el-select v-model="pipelineForm.sourceId" placeholder="请选择数据源" :loading="dataSourceLoading" :disabled="isEdit" style="width: 200px" size="small">
+            <el-option v-for="ds in dataSourceOptions" :key="ds.id" :value="ds.id" :label="ds.name" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="同步模式">
+          <el-radio-group v-model="pipelineForm.syncMode" size="small">
+            <el-radio-button value="MANUAL">手动</el-radio-button>
+            <el-radio-button value="INCREMENTAL">增量</el-radio-button>
+            <el-radio-button value="FULL">全量</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+    </el-card>
 
     <!-- Visual Designer -->
     <EtlDesigner
@@ -51,18 +54,18 @@
   </PageContainer>
 
   <!-- YAML Preview Modal -->
-  <a-modal v-model:open="previewVisible" title="Embulk YAML 预览" :width="640" :footer="null">
-    <a-spin :spinning="previewLoading">
+  <el-dialog v-model="previewVisible" title="Embulk YAML 预览" width="640px">
+    <div v-loading="previewLoading">
       <pre class="yaml-preview">{{ previewYaml }}</pre>
-    </a-spin>
-  </a-modal>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
-import { SaveOutlined, CheckCircleOutlined, EyeOutlined } from '@ant-design/icons-vue'
+import { ElMessage, ElLoading } from 'element-plus'
+import { DocumentChecked, CircleCheck, View } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import EtlDesigner from './components/EtlDesigner.vue'
 import { useDesignerGraph } from './composables/useDesignerGraph'
@@ -134,8 +137,8 @@ async function loadPipelineData() {
 }
 
 async function handleSave() {
-  if (!pipelineForm.name) { message.warning('请输入管道名称'); return }
-  if (!pipelineForm.sourceId) { message.warning('请选择数据源'); return }
+  if (!pipelineForm.name) { ElMessage.warning('请输入管道名称'); return }
+  if (!pipelineForm.sourceId) { ElMessage.warning('请选择数据源'); return }
 
   saveLoading.value = true
   try {
@@ -154,24 +157,24 @@ async function handleSave() {
       if (currentId) router.replace({ name: 'EtlPipelineConfig', params: { id: currentId } })
     }
 
-    if (!currentId) { message.error('管道保存失败：未获取到ID'); return }
+    if (!currentId) { ElMessage.error('管道保存失败：未获取到ID'); return }
 
     graph.refreshAllNodeStatuses()
     await saveEtlPipelineGraph(currentId, graph.serialize())
-    message.success('保存成功')
+    ElMessage.success('保存成功')
   } catch {} finally { saveLoading.value = false }
 }
 
 async function handleValidate() {
-  if (!pipelineId.value) { message.warning('请先保存管道后再校验'); return }
-  const hide = message.loading('正在校验管道配置...', 0)
+  if (!pipelineId.value) { ElMessage.warning('请先保存管道后再校验'); return }
+  const loadingInstance = ElLoading.service({ fullscreen: true, text: '正在校验管道配置...' })
   try {
     const res = await validateEtlPipeline(pipelineId.value)
-    hide()
+    loadingInstance.close()
     const errors = res.data?.data
-    if (errors && errors.length > 0) message.warning(`校验发现 ${errors.length} 个问题`)
-    else message.success('校验通过')
-  } catch { hide() }
+    if (errors && errors.length > 0) ElMessage.warning(`校验发现 ${errors.length} 个问题`)
+    else ElMessage.success('校验通过')
+  } catch { loadingInstance.close() }
 }
 
 async function handlePreview() {

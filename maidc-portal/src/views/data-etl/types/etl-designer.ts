@@ -1,4 +1,4 @@
-import type { Node, Edge } from '@vue-flow/core'
+
 
 // ===== Component Categories =====
 
@@ -23,10 +23,10 @@ export type EtlNodeType =
 // ===== Category Colors =====
 
 export const CATEGORY_COLORS: Record<EtlComponentCategory, string> = {
-  INPUT: '#1890ff',
-  TRANSFORM: '#fa8c16',
-  PROCESSOR: '#722ed1',
-  OUTPUT: '#52c41a',
+  INPUT: '#0ea5e9',
+  TRANSFORM: '#f97316',
+  PROCESSOR: '#8b5cf6',
+  OUTPUT: '#10b981',
 }
 
 export const CATEGORY_LABELS: Record<EtlComponentCategory, string> = {
@@ -71,8 +71,29 @@ export interface EtlNodeData {
 
 // ===== Custom Node Type for Vue Flow =====
 
-export type EtlNode = Node<EtlNodeData>
-export type EtlEdge = Edge
+// 不直接沿用 @vue-flow/core 的 Node 泛型：其深层条件类型会让 TS 触发
+// TS2589 深度实例化错误；此扁平结构与 VueFlow 的 Node 双向结构兼容。
+export interface EtlNode {
+  id: string
+  type: string
+  position: { x: number; y: number }
+  data: EtlNodeData
+  [key: string]: unknown
+}
+export interface EtlEdgeData {
+  fieldMappings?: any[]
+  [key: string]: unknown
+}
+
+export interface EtlEdge {
+  id: string
+  source: string
+  target: string
+  sourceHandle?: string | null
+  targetHandle?: string | null
+  data?: EtlEdgeData
+  [key: string]: unknown
+}
 
 // ===== Component Registry =====
 
@@ -81,7 +102,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'TABLE_INPUT',
     category: 'INPUT',
     label: '表输入',
-    icon: 'DatabaseOutlined',
+    icon: 'Coin',
     inputPorts: [],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { schema: '', table: '', where: '', columns: [] },
@@ -90,7 +111,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'CSV_INPUT',
     category: 'INPUT',
     label: 'CSV输入',
-    icon: 'FileTextOutlined',
+    icon: 'Document',
     inputPorts: [],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { filePath: '', delimiter: ',', encoding: 'UTF-8', columns: [] },
@@ -99,7 +120,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'VALUE_MAP',
     category: 'TRANSFORM',
     label: '值映射',
-    icon: 'SwapOutlined',
+    icon: 'Switch',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { mappings: [] },
@@ -108,7 +129,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'EXPRESSION',
     category: 'TRANSFORM',
     label: '表达式',
-    icon: 'CodeOutlined',
+    icon: 'Memo',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { expressions: [] },
@@ -117,7 +138,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'DATE_FMT',
     category: 'TRANSFORM',
     label: '日期格式',
-    icon: 'CalendarOutlined',
+    icon: 'Calendar',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { conversions: [] },
@@ -126,7 +147,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'CONSTANT',
     category: 'TRANSFORM',
     label: '常量赋值',
-    icon: 'NumberOutlined',
+    icon: 'Histogram',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { fields: [] },
@@ -135,7 +156,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'LOOKUP',
     category: 'TRANSFORM',
     label: '字段查找',
-    icon: 'SearchOutlined',
+    icon: 'Search',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { lookupTable: '', matchField: '', returnField: '' },
@@ -144,7 +165,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'FILTER',
     category: 'PROCESSOR',
     label: '过滤器',
-    icon: 'FilterOutlined',
+    icon: 'Filter',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [
       { id: 'out_1', label: '通过' },
@@ -156,7 +177,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'JOIN',
     category: 'PROCESSOR',
     label: 'JOIN',
-    icon: 'MergeCellsOutlined',
+    icon: 'Grid',
     inputPorts: [
       { id: 'in_left', label: '左' },
       { id: 'in_right', label: '右' },
@@ -168,7 +189,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'AGGREGATE',
     category: 'PROCESSOR',
     label: '聚合',
-    icon: 'GroupOutlined',
+    icon: 'Collection',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [{ id: 'out_1', label: '输出' }],
     defaultConfig: { groupBy: [], aggregations: [] },
@@ -177,7 +198,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'TABLE_OUTPUT',
     category: 'OUTPUT',
     label: '表输出',
-    icon: 'CloudUploadOutlined',
+    icon: 'UploadFilled',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [],
     defaultConfig: { schema: '', table: '', writeMode: 'insert' },
@@ -186,7 +207,7 @@ export const COMPONENT_REGISTRY: EtlComponentDef[] = [
     nodeType: 'CSV_OUTPUT',
     category: 'OUTPUT',
     label: 'CSV输出',
-    icon: 'ExportOutlined',
+    icon: 'Promotion',
     inputPorts: [{ id: 'in_1', label: '输入' }],
     outputPorts: [],
     defaultConfig: { filePath: '', delimiter: ',', encoding: 'UTF-8' },
