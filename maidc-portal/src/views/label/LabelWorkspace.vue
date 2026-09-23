@@ -10,7 +10,7 @@
             :title="tool.tooltip"
             @click="activeTool = tool.key"
           >
-            <component :is="tool.icon" />
+            <el-icon :size="18"><component :is="tool.icon" /></el-icon>
           </div>
         </template>
       </div>
@@ -22,7 +22,7 @@
             :title="tool.tooltip"
             @click="handleUtility(tool.key)"
           >
-            <component :is="tool.icon" />
+            <el-icon :size="18"><component :is="tool.icon" /></el-icon>
           </div>
         </template>
       </div>
@@ -36,12 +36,12 @@
           <span class="task-title">{{ taskInfo?.name || '标注任务' }}</span>
         </div>
         <div class="header-center">
-          <a-button size="small" :disabled="currentIndex <= 0" @click="navigateItem(-1)">上一张</a-button>
+          <el-button size="small" :disabled="currentIndex <= 0" @click="navigateItem(-1)">上一张</el-button>
           <span class="image-counter">{{ currentIndex + 1 }} / {{ totalCount }}</span>
-          <a-button size="small" :disabled="currentIndex >= totalCount - 1" @click="navigateItem(1)">下一张</a-button>
+          <el-button size="small" :disabled="currentIndex >= totalCount - 1" @click="navigateItem(1)">下一张</el-button>
         </div>
         <div class="header-right">
-          <a-button type="primary" size="small" @click="handleSave">保存</a-button>
+          <el-button type="primary" size="small" @click="handleSave">保存</el-button>
         </div>
       </div>
 
@@ -92,8 +92,8 @@
             <span class="tag-dot" :style="{ backgroundColor: color }"></span>
             {{ label }}
           </span>
-          <a class="add-tag-link" @click="message.info('添加标签')">
-            <PlusOutlined /> 添加标签
+          <a class="add-tag-link" @click="ElMessage.info('添加标签')">
+            <el-icon :size="12"><Plus /></el-icon> 添加标签
           </a>
         </div>
 
@@ -108,7 +108,7 @@
             <span class="ann-label">{{ ann.label }}</span>
             <span class="ann-coords">x:{{ ann.x }} y:{{ ann.y }} w:{{ ann.w }} h:{{ ann.h }}</span>
             <span class="ann-delete" @click="removeAnnotation(ann.id)">
-              <DeleteOutlined />
+              <el-icon :size="14"><Delete /></el-icon>
             </span>
           </div>
         </div>
@@ -116,12 +116,14 @@
 
       <!-- Bottom buttons -->
       <div class="panel-footer">
-        <a-button type="primary" block @click="handleSubmit">
-          <CheckOutlined /> 提交审核
-        </a-button>
-        <a-button block style="margin-top: 8px" @click="handleSkip">
-          <FastForwardOutlined /> 跳过
-        </a-button>
+        <div class="flex flex-col gap-2">
+          <el-button type="primary" class="!w-full" @click="handleSubmit">
+            <el-icon class="mr-1"><Check /></el-icon> 提交审核
+          </el-button>
+          <el-button class="!w-full" @click="handleSkip">
+            <el-icon class="mr-1"><DArrowRight /></el-icon> 跳过
+          </el-button>
+        </div>
       </div>
     </div>
   </div>
@@ -130,14 +132,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import {
-  BorderOutlined, GatewayOutlined, RadiusSettingOutlined,
-  EditOutlined, FontSizeOutlined, ZoomInOutlined, ZoomOutOutlined,
-  UndoOutlined, RedoOutlined, DragOutlined,
-  PlusOutlined, DeleteOutlined, CheckOutlined, FastForwardOutlined,
-} from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
-import { useModal } from '@/hooks/useModal'
+  Pointer, Crop, Connection, Aim, EditPen, Document,
+  ZoomIn, ZoomOut, Undo, Redo,
+  Plus, Delete, Check, DArrowRight,
+} from '@element-plus/icons-vue'
 import { getLabelTask, getLabelItems, getLabelItemAnnotations, saveLabelAnnotations, submitLabelItem, skipLabelItem } from '@/api/label'
 
 const route = useRoute()
@@ -145,19 +145,19 @@ const taskId = computed(() => Number(route.params.id))
 
 // Tool definitions
 const drawingTools = [
-  { key: 'select', icon: DragOutlined, tooltip: '选择' },
-  { key: 'rectangle', icon: BorderOutlined, tooltip: '矩形框' },
-  { key: 'polygon', icon: GatewayOutlined, tooltip: '多边形' },
-  { key: 'ellipse', icon: RadiusSettingOutlined, tooltip: '椭圆' },
-  { key: 'freehand', icon: EditOutlined, tooltip: '自由绘制' },
-  { key: 'text', icon: FontSizeOutlined, tooltip: '文本' },
+  { key: 'select', icon: Pointer, tooltip: '选择' },
+  { key: 'rectangle', icon: Crop, tooltip: '矩形框' },
+  { key: 'polygon', icon: Connection, tooltip: '多边形' },
+  { key: 'ellipse', icon: Aim, tooltip: '椭圆' },
+  { key: 'freehand', icon: EditPen, tooltip: '自由绘制' },
+  { key: 'text', icon: Document, tooltip: '文本' },
 ]
 
 const utilityTools = [
-  { key: 'zoom-in', icon: ZoomInOutlined, tooltip: '放大' },
-  { key: 'zoom-out', icon: ZoomOutOutlined, tooltip: '缩小' },
-  { key: 'undo', icon: UndoOutlined, tooltip: '撤销' },
-  { key: 'redo', icon: RedoOutlined, tooltip: '重做' },
+  { key: 'zoom-in', icon: ZoomIn, tooltip: '放大' },
+  { key: 'zoom-out', icon: ZoomOut, tooltip: '缩小' },
+  { key: 'undo', icon: Undo, tooltip: '撤销' },
+  { key: 'redo', icon: Redo, tooltip: '重做' },
 ]
 
 // Tool state
@@ -172,18 +172,18 @@ const loading = ref(false)
 
 // Annotations
 const tagColors: Record<string, string> = {
-  nodule: '#ff4d4f',
-  mass: '#1677ff',
-  effusion: '#722ed1',
+  nodule: '#ef4444',
+  mass: '#0ea5e9',
+  effusion: '#8b5cf6',
 }
 const annotations = ref<any[]>([])
 
 // Utility handler
 function handleUtility(key: string) {
-  if (key === 'undo') message.info('撤销')
-  else if (key === 'redo') message.info('重做')
-  else if (key === 'zoom-in') message.info('放大')
-  else if (key === 'zoom-out') message.info('缩小')
+  if (key === 'undo') ElMessage.info('撤销')
+  else if (key === 'redo') ElMessage.info('重做')
+  else if (key === 'zoom-in') ElMessage.info('放大')
+  else if (key === 'zoom-out') ElMessage.info('缩小')
 }
 
 async function loadTask() {
@@ -195,7 +195,7 @@ async function loadTask() {
     if (taskInfo.value?.tags) {
       taskInfo.value.tags.forEach((tag: string, idx: number) => {
         if (!tagColors[tag]) {
-          const colors = ['#ff4d4f', '#1677ff', '#722ed1', '#fa8c16', '#13c2c2', '#eb2f96']
+          const colors = ['#ef4444', '#0ea5e9', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899']
           tagColors[tag] = colors[idx % colors.length]
         }
       })
@@ -226,13 +226,13 @@ async function loadAnnotations() {
 }
 
 async function handleSave() {
-  if (!items.value[currentIndex.value]) { message.warning('没有可保存的标注项'); return }
+  if (!items.value[currentIndex.value]) { ElMessage.warning('没有可保存的标注项'); return }
   const itemId = items.value[currentIndex.value].id
   try {
     await saveLabelAnnotations(taskId.value, itemId, { annotations: annotations.value })
-    message.success('标注已保存')
+    ElMessage.success('标注已保存')
   } catch {
-    message.error('保存失败')
+    ElMessage.error('保存失败')
   }
 }
 
@@ -242,9 +242,9 @@ async function handleSubmit() {
   try {
     await handleSave()
     await submitLabelItem(taskId.value, itemId)
-    message.success('已提交审核')
+    ElMessage.success('已提交审核')
   } catch {
-    message.error('提交失败')
+    ElMessage.error('提交失败')
   }
 }
 
@@ -253,13 +253,13 @@ async function handleSkip() {
   const itemId = items.value[currentIndex.value].id
   try {
     await skipLabelItem(taskId.value, itemId)
-    message.info('已跳过')
+    ElMessage.info('已跳过')
     if (currentIndex.value < totalCount.value - 1) {
       currentIndex.value++
       await loadAnnotations()
     }
   } catch {
-    message.error('操作失败')
+    ElMessage.error('操作失败')
   }
 }
 
@@ -332,7 +332,7 @@ onMounted(async () => {
 
 .tool-btn.active {
   color: #fff;
-  background: #1677ff;
+  background: #0ea5e9;
 }
 
 .tool-divider {
@@ -369,7 +369,7 @@ onMounted(async () => {
 .task-title {
   font-weight: 600;
   font-size: 15px;
-  color: #000;
+  color: #0f172a;
 }
 
 .header-center {
@@ -380,7 +380,7 @@ onMounted(async () => {
 
 .image-counter {
   font-size: 14px;
-  color: #333;
+  color: #334155;
   font-variant-numeric: tabular-nums;
 }
 
@@ -477,7 +477,7 @@ onMounted(async () => {
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: #000;
+  color: #0f172a;
   margin-bottom: 12px;
 }
 
@@ -495,7 +495,7 @@ onMounted(async () => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #333;
+  color: #334155;
 }
 
 .tag-dot {
@@ -507,7 +507,7 @@ onMounted(async () => {
 
 .add-tag-link {
   font-size: 12px;
-  color: #1677ff;
+  color: #0ea5e9;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -515,7 +515,7 @@ onMounted(async () => {
 }
 
 .add-tag-link:hover {
-  color: #4096ff;
+  color: #38bdf8;
 }
 
 /* Annotations list */
@@ -530,10 +530,10 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   padding: 8px;
-  background: #fafafa;
+  background: #f8fafc;
   border-radius: 4px;
   font-size: 12px;
-  color: #333;
+  color: #334155;
 }
 
 .ann-label {
@@ -542,12 +542,12 @@ onMounted(async () => {
 }
 
 .ann-coords {
-  color: #999;
+  color: #94a3b8;
   flex: 1;
 }
 
 .ann-delete {
-  color: #999;
+  color: #94a3b8;
   cursor: pointer;
   padding: 2px;
   display: flex;
@@ -555,7 +555,7 @@ onMounted(async () => {
 }
 
 .ann-delete:hover {
-  color: #ff4d4f;
+  color: #ef4444;
 }
 
 /* Bottom buttons */
