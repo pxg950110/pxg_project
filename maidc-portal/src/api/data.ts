@@ -136,7 +136,7 @@ export function deleteDataSource(id: number) {
 }
 
 export function testDataSourceConnection(id: number) {
-  return request.post<ApiResponse<{ success: boolean; message: string }>>(`/cdr/datasources/${id}/test-connection`)
+  return request.post<ApiResponse<{ success: boolean; message: string; latencyMs?: number }>>(`/cdr/datasources/${id}/test-connection`)
 }
 
 export function syncDataSource(id: number) {
@@ -228,32 +228,76 @@ export function previewDesensitize(data: { field: string; strategy: string; para
 }
 
 // ========== Data Dictionary APIs ==========
-export function getDictTypes(params?: { page?: number; page_size?: number; keyword?: string }) {
-  return request.get<ApiResponse<PageResult<any>>>('/system/dict-types', { params })
+// 后端字段（typeCode/typeName、dictCode/dictLabel/dictValue/isEnabled/sortOrder）
+// 与页面字段（code/name、code/name/value/status/sort_order）在此映射，页面零感知。
+
+function mapDictType(t: any) {
+  return { id: t.id, code: t.typeCode, name: t.typeName, remark: t.remark }
+}
+
+function mapDictItemToFront(i: any) {
+  return {
+    id: i.id,
+    code: i.dictCode,
+    name: i.dictLabel,
+    value: i.dictValue,
+    sort_order: i.sortOrder ?? 0,
+    status: i.isEnabled === false ? 'DISABLED' : 'ENABLED',
+    remark: i.remark,
+  }
+}
+
+function mapDictItemToBack(d: Record<string, any>) {
+  return {
+    dictCode: d.code,
+    dictLabel: d.name,
+    dictValue: d.value,
+    sortOrder: d.sort_order ?? 0,
+    isEnabled: d.status !== 'DISABLED',
+    remark: d.remark,
+  }
+}
+
+export async function getDictTypes(params?: { page?: number; page_size?: number; keyword?: string }) {
+  const res = await request.get<ApiResponse<any>>('/system/dict-types', { params })
+  const page: any = res.data.data
+  const items = (page?.content ?? []).map(mapDictType)
+  res.data.data = { items, total: page?.totalElements ?? items.length }
+  return res
 }
 
 export function createDictType(data: Record<string, any>) {
-  return request.post<ApiResponse<any>>('/system/dict-types', data)
+  return request.post<ApiResponse<any>>(
+    '/system/dict-types',
+    { typeCode: data.code, typeName: data.name, remark: data.remark },
+  )
 }
 
 export function updateDictType(id: number, data: Record<string, any>) {
-  return request.put<ApiResponse<any>>(`/system/dict-types/${id}`, data)
+  return request.put<ApiResponse<any>>(
+    `/system/dict-types/${id}`,
+    { typeName: data.name, remark: data.remark },
+  )
 }
 
 export function deleteDictType(id: number) {
   return request.delete<ApiResponse<void>>(`/system/dict-types/${id}`)
 }
 
-export function getDictItems(typeId: number, params?: { page?: number; page_size?: number; keyword?: string }) {
-  return request.get<ApiResponse<PageResult<any>>>(`/system/dict-types/${typeId}/items`, { params })
+export async function getDictItems(typeId: number, params?: { page?: number; page_size?: number; keyword?: string }) {
+  const res = await request.get<ApiResponse<any>>(`/system/dict-types/${typeId}/items`, { params })
+  const list = (res.data.data ?? []).map(mapDictItemToFront)
+  res.data.data = { items: list, total: list.length }
+  return res
 }
 
 export function createDictItem(data: Record<string, any>) {
-  return request.post<ApiResponse<any>>('/system/dict-items', data)
+  const typeId = data.type_id
+  return request.post<ApiResponse<any>>(`/system/dict-types/${typeId}/items`, mapDictItemToBack(data))
 }
 
 export function updateDictItem(id: number, data: Record<string, any>) {
-  return request.put<ApiResponse<any>>(`/system/dict-items/${id}`, data)
+  return request.put<ApiResponse<any>>(`/system/dict-items/${id}`, mapDictItemToBack(data))
 }
 
 export function deleteDictItem(id: number) {

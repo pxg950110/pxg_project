@@ -1,23 +1,71 @@
 <template>
-  <div class="welcome-section">
-    <div class="welcome-info">
-      <h2 class="welcome-greeting">
-        {{ greeting }}，{{ userName }}
-        <span v-if="role" class="welcome-role">{{ role }}</span>
-      </h2>
-      <p class="welcome-date">{{ date }}</p>
+  <div class="welcome-section relative overflow-hidden rounded-xl bg-gradient-to-r from-sky-600 via-sky-700 to-slate-900 p-6 text-white shadow-clinical mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <!-- 装饰性科技背景网格纹理 -->
+    <div class="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+
+    <div class="relative z-10 space-y-1.5 min-w-0">
+      <div class="flex items-center gap-3 flex-wrap">
+        <h2 class="text-xl font-bold tracking-tight m-0 text-white flex items-center gap-2">
+          <span>{{ greeting }}，{{ userName }}</span>
+        </h2>
+        <span
+          v-if="role"
+          class="text-xs px-2.5 py-0.5 rounded-full bg-white/20 text-sky-100 font-medium border border-white/20 backdrop-blur-sm"
+        >
+          {{ role }}
+        </span>
+      </div>
+
+      <p class="text-xs text-sky-100/80 m-0 flex items-center gap-2 flex-wrap font-sans">
+        <span>{{ date }}</span>
+        <span v-if="orgName || deptName" class="text-sky-200">
+          · {{ [orgName, deptName].filter(Boolean).join(' · ') }}
+        </span>
+      </p>
+    </div>
+
+    <!-- 快捷患者直达检索框（权限控制） -->
+    <div v-if="canSearchPatient" class="relative z-10 w-full md:w-80">
+      <el-input
+        v-model="keyword"
+        placeholder="快速搜索患者（姓名/病案号）..."
+        clearable
+        size="default"
+        class="search-input !rounded-lg"
+        @keyup.enter="handlePatientSearch"
+      >
+        <template #prefix>
+          <el-icon class="text-slate-400"><Search /></el-icon>
+        </template>
+        <template #append>
+          <el-button type="primary" class="!bg-sky-500 !text-white !border-0" @click="handlePatientSearch">
+            搜索
+          </el-button>
+        </template>
+      </el-input>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { Search } from '@element-plus/icons-vue'
+import { usePermissionStore } from '@/stores/permission'
 
 const props = defineProps<{
   userName: string
   date: string
   role?: string
+  orgName?: string | null
+  deptName?: string | null
 }>()
+
+const router = useRouter()
+const permissionStore = usePermissionStore()
+const keyword = ref('')
+
+const canSearchPatient = computed(() => permissionStore.hasPermission('cdr:read'))
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -25,37 +73,23 @@ const greeting = computed(() => {
   if (hour < 18) return '下午好'
   return '晚上好'
 })
+
+function handlePatientSearch() {
+  const kw = keyword.value.trim()
+  if (!kw) return
+  router.push({ path: '/data/cdr/patients', query: { keyword: kw } })
+}
 </script>
 
-<style scoped lang="scss">
-.welcome-section {
-  padding: 24px;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-  border-radius: 8px;
-  color: #fff;
-  margin-bottom: 16px;
+<style scoped>
+:deep(.search-input .el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: none !important;
+  border-radius: 8px 0 0 8px;
 }
-
-.welcome-greeting {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0 0 4px;
-}
-
-.welcome-role {
-  display: inline-block;
-  margin-left: 12px;
-  padding: 2px 10px;
-  font-size: 13px;
-  font-weight: 400;
-  vertical-align: middle;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-
-.welcome-date {
-  font-size: 14px;
-  opacity: 0.85;
-  margin: 0;
+:deep(.search-input .el-input-group__append) {
+  background-color: #0ea5e9;
+  border: none;
+  border-radius: 0 8px 8px 0;
 }
 </style>

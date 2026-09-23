@@ -236,7 +236,7 @@ import {
   Loading,
 } from '@element-plus/icons-vue'
 import { getMessages, markAsRead, markAllAsRead } from '@/api/msg'
-import SettingsDrawer from '@/layouts/SettingsDrawer.vue'
+import SettingsDrawer from './SettingsDrawer.vue'
 
 interface MessageItem {
   id: number

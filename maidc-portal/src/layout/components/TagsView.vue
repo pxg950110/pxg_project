@@ -1,12 +1,12 @@
 <template>
-  <div v-if="uiStore.tabBarEnabled" class="tags-view-container h-[38px] bg-white border-b border-slate-200/80 px-4 flex items-center shadow-xs overflow-hidden select-none relative">
+  <div v-if="uiStore.tabBarEnabled" class="tags-view-container h-[44px] bg-white border-b border-slate-200/80 px-4 flex items-center shadow-xs overflow-hidden select-none relative">
     <el-scrollbar class="w-full flex items-center" wrap-class="flex items-center">
-      <div class="flex items-center gap-1.5 py-1">
+      <div class="flex items-center gap-2 py-1">
         <div
           v-for="tab in uiStore.openTabs"
           :key="tab.fullPath"
           :class="[
-            'capsule-tab group inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border transition-all duration-200 cursor-pointer whitespace-nowrap',
+            'capsule-tab group inline-flex items-center gap-2 px-3.5 py-1.5 text-[13.5px] rounded-full border transition-all duration-200 cursor-pointer whitespace-nowrap',
             isActive(tab)
               ? 'bg-sky-50 text-sky-700 border-sky-300 font-semibold shadow-xs ring-1 ring-sky-200/50'
               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300'
@@ -17,15 +17,15 @@
           <!-- Active dot indicator -->
           <span
             v-if="isActive(tab)"
-            class="w-1.5 h-1.5 rounded-full bg-sky-500 flex-shrink-0 animate-pulse"
+            class="w-2 h-2 rounded-full bg-sky-500 flex-shrink-0 animate-pulse"
           ></span>
 
-          <span class="truncate max-w-[140px]">{{ tab.title }}</span>
+          <span class="truncate max-w-[180px]">{{ tab.title }}</span>
 
           <!-- Close icon (hidden on home/dashboard workspace unless there are multiple) -->
           <el-icon
             v-if="!isAffix(tab)"
-            class="text-[11px] p-0.5 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors flex-shrink-0"
+            class="text-[13px] p-1 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors flex-shrink-0"
             @click.stop="handleCloseTab(tab)"
           >
             <Close />

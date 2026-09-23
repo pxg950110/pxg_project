@@ -1,16 +1,23 @@
 <template>
-  <a-card title="快捷操作" :bordered="false">
-    <a-row :gutter="[16, 16]">
-      <a-col v-for="action in allowedActions" :key="action.key" :span="6">
-        <a-button type="primary" ghost block size="large" @click="handleClick(action)">
-          <template #icon>
-            <component :is="workspaceIconMap[action.icon] ?? workspaceIconMap['appstore']" />
-          </template>
-          {{ action.label }}
-        </a-button>
-      </a-col>
-    </a-row>
-  </a-card>
+  <el-card shadow="never" class="rounded-xl">
+    <template #header>
+      <span class="text-base font-semibold text-slate-800">快捷操作</span>
+    </template>
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <button
+        v-for="action in allowedActions"
+        :key="action.key"
+        type="button"
+        class="quick-action-btn"
+        @click="handleClick(action)"
+      >
+        <el-icon :size="20">
+          <component :is="workspaceIconMap[action.icon] ?? workspaceIconMap['appstore']" />
+        </el-icon>
+        <span>{{ action.label }}</span>
+      </button>
+    </div>
+  </el-card>
 </template>
 
 <script setup lang="ts">
@@ -20,10 +27,7 @@ import { usePermissionStore } from '@/stores/permission'
 import { workspaceIconMap } from './icons'
 import type { QuickAction } from '@/api/workspace'
 
-const props = defineProps<{
-  actions: QuickAction[]
-}>()
-
+const props = defineProps<{ actions: QuickAction[] }>()
 const router = useRouter()
 const permissionStore = usePermissionStore()
 
@@ -35,3 +39,26 @@ function handleClick(action: QuickAction) {
   router.push(action.route)
 }
 </script>
+
+<style scoped>
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-action-btn:hover {
+  border-color: var(--el-color-primary-light-5);
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+</style>

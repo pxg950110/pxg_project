@@ -1,28 +1,30 @@
 <template>
-  <a-drawer
-    :open="visible"
+  <el-drawer
+    :model-value="visible"
     title="页面设置"
-    placement="right"
-    :width="300"
+    direction="rtl"
+    size="300px"
     @close="emit('update:visible', false)"
   >
     <!-- Theme Color -->
     <div class="setting-section">
       <div class="setting-label">主题色</div>
       <div class="color-grid">
-        <a-tooltip v-for="c in presetColors" :key="c.value" :title="c.label">
+        <el-tooltip v-for="c in presetColors" :key="c.value" :content="c.label" placement="top">
           <div
             :class="['color-item', { active: '#' + uiStore.primaryColor === c.value }]"
             :style="{ background: c.value }"
             @click="uiStore.setPrimaryColor(c.value.replace('#', ''))"
           >
-            <CheckOutlined v-if="'#' + uiStore.primaryColor === c.value" class="check-icon" />
+            <el-icon v-if="'#' + uiStore.primaryColor === c.value" class="text-white text-xs font-bold">
+              <Check />
+            </el-icon>
           </div>
-        </a-tooltip>
+        </el-tooltip>
       </div>
     </div>
 
-    <a-divider />
+    <el-divider />
 
     <!-- Tab Bar Toggle -->
     <div class="setting-section">
@@ -31,11 +33,11 @@
           <div class="setting-label">页签栏</div>
           <div class="setting-desc">在顶部显示已打开页面的标签</div>
         </div>
-        <a-switch :checked="uiStore.tabBarEnabled" @change="uiStore.toggleTabBar()" />
+        <el-switch :model-value="uiStore.tabBarEnabled" @update:model-value="uiStore.toggleTabBar()" />
       </div>
     </div>
 
-    <a-divider />
+    <el-divider />
 
     <!-- Future settings can be added below -->
     <div class="setting-section">
@@ -46,11 +48,11 @@
         </div>
       </div>
     </div>
-  </a-drawer>
+  </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { CheckOutlined } from '@ant-design/icons-vue'
+import { Check } from '@element-plus/icons-vue'
 import { useUiStore } from '@/stores/ui'
 
 defineProps<{ visible: boolean }>()
@@ -117,11 +119,6 @@ const presetColors = [
   &.active {
     border-color: rgba(0, 0, 0, 0.25);
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
-  }
-
-  .check-icon {
-    color: #fff;
-    font-size: 14px;
   }
 }
 </style>

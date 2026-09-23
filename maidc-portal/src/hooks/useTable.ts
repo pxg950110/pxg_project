@@ -26,8 +26,8 @@ export function useTable<T>(
       }
       const res = await fetchFn(params)
       tableData.value = res.data.data.items
-      pagination.total = res.data.data.total
-      pagination.current = res.data.data.page
+      pagination.total = res.data.data.total ?? 0
+      pagination.current = res.data.data.page ?? 1
     } finally {
       loading.value = false
     }

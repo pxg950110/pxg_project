@@ -1,42 +1,52 @@
 <template>
-  <PageContainer title="个人工作台" subtitle="MAIDC 医疗 AI 数据中心">
-    <a-spin :spinning="store.loading">
-      <WelcomeSection
-        :user-name="store.dashboard?.welcome?.userName ?? userName"
-        :date="store.dashboard?.welcome?.date ?? ''"
-        :role="store.dashboard?.welcome?.role ?? ''"
-      />
+  <div class="workspace-container space-y-4 max-w-[1600px] mx-auto">
+    <!-- 顶部欢迎横幅 -->
+    <WelcomeSection
+      :user-name="store.dashboard?.welcome?.userName ?? userName"
+      :date="store.dashboard?.welcome?.date ?? ''"
+      :role="store.dashboard?.welcome?.role ?? ''"
+      :org-name="store.dashboard?.welcome?.orgName ?? null"
+      :dept-name="store.dashboard?.welcome?.deptName ?? null"
+    />
 
-      <MetricCards
-        :cards="store.dashboard?.cards ?? null"
-        :metrics="store.dashboard?.metrics ?? null"
-        :loading="store.loading"
-      />
+    <!-- 4列指标卡片 -->
+    <MetricCards
+      :cards="store.dashboard?.cards ?? null"
+      :metrics="store.dashboard?.metrics ?? null"
+      :loading="store.loading"
+    />
 
-      <a-row :gutter="[16, 16]" style="margin-top: 16px">
-        <a-col :span="14">
-          <TodoSection
-            :todos="store.dashboard?.todos ?? []"
-            :stats="store.dashboard?.todoStats ?? null"
-            :loading="store.loading"
-            @complete="handleComplete"
-          />
-        </a-col>
-        <a-col :span="10">
-          <NotifySection
-            :notifications="store.dashboard?.notifications ?? []"
-            :loading="store.loading"
-            @mark-all-read="handleMarkAllRead"
-            @click="handleNotifyClick"
-          />
-        </a-col>
-      </a-row>
-
-      <div style="margin-top: 16px">
-        <QuickActions :actions="store.dashboard?.quickActions ?? []" />
+    <!-- 核心工作区分栏：左侧待办（8/12），右侧通知与专病动态（4/12） -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div class="lg:col-span-8 space-y-4">
+        <TodoSection
+          :todos="store.dashboard?.todos ?? []"
+          :stats="store.dashboard?.todoStats ?? null"
+          :loading="store.loading"
+          @complete="handleComplete"
+        />
       </div>
-    </a-spin>
-  </PageContainer>
+
+      <div class="lg:col-span-4 space-y-4">
+        <NotifySection
+          :notifications="store.dashboard?.notifications ?? []"
+          :loading="store.loading"
+          @mark-all-read="handleMarkAllRead"
+          @click="handleNotifyClick"
+        />
+
+        <CohortDigest
+          v-if="store.dashboard?.cohortDigest?.length"
+          :items="store.dashboard.cohortDigest"
+        />
+      </div>
+    </div>
+
+    <!-- 底部快捷业务入口 -->
+    <div v-if="store.dashboard?.quickActions?.length" class="pt-2">
+      <QuickActions :actions="store.dashboard.quickActions" />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -44,12 +54,12 @@ import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
-import PageContainer from '@/components/PageContainer/index.vue'
 import WelcomeSection from './WelcomeSection.vue'
 import MetricCards from './MetricCards.vue'
 import TodoSection from './TodoSection.vue'
 import NotifySection from './NotifySection.vue'
 import QuickActions from './QuickActions.vue'
+import CohortDigest from './CohortDigest.vue'
 import type { NotificationItem } from '@/api/workspace'
 
 const store = useWorkspaceStore()
@@ -70,7 +80,7 @@ async function handleMarkAllRead() {
   try {
     await store.markAllNotificationsRead()
   } catch {
-    // error handled by store or request interceptor
+    // ignore
   }
 }
 
@@ -84,7 +94,10 @@ function handleNotifyClick(item: NotificationItem) {
       MODEL: `/model/list`,
       ALERT: `/alert/active`,
     }
-    const route = routeMap[item.bizType]
+    const route =
+      item.bizType === 'COHORT'
+        ? `/data/cdr/disease/${item.bizId}`
+        : routeMap[item.bizType]
     if (route) router.push(route)
   }
 }

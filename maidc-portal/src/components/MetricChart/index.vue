@@ -1,8 +1,6 @@
 <template>
-  <div class="metric-chart-wrapper">
-    <a-spin v-if="loading" class="chart-spin">
-      <div class="chart-skeleton" :style="{ height: height }" />
-    </a-spin>
+  <div v-loading="loading" class="metric-chart-wrapper">
+    <div v-if="loading" class="chart-skeleton" :style="{ height: height }" />
     <v-chart
       v-show="!loading"
       :option="option"

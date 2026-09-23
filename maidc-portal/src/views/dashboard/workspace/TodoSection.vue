@@ -1,97 +1,161 @@
 <template>
-  <a-card :bordered="false" :loading="loading">
-    <template #title>
-      待办任务
-      <a-badge
-        v-if="stats.total > 0"
-        :count="stats.total"
-        :number-style="{ backgroundColor: '#1677ff' }"
-        style="margin-left: 8px"
-      />
-    </template>
-    <template #extra>
-      <a-space :size="8">
-        <a-tag color="blue">今日 {{ stats.today }}</a-tag>
-        <a-tag :color="stats.overdue > 0 ? 'error' : 'default'">超期 {{ stats.overdue }}</a-tag>
-        <a-radio-group v-model:value="activeFilter" size="small" button-style="solid">
-          <a-radio-button value="ALL">全部</a-radio-button>
-          <a-radio-button v-if="hasFollowup" value="FOLLOWUP">随访</a-radio-button>
-          <a-radio-button value="APPROVAL">审批</a-radio-button>
-          <a-radio-button value="LABELING">标注</a-radio-button>
-          <a-radio-button value="OTHER">其他</a-radio-button>
-        </a-radio-group>
-      </a-space>
-    </template>
+  <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm flex flex-col h-full">
+    <!-- 头部与筛选 -->
+    <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 flex-wrap gap-2">
+      <div class="flex items-center gap-2">
+        <span class="w-1 h-3.5 bg-sky-500 rounded-full" />
+        <h3 class="text-sm font-semibold text-slate-900 m-0">待办事项</h3>
+        <span
+          v-if="stats.total > 0"
+          class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold bg-sky-100 text-sky-700 rounded-full"
+        >
+          {{ stats.total }}
+        </span>
+      </div>
 
-    <div v-if="filteredTodos.length === 0" class="empty-state">
-      <a-empty description="暂无待办任务" />
+      <!-- 右侧统计与分类筛选 -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+          今日 {{ stats.today }}
+        </span>
+        <span
+          v-if="stats.overdue > 0"
+          class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-medium"
+        >
+          超期 {{ stats.overdue }}
+        </span>
+
+        <!-- 分类筛选单选按钮组 -->
+        <el-radio-group v-model="activeFilter" size="small">
+          <el-radio-button label="ALL">全部</el-radio-button>
+          <el-radio-button v-if="hasFollowup" label="FOLLOWUP">随访</el-radio-button>
+          <el-radio-button label="APPROVAL">审批</el-radio-button>
+          <el-radio-button label="OTHER">其他</el-radio-button>
+        </el-radio-group>
+      </div>
     </div>
 
-    <a-list v-else :data-source="filteredTodos" size="small">
-      <template #renderItem="{ item }">
-        <a-list-item>
-          <!-- 随访待办：患者/阶段/必评量表/超期状态，跳随访工作台执行（不在工作台直接完成） -->
-          <a-list-item-meta v-if="item.taskType === 'FOLLOWUP'">
-            <template #title>
-              <a class="todo-title" @click="goFollowupWorkbench">
-                {{ item.patientName ?? item.title }}
-                <span v-if="item.stageName" class="dim">· {{ item.stageName }}随访</span>
-              </a>
-              <a-tag v-if="(item.overdueDays ?? 0) > 0" color="error" style="margin-left: 8px">
-                超期 {{ item.overdueDays }} 天
-              </a-tag>
-              <a-tooltip v-if="(item.overdueDays ?? 0) > 7" title="超期 > 7 天已升级通知负责医生">
-                <WarningOutlined style="color: #faad14; margin-left: 4px" />
-              </a-tooltip>
-            </template>
-            <template #description>
-              <a-tag v-for="scale in item.scales ?? []" :key="scale" color="red" style="margin-bottom: 2px">
-                {{ scale }}
-              </a-tag>
-              <span class="dim" style="margin-left: 8px">到期：{{ item.dueDate }}</span>
-            </template>
-            <template #avatar>
-              <a-tag :color="priorityColor(item.priority)">{{ item.priority }}</a-tag>
-            </template>
-          </a-list-item-meta>
+    <!-- 列表内容区 -->
+    <div v-loading="loading" class="flex-1 overflow-y-auto min-h-[280px]">
+      <div v-if="filteredTodos.length === 0" class="py-12 flex flex-col items-center justify-center text-slate-400">
+        <el-icon :size="40" class="text-slate-300 mb-2"><CircleCheck /></el-icon>
+        <p class="text-xs font-medium">暂无进行中的待办任务</p>
+      </div>
 
-          <!-- 通用待办：与 v1 行为一致 -->
-          <a-list-item-meta v-else>
-            <template #title>
-              <a class="todo-title" @click="handleNavigate(item)">{{ item.title }}</a>
-            </template>
-            <template #description>
-              <span>{{ formatType(item.taskType) }}</span>
-              <span v-if="item.dueDate" style="margin-left: 12px" :class="{ 'overdue-text': (item.overdueDays ?? 0) > 0 }">
-                截止: {{ item.dueDate }}
-              </span>
-            </template>
-            <template #avatar>
-              <a-tag :color="priorityColor(item.priority)">{{ item.priority }}</a-tag>
-            </template>
-          </a-list-item-meta>
+      <div v-else class="divide-y divide-slate-100">
+        <div
+          v-for="item in filteredTodos"
+          :key="item.id"
+          class="py-3 px-2 flex items-center justify-between gap-4 hover:bg-slate-50/80 rounded-lg transition-colors group"
+        >
+          <!-- 左侧优先级徽标与标题信息 -->
+          <div class="flex items-start gap-3 flex-1 min-w-0">
+            <!-- 优先级微徽标 -->
+            <span
+              class="mt-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold select-none flex-shrink-0"
+              :class="priorityClasses(item.priority)"
+            >
+              {{ item.priority || 'NORMAL' }}
+            </span>
 
-          <template #actions>
-            <a-button v-if="item.taskType === 'FOLLOWUP'" type="primary" size="small" @click="goFollowupWorkbench">
+            <div class="min-w-0 flex-1">
+              <!-- 随访待办 -->
+              <div v-if="item.taskType === 'FOLLOWUP'" class="space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span
+                    class="text-xs font-semibold text-slate-800 hover:text-sky-600 transition-colors cursor-pointer"
+                    @click="goFollowupWorkbench(item)"
+                  >
+                    {{ item.patientName ?? item.title }}
+                  </span>
+                  <span v-if="item.stageName" class="text-xs text-slate-500">
+                    · {{ item.stageName }}随访
+                  </span>
+
+                  <!-- 超期警报 -->
+                  <span
+                    v-if="(item.overdueDays ?? 0) > 0"
+                    class="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded"
+                  >
+                    超期 {{ item.overdueDays }} 天
+                  </span>
+                  <el-tooltip v-if="(item.overdueDays ?? 0) > 7" content="超期 > 7 天已升级通知负责医生" placement="top">
+                    <el-icon :size="13" class="text-amber-500"><WarningFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+
+                <!-- 量表与截止时间 -->
+                <div class="flex items-center gap-2 flex-wrap text-xs text-slate-400">
+                  <span
+                    v-for="scale in item.scales ?? []"
+                    :key="scale"
+                    class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 text-[11px]"
+                  >
+                    {{ scale }}
+                  </span>
+                  <span class="text-slate-400">到期：{{ item.dueDate }}</span>
+                </div>
+              </div>
+
+              <!-- 通用常规待办 -->
+              <div v-else class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="text-xs font-semibold text-slate-800 hover:text-sky-600 transition-colors cursor-pointer"
+                    @click="handleNavigate(item)"
+                  >
+                    {{ item.title }}
+                  </span>
+                  <span class="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                    {{ formatType(item.taskType) }}
+                  </span>
+                </div>
+                <div v-if="item.dueDate" class="text-xs text-slate-400">
+                  截止日期：
+                  <span :class="{ 'text-rose-500 font-semibold': (item.overdueDays ?? 0) > 0 }">
+                    {{ item.dueDate }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧动作操作 -->
+          <div class="flex-shrink-0 flex items-center gap-2">
+            <el-button
+              v-if="item.taskType === 'FOLLOWUP'"
+              type="primary"
+              size="small"
+              class="!rounded-md"
+              @click="goFollowupWorkbench(item)"
+            >
               开始随访
-            </a-button>
-            <a-button v-else type="link" size="small" @click="handleComplete(item)">完成</a-button>
-          </template>
-        </a-list-item>
-      </template>
-    </a-list>
-  </a-card>
+            </el-button>
+            <el-button
+              v-else
+              link
+              type="primary"
+              size="small"
+              class="!text-xs"
+              @click="handleComplete(item)"
+            >
+              完成
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { WarningOutlined } from '@ant-design/icons-vue'
+import { CircleCheck, WarningFilled } from '@element-plus/icons-vue'
 import type { TodoStats, WorkspaceTodo } from '@/api/workspace'
 
 const props = defineProps<{
   todos: WorkspaceTodo[]
-  /** 服务端统计；缺失时按 todos 本地计算 */
   stats?: TodoStats | null
   loading: boolean
 }>()
@@ -103,13 +167,13 @@ const emit = defineEmits<{
 const router = useRouter()
 const activeFilter = ref('ALL')
 
-const hasFollowup = computed(() => props.todos.some(t => t.taskType === 'FOLLOWUP'))
+const hasFollowup = computed(() => props.todos.some((t) => t.taskType === 'FOLLOWUP'))
 
 const localStats = computed<TodoStats>(() => {
   const today = new Date().toISOString().slice(0, 10)
   return {
-    today: props.todos.filter(t => t.dueDate === today).length,
-    overdue: props.todos.filter(t => (t.overdueDays ?? 0) > 0).length,
+    today: props.todos.filter((t) => t.dueDate === today).length,
+    overdue: props.todos.filter((t) => (t.overdueDays ?? 0) > 0).length,
     total: props.todos.length,
   }
 })
@@ -119,19 +183,31 @@ const stats = computed(() => (props.stats && props.stats.total > 0 ? props.stats
 const filteredTodos = computed(() => {
   if (activeFilter.value === 'ALL') return props.todos
   if (activeFilter.value === 'OTHER') {
-    return props.todos.filter(t => t.taskType === 'OTHER' || t.taskType === 'DATA_QUERY')
+    return props.todos.filter((t) => t.taskType === 'OTHER' || t.taskType === 'DATA_QUERY')
   }
-  return props.todos.filter(t => t.taskType === activeFilter.value)
+  return props.todos.filter((t) => t.taskType === activeFilter.value)
 })
 
 function formatType(type: string) {
-  const map: Record<string, string> = { APPROVAL: '审批', LABELING: '标注', DATA_QUERY: '数据查询', FOLLOWUP: '随访', OTHER: '其他' }
+  const map: Record<string, string> = {
+    APPROVAL: '审批',
+    LABELING: '标注',
+    DATA_QUERY: '数据查询',
+    FOLLOWUP: '随访',
+    OTHER: '其他',
+  }
   return map[type] ?? type
 }
 
-function priorityColor(priority: string) {
-  const map: Record<string, string> = { HIGH: 'red', MEDIUM: 'orange', LOW: 'blue' }
-  return map[priority] ?? 'default'
+function priorityClasses(priority?: string) {
+  const p = (priority || '').toUpperCase()
+  if (p === 'HIGH' || p === 'CRITICAL') {
+    return 'bg-rose-100 text-rose-700'
+  }
+  if (p === 'MEDIUM') {
+    return 'bg-amber-100 text-amber-700'
+  }
+  return 'bg-sky-100 text-sky-700'
 }
 
 function handleNavigate(item: WorkspaceTodo) {
@@ -143,32 +219,17 @@ function handleNavigate(item: WorkspaceTodo) {
   if (route) router.push(route)
 }
 
-function goFollowupWorkbench() {
-  // TODO: 随访工作台正式路由随 CRS 前端平移确定，暂指专病管理
-  router.push('/data/cdr/disease')
+function goFollowupWorkbench(item: WorkspaceTodo) {
+  router.push({
+    path: '/followup/workbench',
+    query: {
+      ...(item.patientId != null ? { patientId: String(item.patientId) } : {}),
+      ...(item.sourceId != null ? { taskId: String(item.sourceId) } : {}),
+    },
+  })
 }
 
 function handleComplete(item: WorkspaceTodo) {
   emit('complete', item.id)
 }
 </script>
-
-<style scoped lang="scss">
-.empty-state {
-  padding: 32px 0;
-}
-
-.todo-title {
-  cursor: pointer;
-  &:hover { color: #1890ff; }
-}
-
-.dim {
-  color: #999;
-  font-size: 13px;
-}
-
-.overdue-text {
-  color: #ff4d4f;
-}
-</style>

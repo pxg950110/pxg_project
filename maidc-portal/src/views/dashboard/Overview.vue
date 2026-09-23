@@ -1,197 +1,273 @@
 <template>
-  <PageContainer title="系统总览" subtitle="MAIDC 医疗 AI 数据中心运行概览">
-    <a-spin :spinning="loading" tip="加载中...">
-    <!-- Welcome Banner -->
-    <div class="welcome-banner">
-      <div class="welcome-info">
-        <h2 class="welcome-greeting">{{ greeting }}，{{ userName }}</h2>
-        <p class="welcome-date">今天是{{ currentDate }}</p>
-        <p class="welcome-tasks">
-          您有 <span class="task-count">{{ pendingApprovals }}</span> 条待办事项
+  <div class="overview-container space-y-4 max-w-[1600px] mx-auto" v-loading="loading">
+    <!-- 顶部欢迎横幅 -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-sky-600 via-sky-700 to-slate-900 p-6 text-white shadow-clinical flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+
+      <div class="relative z-10 space-y-1.5">
+        <h2 class="text-xl font-bold tracking-tight text-white m-0">
+          {{ greeting }}，{{ userName }}
+        </h2>
+        <p class="text-xs text-sky-100/80 m-0">
+          今天是 {{ currentDate }} · 医疗 AI 数据中心各核心服务平稳运行中
+        </p>
+        <p class="text-xs text-sky-100/90 m-0 pt-0.5">
+          您当前有 <span class="font-bold text-amber-300 font-mono text-sm">{{ pendingApprovals }}</span> 项待处理审批与业务任务
         </p>
       </div>
-      <div class="welcome-actions">
-        <a-button type="primary" ghost @click="$router.push('/model/list')">
-          <template #icon><PlusOutlined /></template>
+
+      <div class="relative z-10 flex items-center gap-2.5 flex-wrap">
+        <el-button
+          type="primary"
+          class="!bg-white/15 hover:!bg-white/25 !text-white !border-white/30 backdrop-blur-sm"
+          @click="$router.push('/model/list')"
+        >
+          <el-icon class="mr-1"><Plus /></el-icon>
           注册模型
-        </a-button>
-        <a-button type="primary" ghost @click="$router.push('/model/evaluations')">
-          <template #icon><LineChartOutlined /></template>
+        </el-button>
+        <el-button
+          type="primary"
+          class="!bg-white/15 hover:!bg-white/25 !text-white !border-white/30 backdrop-blur-sm"
+          @click="$router.push('/model/evaluations')"
+        >
+          <el-icon class="mr-1"><TrendCharts /></el-icon>
           新建评估
-        </a-button>
-        <a-button type="primary" ghost @click="$router.push('/model/deployments')">
-          <template #icon><AuditOutlined /></template>
+        </el-button>
+        <el-button
+          type="primary"
+          class="!bg-white/15 hover:!bg-white/25 !text-white !border-white/30 backdrop-blur-sm"
+          @click="$router.push('/model/deployments')"
+        >
+          <el-icon class="mr-1"><Tickets /></el-icon>
           提交审批
-        </a-button>
+        </el-button>
       </div>
     </div>
 
-    <!-- Metric Cards Row 1: 3 cards -->
-    <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="8">
-        <MetricCard
-          title="模型总数"
-          :value="modelCount"
-          suffix="个"
-          :trend="{ value: 12, type: 'up' }"
-        >
-          <template #icon><ExperimentOutlined /></template>
-        </MetricCard>
-      </a-col>
-      <a-col :span="8">
-        <MetricCard
-          title="活跃部署"
-          :value="activeDeployments"
-          suffix="个"
-          :trend="{ value: 3, type: 'up' }"
-        >
-          <template #icon><RocketOutlined /></template>
-        </MetricCard>
-      </a-col>
-      <a-col :span="8">
-        <MetricCard
-          title="今日推理次数"
-          :value="dailyInferences"
-          suffix="次"
-          :trend="{ value: 8, type: 'up' }"
-        >
-          <template #icon><ThunderboltOutlined /></template>
-        </MetricCard>
-      </a-col>
-    </a-row>
-
-    <!-- Metric Cards Row 2: 3 cards -->
-    <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="8">
-        <MetricCard
-          title="患者记录"
-          :value="patientRecords"
-          suffix="条"
-          :trend="{ value: 5, type: 'up' }"
-        >
-          <template #icon><TeamOutlined /></template>
-        </MetricCard>
-      </a-col>
-      <a-col :span="8">
-        <MetricCard
-          title="研究项目"
-          :value="researchProjects"
-          suffix="个"
-        >
-          <template #icon><ProjectOutlined /></template>
-        </MetricCard>
-      </a-col>
-      <a-col :span="8">
-        <MetricCard
-          title="待审批"
-          :value="pendingApprovals"
-          suffix="条"
-          :trend="{ value: 2, type: 'down' }"
-        >
-          <template #icon><AuditOutlined /></template>
-        </MetricCard>
-      </a-col>
-    </a-row>
-
-    <!-- Charts Row: Model Status + Recent Alerts -->
-    <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="12">
-        <a-card title="模型状态分布" :bordered="false">
-          <template #extra>
-            <a class="view-all-link" @click="$router.push('/model/list')">查看全部</a>
-          </template>
-          <MetricChart :option="modelStatusOption" height="300px" />
-        </a-card>
-      </a-col>
-      <a-col :span="12">
-        <a-card title="最近告警" :bordered="false">
-          <template #extra>
-            <a class="view-all-link" @click="$router.push('/alert/active')">查看全部</a>
-          </template>
-          <div class="alert-list">
-            <div
-              v-for="(alert, index) in recentAlerts"
-              :key="index"
-              class="alert-item"
-            >
-              <div class="alert-left">
-                <a-tag
-                  :color="alert.severity === 'CRITICAL' ? 'red' : 'orange'"
-                  class="alert-tag"
-                >
-                  {{ alert.severity }}
-                </a-tag>
-                <span class="alert-message">{{ alert.message }}</span>
-              </div>
-              <span class="alert-time">{{ alert.time }}</span>
-            </div>
+    <!-- 6 列/2行 核心指标卡片 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm hover:shadow-clinical transition-all">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">模型总数</span>
+          <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+            <el-icon :size="16"><Cpu /></el-icon>
           </div>
-        </a-card>
-      </a-col>
-    </a-row>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1">
+          <span class="text-2xl font-bold font-mono text-slate-900">{{ modelCount }}</span>
+          <span class="text-xs text-slate-400">个</span>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <span>周环比</span>
+          <span class="text-emerald-600 font-semibold flex items-center">↑ 12%</span>
+        </div>
+      </div>
 
-    <!-- Activity Feed + Data Source Status -->
-    <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="16">
-        <a-card title="最近活动" :bordered="false">
-          <template #extra>
-            <a class="view-all-link" @click="$router.push('/audit/logs')">查看全部</a>
-          </template>
-          <div class="activity-list">
-            <div
-              v-for="(item, index) in recentActivities"
-              :key="index"
-              class="activity-item"
-            >
-              <span class="activity-dot" :style="{ background: item.dotColor }"></span>
-              <span class="activity-text">{{ item.text }}</span>
-              <a-tag :color="item.tagColor" class="activity-tag">{{ item.category }}</a-tag>
-              <span class="activity-time">{{ item.time }}</span>
-            </div>
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm hover:shadow-clinical transition-all">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">活跃部署</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <el-icon :size="16"><CircleCheck /></el-icon>
           </div>
-        </a-card>
-      </a-col>
-      <a-col :span="8">
-        <a-card title="数据源连接状态" :bordered="false">
-          <div class="datasource-list">
-            <div
-              v-for="(ds, index) in dataSources"
-              :key="index"
-              class="datasource-item"
-            >
-              <div class="datasource-info">
-                <span class="datasource-name">{{ ds.name }}</span>
-                <span class="datasource-desc">{{ ds.description }}</span>
-              </div>
-              <a-badge
-                :status="ds.connected ? 'success' : 'error'"
-                :text="ds.connected ? '已连接' : '断开'"
-              />
-            </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1">
+          <span class="text-2xl font-bold font-mono text-slate-900">{{ activeDeployments }}</span>
+          <span class="text-xs text-slate-400">个</span>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <span>服务状态</span>
+          <span class="text-emerald-600 font-medium">健康在线</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm hover:shadow-clinical transition-all">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">今日推理调用</span>
+          <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+            <el-icon :size="16"><TrendCharts /></el-icon>
           </div>
-        </a-card>
-      </a-col>
-    </a-row>
-    </a-spin>
-  </PageContainer>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1">
+          <span class="text-2xl font-bold font-mono text-slate-900">{{ dailyInferences }}</span>
+          <span class="text-xs text-slate-400">次</span>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <span>推理吞吐</span>
+          <span class="text-sky-600 font-semibold flex items-center">↑ 8% 今日峰值</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm hover:shadow-clinical transition-all">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">在管患者记录</span>
+          <div class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+            <el-icon :size="16"><User /></el-icon>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1">
+          <span class="text-2xl font-bold font-mono text-slate-900">{{ patientRecords }}</span>
+          <span class="text-xs text-slate-400">人</span>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <span>数据接入</span>
+          <span class="text-emerald-600 font-semibold">CDR 实时入库</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm hover:shadow-clinical transition-all">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">临床科研项目</span>
+          <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <el-icon :size="16"><Document /></el-icon>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1">
+          <span class="text-2xl font-bold font-mono text-slate-900">{{ researchProjects }}</span>
+          <span class="text-xs text-slate-400">项</span>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <span>专病队列</span>
+          <span class="text-slate-600 font-medium">多中心协同</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm hover:shadow-clinical transition-all">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">待审批事务</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+            <el-icon :size="16"><WarningFilled /></el-icon>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1">
+          <span class="text-2xl font-bold font-mono text-slate-900">{{ pendingApprovals }}</span>
+          <span class="text-xs text-slate-400">项</span>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <span>优先级</span>
+          <span class="text-amber-600 font-semibold">伦理与上线复审</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中部图表与告警区：左侧模型状态分布，右侧最近告警 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-3.5 bg-sky-500 rounded-full" />
+            <h3 class="text-sm font-semibold text-slate-900 m-0">模型状态生命周期分布</h3>
+          </div>
+          <el-button link type="primary" class="!text-xs" @click="$router.push('/model/list')">查看列表</el-button>
+        </div>
+        <div ref="modelChartRef" class="w-full h-72" />
+      </div>
+
+      <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-3.5 bg-rose-500 rounded-full" />
+            <h3 class="text-sm font-semibold text-slate-900 m-0">实时告警与危急监控</h3>
+          </div>
+          <el-button link type="primary" class="!text-xs" @click="$router.push('/alert/active')">查看全部</el-button>
+        </div>
+        <div class="flex-1 space-y-2.5 overflow-y-auto">
+          <div v-if="recentAlerts.length === 0" class="py-12 text-center text-slate-400 text-xs">
+            暂无活跃系统告警
+          </div>
+          <div
+            v-for="(alert, index) in recentAlerts"
+            :key="index"
+            class="p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span
+                class="px-2 py-0.5 rounded text-[11px] font-bold flex-shrink-0"
+                :class="alert.severity === 'CRITICAL' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'"
+              >
+                {{ alert.severity }}
+              </span>
+              <span class="text-xs text-slate-700 truncate font-medium">{{ alert.message }}</span>
+            </div>
+            <span class="text-[11px] text-slate-400 flex-shrink-0">{{ alert.time }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部：左侧操作审计日志，右侧数据源健康状态 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="lg:col-span-8 bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-3.5 bg-indigo-500 rounded-full" />
+            <h3 class="text-sm font-semibold text-slate-900 m-0">最近操作与审计轨迹</h3>
+          </div>
+          <el-button link type="primary" class="!text-xs" @click="$router.push('/audit/operations')">更多日志</el-button>
+        </div>
+        <div class="space-y-2">
+          <div
+            v-for="(item, index) in recentActivities"
+            :key="index"
+            class="py-1.5 px-2 flex items-center justify-between text-xs hover:bg-slate-50 rounded-md transition-colors"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="{ backgroundColor: item.dotColor }" />
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 flex-shrink-0">
+                {{ item.category }}
+              </span>
+              <span class="text-slate-700 truncate">{{ item.text }}</span>
+            </div>
+            <span class="text-[11px] text-slate-400 flex-shrink-0">{{ item.time }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-clinical-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-3.5 bg-emerald-500 rounded-full" />
+            <h3 class="text-sm font-semibold text-slate-900 m-0">数据源连接状态</h3>
+          </div>
+          <el-button link type="primary" class="!text-xs" @click="$router.push('/etl/datasources')">管理数据源</el-button>
+        </div>
+        <div class="space-y-2">
+          <div
+            v-for="(ds, index) in dataSources"
+            :key="index"
+            class="p-2 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors flex items-center justify-between"
+          >
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-slate-800 truncate">{{ ds.name }}</div>
+              <div class="text-[11px] text-slate-400 truncate">{{ ds.description || '医疗数据源接口' }}</div>
+            </div>
+            <span
+              class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
+              :class="ds.connected ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'"
+            >
+              <span class="w-1.5 h-1.5 rounded-full" :class="ds.connected ? 'bg-emerald-500' : 'bg-rose-500'" />
+              {{ ds.connected ? '已连接' : '断开' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import * as echarts from 'echarts'
 import {
-  ExperimentOutlined,
-  RocketOutlined,
-  LineChartOutlined,
-  PlusOutlined,
-  ThunderboltOutlined,
-  TeamOutlined,
-  ProjectOutlined,
-  AuditOutlined,
-} from '@ant-design/icons-vue'
-import PageContainer from '@/components/PageContainer/index.vue'
-import MetricCard from '@/components/MetricCard/index.vue'
-import MetricChart from '@/components/MetricChart/index.vue'
+  Plus,
+  TrendCharts,
+  Tickets,
+  Cpu,
+  CircleCheck,
+  User,
+  Document,
+  WarningFilled,
+} from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { getModels, getDeployments, getApprovals, getAlerts, getMetricsOverview } from '@/api/model'
 import { getAuditLogs } from '@/api/audit'
@@ -200,10 +276,9 @@ import { getDataSources, getPatients, getProjects } from '@/api/data'
 const router = useRouter()
 const authStore = useAuthStore()
 
-// ============ Loading State ============
 const loading = ref(true)
 
-// ============ Metric Cards (reactive) ============
+// 指标统计
 const modelCount = ref(0)
 const activeDeployments = ref(0)
 const dailyInferences = ref(0)
@@ -211,7 +286,6 @@ const patientRecords = ref(0)
 const researchProjects = ref(0)
 const pendingApprovals = ref(0)
 
-// ============ Welcome Section ============
 const userName = computed(() => authStore.userInfo?.realName || '医生')
 
 const greeting = computed(() => {
@@ -231,59 +305,81 @@ const currentDate = computed(() => {
   return `${year}年${month}月${day}日`
 })
 
-// ============ Recent Alerts ============
 const recentAlerts = ref<any[]>([])
-
-// ============ Recent Activity ============
 const recentActivities = ref<any[]>([])
-
-// ============ Data Sources ============
 const dataSources = ref<any[]>([])
 
-// ============ Chart: Model Status Horizontal Bar ============
-const modelStatusOption = ref(buildChartOption({}))
+const modelChartRef = ref<HTMLElement>()
+let modelChartInstance: echarts.ECharts | null = null
 
-function buildChartOption(metricsData: Record<string, any>) {
-  const distribution = metricsData.modelStatusDistribution || {}
-  const categories = ['DRAFT', 'REGISTERED', 'PUBLISHED', 'DEPRECATED']
-  const colorMap: Record<string, string> = {
-    DRAFT: '#d9d9d9',
-    REGISTERED: '#1677ff',
-    PUBLISHED: '#52c41a',
-    DEPRECATED: '#faad14',
+function renderModelStatusChart(distribution: Record<string, number> = {}) {
+  if (!modelChartRef.value) return
+  if (!modelChartInstance) {
+    modelChartInstance = echarts.init(modelChartRef.value)
   }
+
+  const categories = ['DRAFT', 'REGISTERED', 'PUBLISHED', 'DEPRECATED']
+  const labelMap: Record<string, string> = {
+    DRAFT: '草稿',
+    REGISTERED: '已注册',
+    PUBLISHED: '已发布',
+    DEPRECATED: '已废弃',
+  }
+  const colorMap: Record<string, string> = {
+    DRAFT: '#94A3B8',
+    REGISTERED: '#0EA5E9',
+    PUBLISHED: '#10B981',
+    DEPRECATED: '#F59E0B',
+  }
+
   const chartData = categories.map((cat) => ({
     value: distribution[cat] || 0,
     itemStyle: { color: colorMap[cat] },
   }))
 
-  return {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { left: '3%', right: '10%', bottom: '3%', top: '3%', containLabel: true },
-    xAxis: { type: 'value', boundaryGap: [0, 0.1] },
+  const option: echarts.EChartsOption = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: any) => {
+        const item = params[0]
+        return `${labelMap[item.name] || item.name}: <b>${item.value}</b> 个`
+      },
+    },
+    grid: { left: '3%', right: '12%', bottom: '5%', top: '5%', containLabel: true },
+    xAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      splitLine: { lineStyle: { color: '#F1F5F9' } },
+      axisLabel: { color: '#64748B', fontSize: 11 },
+    },
     yAxis: {
       type: 'category',
-      data: categories,
-      axisLabel: { fontSize: 13 },
+      data: categories.map((c) => labelMap[c] || c),
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#334155', fontSize: 12, fontWeight: 500 },
     },
     series: [
       {
         type: 'bar',
-        barWidth: 28,
+        barWidth: 20,
         label: {
           show: true,
           position: 'right',
           formatter: '{c}个',
-          fontSize: 13,
-          color: 'rgba(0,0,0,0.65)',
+          fontSize: 12,
+          color: '#64748B',
+          fontWeight: 600,
         },
         data: chartData,
       },
     ],
   }
+
+  modelChartInstance.setOption(option, true)
 }
 
-// ============ Helper: format relative time ============
 function formatRelativeTime(dateStr: string): string {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -298,21 +394,19 @@ function formatRelativeTime(dateStr: string): string {
   return `${diffDay}天前`
 }
 
-// ============ Helper: map audit module to activity category ============
 function mapAuditToCategory(module: string): { category: string; tagColor: string; dotColor: string } {
   const map: Record<string, { category: string; tagColor: string; dotColor: string }> = {
-    MODEL: { category: '模型', tagColor: 'geekblue', dotColor: '#2f54eb' },
-    APPROVAL: { category: '审批', tagColor: 'purple', dotColor: '#722ed1' },
-    EVALUATION: { category: '评估', tagColor: 'blue', dotColor: '#1677ff' },
-    DEPLOYMENT: { category: '部署', tagColor: 'green', dotColor: '#52c41a' },
-    ALERT: { category: '告警', tagColor: 'red', dotColor: '#ff4d4f' },
-    ETL: { category: 'ETL', tagColor: 'cyan', dotColor: '#13c2c2' },
-    DATA: { category: '数据', tagColor: 'orange', dotColor: '#fa8c16' },
+    MODEL: { category: '模型', tagColor: 'sky', dotColor: '#0EA5E9' },
+    APPROVAL: { category: '审批', tagColor: 'violet', dotColor: '#8B5CF6' },
+    EVALUATION: { category: '评估', tagColor: 'sky', dotColor: '#0284C7' },
+    DEPLOYMENT: { category: '部署', tagColor: 'emerald', dotColor: '#10B981' },
+    ALERT: { category: '告警', tagColor: 'rose', dotColor: '#EF4444' },
+    ETL: { category: 'ETL', tagColor: 'cyan', dotColor: '#06B6D4' },
+    DATA: { category: '数据', tagColor: 'amber', dotColor: '#F59E0B' },
   }
-  return map[module] || { category: module || '其他', tagColor: 'default', dotColor: '#8c8c8c' }
+  return map[module] || { category: module || '其他', tagColor: 'slate', dotColor: '#94A3B8' }
 }
 
-// ============ Fetch All Dashboard Data ============
 async function fetchDashboardData() {
   loading.value = true
   try {
@@ -334,11 +428,10 @@ async function fetchDashboardData() {
       getProjects({ page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
       getApprovals({ status: 'PENDING', page: 1, page_size: 1 }).catch(() => ({ data: { data: { total: 0 } } })),
       getAlerts({ page: 1, page_size: 4 }).catch(() => ({ data: { data: { items: [] } } })),
-      getAuditLogs({ page: 1, page_size: 8 }).catch(() => ({ data: { data: { items: [] } } })),
+      getAuditLogs({ page: 1, pageSize: 8 }).catch(() => ({ data: { data: { items: [] } } })),
       getDataSources({ page: 1, page_size: 10 }).catch(() => ({ data: { data: { items: [] } } })),
     ])
 
-    // Metric cards
     modelCount.value = modelsRes.data.data.total || 0
     const depData = deploymentsRes.data.data
     activeDeployments.value = Array.isArray(depData) ? depData.length : (depData.total || 0)
@@ -346,14 +439,11 @@ async function fetchDashboardData() {
     researchProjects.value = projectsRes.data.data.total || 0
     pendingApprovals.value = approvalsRes.data.data.total || 0
 
-    // Daily inferences from metrics
     const metricsData = metricsRes.data.data
     dailyInferences.value = metricsData.todayInference || 0
 
-    // Model status chart
-    modelStatusOption.value = buildChartOption(metricsData)
+    renderModelStatusChart(metricsData.modelStatusDistribution || {})
 
-    // Recent alerts
     const alertItems = alertsRes.data.data.items || []
     recentAlerts.value = alertItems.map((a: any) => ({
       severity: a.severity || 'WARNING',
@@ -361,7 +451,6 @@ async function fetchDashboardData() {
       time: formatRelativeTime(a.triggeredAt || a.createdAt || a.created_at || ''),
     }))
 
-    // Recent activities from audit logs
     const auditItems = auditRes.data.data.items || []
     recentActivities.value = auditItems.map((log: any) => {
       const { category, tagColor, dotColor } = mapAuditToCategory(log.module)
@@ -374,7 +463,6 @@ async function fetchDashboardData() {
       }
     })
 
-    // Data sources
     const dsItems = dsRes.data.data.items || []
     dataSources.value = dsItems.map((ds: any) => ({
       name: ds.name || ds.source_name || '',
@@ -386,181 +474,18 @@ async function fetchDashboardData() {
   }
 }
 
+const handleResize = () => {
+  modelChartInstance?.resize()
+}
+
 onMounted(() => {
   fetchDashboardData()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  modelChartInstance?.dispose()
+  modelChartInstance = null
 })
 </script>
-
-<style scoped>
-/* Welcome Banner */
-.welcome-banner {
-  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
-  border-radius: 12px;
-  padding: 28px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #fff;
-}
-.welcome-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.welcome-greeting {
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0;
-  color: #fff;
-}
-.welcome-date {
-  font-size: 14px;
-  margin: 0;
-  opacity: 0.85;
-}
-.welcome-tasks {
-  font-size: 14px;
-  margin: 0;
-  margin-top: 4px;
-  opacity: 0.9;
-}
-.task-count {
-  font-size: 18px;
-  font-weight: 600;
-}
-.welcome-actions {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.welcome-actions .ant-btn-background-ghost {
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.6) !important;
-}
-.welcome-actions .ant-btn-background-ghost:hover {
-  border-color: #fff !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-}
-
-/* View-all links */
-.view-all-link {
-  font-size: 13px;
-  color: #1677ff;
-  cursor: pointer;
-}
-.view-all-link:hover {
-  color: #4096ff;
-}
-
-/* Alert List */
-.alert-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.alert-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-.alert-item:last-child {
-  border-bottom: none;
-}
-.alert-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-}
-.alert-tag {
-  flex-shrink: 0;
-  font-weight: 500;
-}
-.alert-message {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.75);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.alert-time {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.35);
-  flex-shrink: 0;
-  margin-left: 16px;
-}
-
-/* Activity Feed */
-.activity-list {
-  display: flex;
-  flex-direction: column;
-}
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-.activity-item:last-child {
-  border-bottom: none;
-}
-.activity-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.activity-text {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.75);
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.activity-tag {
-  flex-shrink: 0;
-  border-radius: 4px;
-}
-.activity-time {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.35);
-  flex-shrink: 0;
-  margin-left: 8px;
-}
-
-/* Data Source Status */
-.datasource-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.datasource-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-.datasource-item:last-child {
-  border-bottom: none;
-}
-.datasource-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.datasource-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
-}
-.datasource-desc {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-}
-</style>
