@@ -1,36 +1,36 @@
 <template>
   <template v-for="field in schema.fields" :key="field.key">
-    <a-form-item v-if="field.type === 'text'" :label="field.label">
-      <a-input v-model:value="params[field.key]" :placeholder="field.placeholder || `请输入${field.label}`" />
-    </a-form-item>
+    <el-form-item v-if="field.type === 'text'" :label="field.label">
+      <el-input v-model="params[field.key]" :placeholder="field.placeholder || `请输入${field.label}`" />
+    </el-form-item>
 
-    <a-form-item v-else-if="field.type === 'password'" :label="field.label">
-      <a-input-password v-model:value="params[field.key]" :placeholder="field.placeholder || `请输入${field.label}`" />
-    </a-form-item>
+    <el-form-item v-else-if="field.type === 'password'" :label="field.label">
+      <el-input v-model="params[field.key]" type="password" show-password :placeholder="field.placeholder || `请输入${field.label}`" />
+    </el-form-item>
 
-    <a-form-item v-else-if="field.type === 'number'" :label="field.label">
-      <a-input-number v-model:value="params[field.key]" :min="field.min" :max="field.max"
+    <el-form-item v-else-if="field.type === 'number'" :label="field.label">
+      <el-input-number v-model="params[field.key]" :min="field.min" :max="field.max" controls-position="right"
         :placeholder="field.placeholder || `请输入${field.label}`" style="width: 100%" />
-    </a-form-item>
+    </el-form-item>
 
-    <a-form-item v-else-if="field.type === 'select'" :label="field.label">
-      <a-select v-model:value="params[field.key]" :placeholder="`请选择${field.label}`">
-        <a-select-option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</a-select-option>
-      </a-select>
-    </a-form-item>
+    <el-form-item v-else-if="field.type === 'select'" :label="field.label">
+      <el-select v-model="params[field.key]" :placeholder="`请选择${field.label}`" style="width: 100%">
+        <el-option v-for="opt in field.options" :key="opt" :value="opt" :label="opt" />
+      </el-select>
+    </el-form-item>
 
-    <a-form-item v-else-if="field.type === 'textarea'" :label="field.label">
-      <a-textarea v-model:value="params[field.key]" :rows="3" :placeholder="field.placeholder" />
-    </a-form-item>
+    <el-form-item v-else-if="field.type === 'textarea'" :label="field.label">
+      <el-input v-model="params[field.key]" type="textarea" :rows="3" :placeholder="field.placeholder" />
+    </el-form-item>
 
-    <a-form-item v-else-if="field.type === 'keyvalue'" :label="field.label">
-      <div v-for="(kv, idx) in getKeyValuePairs(field.key)" :key="idx" style="display: flex; gap: 8px; margin-bottom: 4px;">
-        <a-input v-model:value="kv.key" placeholder="Key" style="flex: 1" @change="syncKeyValue(field.key)" />
-        <a-input v-model:value="kv.value" placeholder="Value" style="flex: 1" @change="syncKeyValue(field.key)" />
-        <a-button type="text" danger size="small" @click="removeKeyValue(field.key, idx)">删除</a-button>
+    <el-form-item v-else-if="field.type === 'keyvalue'" :label="field.label">
+      <div v-for="(kv, idx) in getKeyValuePairs(field.key)" :key="idx" style="display: flex; gap: 8px; margin-bottom: 4px; width: 100%;">
+        <el-input v-model="kv.key" placeholder="Key" style="flex: 1" @input="syncKeyValue(field.key)" />
+        <el-input v-model="kv.value" placeholder="Value" style="flex: 1" @input="syncKeyValue(field.key)" />
+        <el-button text type="danger" size="small" @click="removeKeyValue(field.key, idx)">删除</el-button>
       </div>
-      <a-button type="dashed" size="small" @click="addKeyValue(field.key)">+ 添加</a-button>
-    </a-form-item>
+      <el-button plain size="small" @click="addKeyValue(field.key)">+ 添加</el-button>
+    </el-form-item>
   </template>
 </template>
 

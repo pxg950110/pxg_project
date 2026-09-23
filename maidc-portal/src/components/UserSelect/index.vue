@@ -1,22 +1,27 @@
 <template>
-  <a-select
-    :value="modelValue"
+  <el-select
+    :model-value="modelValue"
     :placeholder="placeholder || '请选择用户'"
-    show-search
-    :filter-option="false"
+    filterable
+    remote
+    :remote-method="handleSearch"
     :loading="fetching"
-    allow-clear
-    :mode="multiple ? 'multiple' : undefined"
+    clearable
+    :multiple="multiple"
     style="width: 100%"
-    @search="handleSearch"
     @change="handleChange"
     @focus="handleFocus"
   >
-    <a-select-option v-for="item in options" :key="item.id" :value="String(item.id)">
+    <el-option
+      v-for="item in options"
+      :key="item.id"
+      :value="String(item.id)"
+      :label="item.real_name || item.username"
+    >
       <span>{{ item.real_name || item.username }}</span>
       <span v-if="item.real_name" class="option-username">{{ item.username }}</span>
-    </a-select-option>
-  </a-select>
+    </el-option>
+  </el-select>
 </template>
 
 <script setup lang="ts">
@@ -31,7 +36,7 @@ interface UserItem {
 }
 
 interface Props {
-  modelValue?: string
+  modelValue?: string | string[]
   placeholder?: string
   multiple?: boolean
 }

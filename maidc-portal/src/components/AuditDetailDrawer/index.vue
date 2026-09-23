@@ -1,28 +1,31 @@
 <template>
-  <a-drawer
-    :open="visible"
+  <el-drawer
+    :model-value="visible"
     title="审计详情"
     :width="640"
     @close="handleClose"
   >
     <template v-if="record">
-      <a-descriptions :column="1" bordered size="small">
-        <a-descriptions-item label="操作ID">{{ record.id }}</a-descriptions-item>
-        <a-descriptions-item label="操作模块">{{ record.module }}</a-descriptions-item>
-        <a-descriptions-item label="操作类型">{{ record.operation }}</a-descriptions-item>
-        <a-descriptions-item label="操作人">{{ record.username }}</a-descriptions-item>
-        <a-descriptions-item label="操作时间">{{ formatTime(record.created_at) }}</a-descriptions-item>
-        <a-descriptions-item label="IP地址">{{ record.ip_address }}</a-descriptions-item>
-        <a-descriptions-item label="User-Agent">{{ record.user_agent }}</a-descriptions-item>
-        <a-descriptions-item label="目标类型">{{ record.target_type }}</a-descriptions-item>
-        <a-descriptions-item label="目标ID">{{ record.target_id }}</a-descriptions-item>
-        <a-descriptions-item label="状态">
-          <a-badge
-            :color="(record.status ?? 0) >= 200 && (record.status ?? 0) < 300 ? 'green' : 'red'"
-            :text="`${record.status ?? '-'}`"
-          />
-        </a-descriptions-item>
-      </a-descriptions>
+      <el-descriptions :column="1" border size="small">
+        <el-descriptions-item label="操作ID">{{ record.id }}</el-descriptions-item>
+        <el-descriptions-item label="操作模块">{{ record.module }}</el-descriptions-item>
+        <el-descriptions-item label="操作类型">{{ record.operation }}</el-descriptions-item>
+        <el-descriptions-item label="操作人">{{ record.username }}</el-descriptions-item>
+        <el-descriptions-item label="操作时间">{{ formatTime(record.created_at) }}</el-descriptions-item>
+        <el-descriptions-item label="IP地址">{{ record.ip_address }}</el-descriptions-item>
+        <el-descriptions-item label="Trace ID">
+          <span class="trace-id" title="点击复制" @click="copyTraceId(record.trace_id)">{{ record.trace_id ?? '-' }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="User-Agent">{{ record.user_agent }}</el-descriptions-item>
+        <el-descriptions-item label="目标类型">{{ record.target_type }}</el-descriptions-item>
+        <el-descriptions-item label="目标ID">{{ record.target_id }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <span class="status-inline">
+            <span class="status-dot" :style="{ background: statusColor }" />
+            {{ record.status ?? '-' }}
+          </span>
+        </el-descriptions-item>
+      </el-descriptions>
 
       <div v-if="record.request_data" class="detail-section">
         <h4>请求数据</h4>
@@ -39,11 +42,13 @@
         <p class="detail-comment">{{ record.comment }}</p>
       </div>
     </template>
-  </a-drawer>
+  </el-drawer>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import dayjs from 'dayjs'
+import { ElMessage } from 'element-plus'
 import JsonViewer from '@/components/JsonViewer/index.vue'
 
 interface AuditRecord {
@@ -53,6 +58,7 @@ interface AuditRecord {
   username?: string
   created_at?: string
   ip_address?: string
+  trace_id?: string
   user_agent?: string
   target_type?: string
   target_id?: string
@@ -72,8 +78,13 @@ interface Emits {
   (e: 'update:visible', value: boolean): void
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const statusColor = computed(() => {
+  const s = props.record?.status ?? 0
+  return s >= 200 && s < 300 ? '#52c41a' : '#ff4d4f'
+})
 
 function handleClose() {
   emit('update:visible', false)
@@ -82,6 +93,31 @@ function handleClose() {
 function formatTime(timestamp?: string): string {
   if (!timestamp) return '-'
   return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')
+}
+
+function copyTraceId(traceId?: string) {
+  if (!traceId) return
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard
+      .writeText(traceId)
+      .then(() => ElMessage.success('已复制 Trace ID'))
+      .catch(() => fallbackCopy(traceId))
+  } else {
+    fallbackCopy(traceId)
+  }
+}
+
+function fallbackCopy(text: string) {
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  document.body.appendChild(textarea)
+  textarea.select()
+  try {
+    document.execCommand('copy')
+    ElMessage.success('已复制 Trace ID')
+  } finally {
+    document.body.removeChild(textarea)
+  }
 }
 </script>
 
@@ -101,5 +137,22 @@ function formatTime(timestamp?: string): string {
   border-radius: 4px;
   font-size: 13px;
   color: rgba(0, 0, 0, 0.65);
+}
+.status-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.trace-id {
+  color: #08979c;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  cursor: pointer;
 }
 </style>

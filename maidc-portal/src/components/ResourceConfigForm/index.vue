@@ -1,43 +1,44 @@
 <template>
   <div class="resource-config-form">
-    <a-form layout="vertical" size="small">
-      <a-row :gutter="16">
-        <a-col :span="12">
-          <a-form-item label="CPU（核）">
-            <a-slider v-model:value="config.cpu" :min="0.5" :max="64" :step="0.5" :marks="cpuMarks" @change="emitValue" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label="内存（GB）">
-            <a-slider v-model:value="config.memory" :min="1" :max="256" :step="1" :marks="memoryMarks" @change="emitValue" />
-          </a-form-item>
-        </a-col>
-      </a-row>
-      <a-row :gutter="16">
-        <a-col :span="12">
-          <a-form-item label="GPU（卡数）">
-            <a-slider v-model:value="config.gpu" :min="0" :max="8" :step="1" :marks="gpuMarks" @change="emitValue" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label="副本数">
-            <a-input-number
-              v-model:value="config.replicas"
+    <el-form label-position="top" size="small">
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="CPU（核）">
+            <el-slider v-model="config.cpu" :min="0.5" :max="64" :step="0.5" :marks="cpuMarks" @change="emitValue" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="内存（GB）">
+            <el-slider v-model="config.memory" :min="1" :max="256" :step="1" :marks="memoryMarks" @change="emitValue" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="GPU（卡数）">
+            <el-slider v-model="config.gpu" :min="0" :max="8" :step="1" :marks="gpuMarks" @change="emitValue" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="副本数">
+            <el-input-number
+              v-model="config.replicas"
               :min="1"
               :max="20"
+              controls-position="right"
               style="width: 100%"
               @change="emitValue"
             />
-          </a-form-item>
-        </a-col>
-      </a-row>
+          </el-form-item>
+        </el-col>
+      </el-row>
       <div class="resource-summary">
         <span class="summary-item">CPU: {{ config.cpu }} 核</span>
         <span class="summary-item">内存: {{ config.memory }} GB</span>
         <span class="summary-item">GPU: {{ config.gpu }} 卡</span>
         <span class="summary-item">副本: {{ config.replicas }}</span>
       </div>
-    </a-form>
+    </el-form>
   </div>
 </template>
 
