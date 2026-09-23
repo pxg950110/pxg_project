@@ -5,84 +5,90 @@
       <div class="perm-page-header">
         <div class="perm-header-top">
           <h2 class="perm-page-title">权限管理</h2>
-          <a-button type="primary" @click="handleAdd">
-            <PlusOutlined /> 新增权限
-          </a-button>
+          <el-button type="primary" @click="handleAdd">
+            <el-icon class="mr-1"><Plus /></el-icon> 新增权限
+          </el-button>
         </div>
         <p class="perm-page-desc">管理菜单权限、API权限和数据权限。权限通过角色分配给用户。</p>
       </div>
 
       <!-- Filter Bar -->
       <div class="perm-filter-bar">
-        <a-select
-          v-model:value="filterType"
-          allow-clear
+        <el-select
+          v-model="filterType"
+          clearable
           placeholder="类型: 全部"
           class="perm-filter-select"
         >
-          <a-select-option value="MENU">MENU</a-select-option>
-          <a-select-option value="API">API</a-select-option>
-          <a-select-option value="DATA">DATA</a-select-option>
-          <a-select-option value="BUTTON">BUTTON</a-select-option>
-        </a-select>
+          <el-option value="MENU" label="MENU" />
+          <el-option value="API" label="API" />
+          <el-option value="DATA" label="DATA" />
+          <el-option value="BUTTON" label="BUTTON" />
+        </el-select>
 
-        <a-input-search
-          v-model:value="filterKeyword"
+        <el-input
+          v-model="filterKeyword"
           placeholder="搜索权限名称..."
           class="perm-filter-search"
-          allow-clear
-        />
+          clearable
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
       </div>
 
       <!-- Hierarchical Permission Table -->
-      <a-table
-        :columns="columns"
-        :data-source="filteredData"
-        :pagination="false"
+      <el-table
+        :data="filteredData"
         row-key="id"
-        :default-expand-all-rows="true"
-        :indent-size="0"
-        :loading="loading"
-        children-column-name="children"
+        default-expand-all
+        :indent="0"
+        v-loading="loading"
+        :tree-props="{ children: 'children' }"
         class="perm-table"
         :row-class-name="getRowClassName"
       >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'name'">
-            <span v-if="record.isParent" class="perm-parent-name">
+        <el-table-column label="权限名称" prop="name">
+          <template #default="{ row }">
+            <span v-if="row.isParent" class="perm-parent-name">
               <span class="perm-icon-folder">&#128193;</span>
-              <span class="perm-parent-text">{{ record.name }}</span>
+              <span class="perm-parent-text">{{ row.name }}</span>
             </span>
             <span v-else class="perm-child-name">
-              <span class="perm-icon-file">{{ record.type === 'API' ? '&#128295;' : '&#128196;' }}</span>
-              <span>{{ record.name }}</span>
+              <span class="perm-icon-file">{{ row.type === 'API' ? '&#128295;' : '&#128196;' }}</span>
+              <span>{{ row.name }}</span>
             </span>
           </template>
-
-          <template v-if="column.key === 'code'">
-            <span class="perm-code">{{ record.code }}</span>
+        </el-table-column>
+        <el-table-column label="编码" prop="code">
+          <template #default="{ row }">
+            <span class="perm-code">{{ row.code }}</span>
           </template>
-
-          <template v-if="column.key === 'type'">
-            <a-tag v-if="record.type === 'MENU'" color="#1677FF">MENU</a-tag>
-            <a-tag v-else-if="record.type === 'API'" color="#8b5cf6">API</a-tag>
-            <a-tag v-else-if="record.type === 'DATA'" color="#f59e0b">DATA</a-tag>
-            <a-tag v-else-if="record.type === 'BUTTON'" color="#10b981">BUTTON</a-tag>
+        </el-table-column>
+        <el-table-column label="类型" prop="type" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.type === 'MENU'" :style="{ backgroundColor: '#0ea5e9', borderColor: '#0ea5e9', color: '#fff' }">MENU</el-tag>
+            <el-tag v-else-if="row.type === 'API'" :style="{ backgroundColor: '#8b5cf6', borderColor: '#8b5cf6', color: '#fff' }">API</el-tag>
+            <el-tag v-else-if="row.type === 'DATA'" :style="{ backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#fff' }">DATA</el-tag>
+            <el-tag v-else-if="row.type === 'BUTTON'" :style="{ backgroundColor: '#10b981', borderColor: '#10b981', color: '#fff' }">BUTTON</el-tag>
           </template>
-
-          <template v-if="column.key === 'roleCount'">
+        </el-table-column>
+        <el-table-column label="关联角色数" prop="roleCount" width="100" align="center">
+          <template #default="{ row }">
             <span class="perm-role-count">
-              {{ record.isParent ? '\u2014' : record.roleCount }}
+              {{ row.isParent ? '—' : row.roleCount }}
             </span>
           </template>
-
-          <template v-if="column.key === 'action'">
+        </el-table-column>
+        <el-table-column label="操作" width="80" align="right">
+          <template #default="{ row }">
             <div class="perm-action">
-              <a v-if="!record.isParent" class="perm-edit-link" @click="handleEdit(record)">编辑</a>
+              <a v-if="!row.isParent" class="perm-edit-link" @click="handleEdit(row)">编辑</a>
             </div>
           </template>
-        </template>
-      </a-table>
+        </el-table-column>
+      </el-table>
 
       <!-- Pagination Row -->
       <div class="perm-pagination-row">
@@ -90,45 +96,45 @@
       </div>
 
       <!-- Add/Edit Permission Modal -->
-      <a-modal
-        v-model:open="modalVisible"
+      <el-dialog
+        v-model="modalVisible"
         :title="editingRecord ? '编辑权限' : '新增权限'"
-        @ok="handleModalOk"
-        :confirm-loading="modalLoading"
         width="520px"
       >
-        <a-form layout="vertical" ref="formRef" :model="formData">
-          <a-form-item label="权限名称" name="name" :rules="[{ required: true, message: '请输入权限名称' }]">
-            <a-input v-model:value="formData.name" placeholder="例如：用户管理" />
-          </a-form-item>
-          <a-form-item label="权限编码" name="code" :rules="[{ required: true, message: '请输入权限编码' }]">
-            <a-input v-model:value="formData.code" placeholder="例如：user:manage" />
-          </a-form-item>
-          <a-form-item label="权限类型" name="type" :rules="[{ required: true, message: '请选择权限类型' }]">
-            <a-select v-model:value="formData.type" placeholder="选择类型">
-              <a-select-option value="MENU">MENU</a-select-option>
-              <a-select-option value="API">API</a-select-option>
-              <a-select-option value="DATA">DATA</a-select-option>
-              <a-select-option value="BUTTON">BUTTON</a-select-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item label="上级权限">
-            <a-select v-model:value="formData.parentId" allow-clear placeholder="无（顶级权限）">
-              <a-select-option v-for="p in permissions" :key="p.id" :value="p.id">
-                {{ p.name }}
-              </a-select-option>
-            </a-select>
-          </a-form-item>
-        </a-form>
-      </a-modal>
+        <el-form label-position="top" ref="formRef" :model="formData">
+          <el-form-item label="权限名称" prop="name" :rules="[{ required: true, message: '请输入权限名称' }]">
+            <el-input v-model="formData.name" placeholder="例如：用户管理" />
+          </el-form-item>
+          <el-form-item label="权限编码" prop="code" :rules="[{ required: true, message: '请输入权限编码' }]">
+            <el-input v-model="formData.code" placeholder="例如：user:manage" />
+          </el-form-item>
+          <el-form-item label="权限类型" prop="type" :rules="[{ required: true, message: '请选择权限类型' }]">
+            <el-select v-model="formData.type" placeholder="选择类型">
+              <el-option value="MENU" label="MENU" />
+              <el-option value="API" label="API" />
+              <el-option value="DATA" label="DATA" />
+              <el-option value="BUTTON" label="BUTTON" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="上级权限">
+            <el-select v-model="formData.parentId" clearable placeholder="无（顶级权限）">
+              <el-option v-for="p in permissions" :key="p.id" :value="p.id" :label="p.name" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="modalVisible = false">取消</el-button>
+          <el-button type="primary" :loading="modalLoading" @click="handleModalOk">确定</el-button>
+        </template>
+      </el-dialog>
     </template>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getPermissionTree, createPermission, updatePermission } from '@/api/system'
 
@@ -190,15 +196,6 @@ const filteredData = computed(() => {
     .filter(Boolean) as PermissionItem[]
 })
 
-// Table columns
-const columns = [
-  { title: '权限名称', key: 'name', dataIndex: 'name' },
-  { title: '编码', key: 'code', dataIndex: 'code' },
-  { title: '类型', key: 'type', dataIndex: 'type', width: 100 },
-  { title: '关联角色数', key: 'roleCount', dataIndex: 'roleCount', width: 100, align: 'center' as const },
-  { title: '操作', key: 'action', width: 80, align: 'right' as const },
-]
-
 async function fetchPermissions() {
   loading.value = true
   try {
@@ -209,8 +206,8 @@ async function fetchPermissions() {
   }
 }
 
-function getRowClassName(record: PermissionItem) {
-  return record.isParent ? 'perm-row-parent' : 'perm-row-child'
+function getRowClassName({ row }: { row: PermissionItem }) {
+  return row.isParent ? 'perm-row-parent' : 'perm-row-child'
 }
 
 const modalVisible = ref(false)
@@ -244,7 +241,7 @@ function handleEdit(record: PermissionItem) {
 
 async function handleModalOk() {
   try {
-    await formRef.value?.validateFields()
+    await formRef.value?.validate()
   } catch {
     return
   }
@@ -265,7 +262,7 @@ async function handleModalOk() {
         parent_id: formData.parentId,
       })
     }
-    message.success(editingRecord.value ? '权限已更新' : '权限已创建')
+    ElMessage.success(editingRecord.value ? '权限已更新' : '权限已创建')
     modalVisible.value = false
     fetchPermissions()
   } finally {
@@ -293,13 +290,13 @@ onMounted(() => {
 .perm-page-title {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 
 .perm-page-desc {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin: 6px 0 0;
 }
 
@@ -346,7 +343,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .perm-parent-text {
@@ -362,7 +359,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding-left: 24px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .perm-icon-file {
@@ -373,7 +370,7 @@ onMounted(() => {
 .perm-code {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 /* Role count column */
@@ -381,7 +378,7 @@ onMounted(() => {
   display: inline-block;
   text-align: center;
   width: 100%;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 
 /* Action column */
@@ -392,12 +389,12 @@ onMounted(() => {
 
 .perm-edit-link {
   font-size: 13px;
-  color: #1677ff;
+  color: #0ea5e9;
   cursor: pointer;
 }
 
 .perm-edit-link:hover {
-  color: #4096ff;
+  color: #38bdf8;
 }
 
 /* Pagination Row */
@@ -411,6 +408,6 @@ onMounted(() => {
 
 .perm-total-text {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 </style>

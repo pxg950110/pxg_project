@@ -9,168 +9,196 @@
           <span class="page-header-subtitle">管理系统用户账号、角色分配与权限控制</span>
         </div>
         <div class="page-header-right">
-          <a-button :icon="h(SearchOutlined)" disabled />
-          <a-button type="primary" @click="openCreateModal">
-            <PlusOutlined /> 新建用户
-          </a-button>
+          <el-button :icon="Search" disabled />
+          <el-button type="primary" @click="openCreateModal">
+            <el-icon class="mr-1"><Plus /></el-icon> 新建用户
+          </el-button>
         </div>
       </div>
 
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <a-select
-          v-model:value="filters.status"
-          allow-clear
+        <el-select
+          v-model="filters.status"
+          clearable
           placeholder="状态"
           class="filter-item"
         >
-          <a-select-option value="启用">启用</a-select-option>
-          <a-select-option value="禁用">禁用</a-select-option>
-        </a-select>
+          <el-option value="启用" label="启用" />
+          <el-option value="禁用" label="禁用" />
+        </el-select>
 
-        <a-select
-          v-model:value="filters.role"
-          allow-clear
+        <el-select
+          v-model="filters.role"
+          clearable
           placeholder="角色"
           class="filter-item"
         >
-          <a-select-option value="管理员">管理员</a-select-option>
-          <a-select-option value="AI工程师">AI工程师</a-select-option>
-          <a-select-option value="研究员">研究员</a-select-option>
-          <a-select-option value="数据管理员">数据管理员</a-select-option>
-          <a-select-option value="临床医生">临床医生</a-select-option>
-        </a-select>
+          <el-option value="管理员" label="管理员" />
+          <el-option value="AI工程师" label="AI工程师" />
+          <el-option value="研究员" label="研究员" />
+          <el-option value="数据管理员" label="数据管理员" />
+          <el-option value="临床医生" label="临床医生" />
+        </el-select>
 
-        <a-select
-          v-model:value="filters.org"
-          allow-clear
+        <el-select
+          v-model="filters.org"
+          clearable
           placeholder="组织"
           class="filter-item"
         >
-          <a-select-option value="放射科">放射科</a-select-option>
-          <a-select-option value="心内科">心内科</a-select-option>
-          <a-select-option value="呼吸内科">呼吸内科</a-select-option>
-        </a-select>
+          <el-option value="放射科" label="放射科" />
+          <el-option value="心内科" label="心内科" />
+          <el-option value="呼吸内科" label="呼吸内科" />
+        </el-select>
 
-        <a-input-search
-          v-model:value="filters.keyword"
+        <el-input
+          v-model="filters.keyword"
           placeholder="搜索用户名/姓名/邮箱..."
           class="filter-search"
-          allow-clear
-        />
+          clearable
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
       </div>
 
       <!-- Table -->
-      <a-table
-        :columns="columns"
-        :data-source="tableData"
-        :loading="loading"
-        :pagination="pagination"
+      <el-table
+        :data="tableData"
+        v-loading="loading"
         row-key="id"
-        @change="handleTableChange"
       >
-        <template #bodyCell="{ column, record, index }">
-          <template v-if="column.key === 'index'">
-            {{ (pagination.current - 1) * pagination.pageSize + index + 1 }}
+        <el-table-column label="#" width="60">
+          <template #default="{ $index }">
+            {{ (pagination.current - 1) * pagination.pageSize + $index + 1 }}
           </template>
-          <template v-if="column.key === 'role'">
-            <a-tag color="blue">{{ record.role }}</a-tag>
+        </el-table-column>
+        <el-table-column label="用户名" prop="username" width="120" />
+        <el-table-column label="姓名" prop="realName" width="120" />
+        <el-table-column label="邮箱" prop="email" />
+        <el-table-column label="角色" prop="role" width="120">
+          <template #default="{ row }">
+            <el-tag type="primary">{{ row.role }}</el-tag>
           </template>
-          <template v-if="column.key === 'status'">
-            <a-badge
-              :status="record.status === '启用' ? 'success' : 'error'"
-              :text="record.status"
-            />
+        </el-table-column>
+        <el-table-column label="状态" prop="status" width="80">
+          <template #default="{ row }">
+            <span class="status-badge">
+              <span
+                class="status-dot"
+                :class="row.status === '启用' ? 'status-dot-success' : 'status-dot-error'"
+              ></span>
+              {{ row.status }}
+            </span>
           </template>
-          <template v-if="column.key === 'action'">
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="right">
+          <template #default="{ row }">
             <div class="action-links">
-              <a @click="editModal.open(record)">编辑</a>
-              <a @click="handleView(record)">查看</a>
+              <a @click="editModal.open(row)">编辑</a>
+              <a @click="handleView(row)">查看</a>
             </div>
           </template>
-        </template>
-      </a-table>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        class="mt-4 justify-end"
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="pagination.total"
+        :current-page="pagination.current"
+        :page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+      />
     </template>
   </PageContainer>
 
   <!-- Create User Modal -->
-  <a-modal
-    v-model:open="userModal.visible"
+  <el-dialog
+    v-model="userModal.visible"
     title="新建用户"
-    @ok="handleCreateUser"
-    :confirm-loading="submitting"
     width="600px"
   >
-    <a-form :model="userForm" layout="vertical">
-      <a-form-item label="用户名" required>
-        <a-input v-model:value="userForm.username" />
-      </a-form-item>
-      <a-form-item label="姓名" required>
-        <a-input v-model:value="userForm.real_name" />
-      </a-form-item>
-      <a-form-item label="邮箱">
-        <a-input v-model:value="userForm.email" />
-      </a-form-item>
-      <a-form-item label="手机号">
-        <a-input v-model:value="userForm.phone" />
-      </a-form-item>
-      <a-form-item label="角色" required>
-        <a-select v-model:value="userForm.role_ids" mode="multiple" placeholder="请选择角色">
-          <a-select-option v-for="role in roleOptions" :key="role.id" :value="role.id">
-            {{ role.name }}
-          </a-select-option>
-        </a-select>
-      </a-form-item>
-    </a-form>
-  </a-modal>
+    <el-form :model="userForm" label-position="top">
+      <el-form-item label="用户名" required>
+        <el-input v-model="userForm.username" />
+      </el-form-item>
+      <el-form-item label="姓名" required>
+        <el-input v-model="userForm.real_name" />
+      </el-form-item>
+      <el-form-item label="邮箱">
+        <el-input v-model="userForm.email" />
+      </el-form-item>
+      <el-form-item label="手机号">
+        <el-input v-model="userForm.phone" />
+      </el-form-item>
+      <el-form-item label="角色" required>
+        <el-select v-model="userForm.role_ids" multiple placeholder="请选择角色">
+          <el-option v-for="role in roleOptions" :key="role.id" :value="role.id" :label="role.name" />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="userModal.close()">取消</el-button>
+      <el-button type="primary" :loading="submitting" @click="handleCreateUser">确定</el-button>
+    </template>
+  </el-dialog>
 
   <!-- Edit User Modal -->
-  <a-modal
-    v-model:open="editModal.visible"
+  <el-dialog
+    v-model="editModal.visible"
     title="编辑用户"
-    @ok="handleUpdateUser"
-    :confirm-loading="submitting"
     width="600px"
   >
-    <a-form :model="editForm" layout="vertical">
-      <a-form-item label="姓名">
-        <a-input v-model:value="editForm.real_name" />
-      </a-form-item>
-      <a-form-item label="邮箱">
-        <a-input v-model:value="editForm.email" />
-      </a-form-item>
-      <a-form-item label="手机号">
-        <a-input v-model:value="editForm.phone" />
-      </a-form-item>
-      <a-form-item label="状态">
-        <a-switch
-          :checked="editForm.status === '启用'"
-          @change="(v: boolean) => editForm.status = v ? '启用' : '禁用'"
+    <el-form :model="editForm" label-position="top">
+      <el-form-item label="姓名">
+        <el-input v-model="editForm.real_name" />
+      </el-form-item>
+      <el-form-item label="邮箱">
+        <el-input v-model="editForm.email" />
+      </el-form-item>
+      <el-form-item label="手机号">
+        <el-input v-model="editForm.phone" />
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-switch
+          :model-value="editForm.status === '启用'"
+          @change="(v) => editForm.status = v ? '启用' : '禁用'"
         />
-      </a-form-item>
-    </a-form>
-  </a-modal>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="editModal.close()">取消</el-button>
+      <el-button type="primary" :loading="submitting" @click="handleUpdateUser">确定</el-button>
+    </template>
+  </el-dialog>
 
   <!-- Reset Password Modal -->
-  <a-modal
-    v-model:open="resetPwdModal.visible"
+  <el-dialog
+    v-model="resetPwdModal.visible"
     title="重置密码"
-    @ok="handleResetPwd"
-    :confirm-loading="submitting"
   >
-    <a-form layout="vertical">
-      <a-form-item label="新密码" required>
-        <a-input-password v-model:value="pwdForm.new_password" placeholder="请输入新密码" />
-      </a-form-item>
-    </a-form>
-  </a-modal>
+    <el-form label-position="top">
+      <el-form-item label="新密码" required>
+        <el-input v-model="pwdForm.new_password" type="password" show-password placeholder="请输入新密码" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="resetPwdModal.close()">取消</el-button>
+      <el-button type="primary" :loading="submitting" @click="handleResetPwd">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, h, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { useModal } from '@/hooks/useModal'
@@ -194,7 +222,7 @@ const filters = reactive({
 })
 
 // Table hook with API
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getUsers({
     page: params.page,
     page_size: params.pageSize,
@@ -203,16 +231,16 @@ const { tableData, loading, pagination, fetchData, handleTableChange } = useTabl
   })
 )
 
-// Table columns
-const columns = [
-  { title: '#', key: 'index', width: 60 },
-  { title: '用户名', dataIndex: 'username', key: 'username', width: 120 },
-  { title: '姓名', dataIndex: 'realName', key: 'realName', width: 120 },
-  { title: '邮箱', dataIndex: 'email', key: 'email' },
-  { title: '角色', dataIndex: 'role', key: 'role', width: 120 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
-  { title: '操作', key: 'action', width: 100, align: 'right' as const },
-]
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // Forms
 const userForm = reactive({
@@ -271,7 +299,7 @@ async function handleCreateUser() {
   submitting.value = true
   try {
     await createUser(userForm)
-    message.success('用户创建成功')
+    ElMessage.success('用户创建成功')
     userModal.close()
     fetchData()
   } finally {
@@ -283,7 +311,7 @@ async function handleUpdateUser() {
   submitting.value = true
   try {
     await updateUser(editingUserId, editForm)
-    message.success('用户更新成功')
+    ElMessage.success('用户更新成功')
     editModal.close()
     fetchData()
   } finally {
@@ -295,7 +323,7 @@ async function handleResetPwd() {
   submitting.value = true
   try {
     await resetPassword(resetPwdModal.currentRecord.value!.id, pwdForm)
-    message.success('密码重置成功')
+    ElMessage.success('密码重置成功')
     resetPwdModal.close()
     fetchData()
   } finally {
@@ -307,7 +335,7 @@ async function handleResetPwd() {
 async function loadRoles() {
   try {
     const res = await getRoles({ page: 1, page_size: 100 })
-    roleOptions.value = res.data.data.items
+    roleOptions.value = res.data.data.items ?? []
   } catch {
     roleOptions.value = []
   }
@@ -341,13 +369,13 @@ watch(filters, () => {
 .page-header-title {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 
 .page-header-subtitle {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .page-header-right {
@@ -381,5 +409,28 @@ watch(filters, () => {
 
 .action-links a {
   font-size: 13px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot-success {
+  background: #10b981;
+}
+
+.status-dot-error {
+  background: #ef4444;
 }
 </style>

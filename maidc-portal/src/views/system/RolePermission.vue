@@ -1,26 +1,29 @@
 <template>
   <PageContainer title="权限配置" :loading="loading">
     <template #extra>
-      <a-button @click="router.back()">返回</a-button>
-      <a-button type="primary" @click="handleSave" :loading="saving">保存</a-button>
+      <el-button @click="router.back()">返回</el-button>
+      <el-button type="primary" @click="handleSave" :loading="saving">保存</el-button>
     </template>
 
-    <a-card>
-      <a-tree
-        v-model:checkedKeys="checkedKeys"
-        :tree-data="permissionTree"
-        :field-names="{ title: 'name', key: 'id', children: 'children' }"
-        checkable
+    <el-card shadow="never">
+      <el-tree
+        ref="treeRef"
+        :data="permissionTree"
+        node-key="id"
+        :props="{ label: 'name', children: 'children' }"
+        show-checkbox
         default-expand-all
+        :default-checked-keys="checkedKeys"
+        @check="syncCheckedKeys"
       />
-    </a-card>
+    </el-card>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getPermissionTree, assignPermissions } from '@/api/system'
 import request from '@/utils/request'
@@ -31,6 +34,11 @@ const loading = ref(false)
 const saving = ref(false)
 const permissionTree = ref<any[]>([])
 const checkedKeys = ref<number[]>([])
+const treeRef = ref()
+
+function syncCheckedKeys() {
+  checkedKeys.value = (treeRef.value?.getCheckedKeys(false) || []) as number[]
+}
 
 async function loadData() {
   loading.value = true
@@ -48,7 +56,7 @@ async function handleSave() {
   saving.value = true
   try {
     await assignPermissions(Number(route.params.id), checkedKeys.value)
-    message.success('权限保存成功')
+    ElMessage.success('权限保存成功')
   } finally { saving.value = false }
 }
 

@@ -8,9 +8,9 @@
           <span class="org-page-subtitle">管理医院、科室与部门组织架构</span>
         </div>
         <div class="org-page-header-right">
-          <a-button type="primary" @click="handleAddOrg">
-            <PlusOutlined /> 新增组织
-          </a-button>
+          <el-button type="primary" @click="handleAddOrg">
+            <el-icon class="mr-1"><Plus /></el-icon> 新增组织
+          </el-button>
         </div>
       </div>
 
@@ -19,16 +19,16 @@
         <!-- Left Panel: Organization Tree -->
         <div class="org-tree-panel">
           <div class="org-tree-card">
-            <a-input
-              v-model:value="searchText"
+            <el-input
+              v-model="searchText"
               placeholder="搜索组织..."
               class="org-search-input"
-              allow-clear
+              clearable
             >
               <template #prefix>
-                <SearchOutlined class="org-search-icon" />
+                <el-icon class="org-search-icon"><Search /></el-icon>
               </template>
-            </a-input>
+            </el-input>
 
             <div class="org-tree-list">
               <template v-for="root in filteredTreeData" :key="root.id">
@@ -44,7 +44,7 @@
                       <span v-else>&#9656;</span>
                     </span>
                   </span>
-                  <ApartmentOutlined class="org-tree-icon" />
+                  <el-icon class="org-tree-icon"><Share /></el-icon>
                   <span class="org-tree-label org-tree-label-root">{{ root.name }}</span>
                 </div>
 
@@ -66,7 +66,7 @@
                           <span v-else>&#9656;</span>
                         </span>
                       </span>
-                      <ApartmentOutlined class="org-tree-icon" />
+                      <el-icon class="org-tree-icon"><Share /></el-icon>
                       <span class="org-tree-label">{{ child.name }}</span>
                     </div>
 
@@ -80,7 +80,7 @@
                         @click.stop="selectOrg(grand.id)"
                       >
                         <span class="org-tree-chevron"></span>
-                        <ApartmentOutlined class="org-tree-icon" />
+                        <el-icon class="org-tree-icon"><Share /></el-icon>
                         <span class="org-tree-label">{{ grand.name }}</span>
                       </div>
                     </template>
@@ -100,9 +100,9 @@
                 <h3 class="org-detail-title">{{ selectedOrg.name }}</h3>
                 <span class="org-detail-desc">{{ selectedOrg.description }}</span>
               </div>
-              <a-button class="org-detail-edit-btn" @click="handleEditOrg(selectedOrg)">
-                <EditOutlined /> 编辑
-              </a-button>
+              <el-button class="org-detail-edit-btn" @click="handleEditOrg(selectedOrg)">
+                <el-icon class="mr-1"><Edit /></el-icon> 编辑
+              </el-button>
             </div>
 
             <!-- 基本信息 Section -->
@@ -141,9 +141,9 @@
                 >
                   <span class="org-sub-name">{{ sub.name }}</span>
                   <span class="org-sub-code">{{ sub.code }}</span>
-                  <a-button class="org-sub-edit-btn" size="small">
-                    <EditOutlined />
-                  </a-button>
+                  <el-button class="org-sub-edit-btn" size="small">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -156,45 +156,48 @@
         </div>
       </div>
       <!-- Add/Edit Organization Modal -->
-      <a-modal
-        v-model:open="orgModalVisible"
+      <el-dialog
+        v-model="orgModalVisible"
         :title="editingOrg ? '编辑组织' : '新增组织'"
-        @ok="handleOrgModalOk"
         width="560px"
       >
-        <a-form layout="vertical">
-          <a-form-item label="组织名称" required>
-            <a-input v-model:value="orgForm.name" placeholder="请输入组织名称" />
-          </a-form-item>
-          <a-form-item label="组织编码" required>
-            <a-input v-model:value="orgForm.code" placeholder="例如：DEPT-XX-001" />
-          </a-form-item>
-          <a-form-item label="组织类型">
-            <a-select v-model:value="orgForm.type" placeholder="选择类型">
-              <a-select-option value="医院">医院</a-select-option>
-              <a-select-option value="科室">科室</a-select-option>
-              <a-select-option value="部门">部门</a-select-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item label="负责人">
-            <a-input v-model:value="orgForm.leader" placeholder="请输入负责人" />
-          </a-form-item>
-          <a-form-item label="联系方式">
-            <a-input v-model:value="orgForm.phone" placeholder="请输入联系方式" />
-          </a-form-item>
-          <a-form-item label="描述">
-            <a-textarea v-model:value="orgForm.description" :rows="2" placeholder="请输入描述" />
-          </a-form-item>
-        </a-form>
-      </a-modal>
+        <el-form label-position="top">
+          <el-form-item label="组织名称" required>
+            <el-input v-model="orgForm.name" placeholder="请输入组织名称" />
+          </el-form-item>
+          <el-form-item label="组织编码" required>
+            <el-input v-model="orgForm.code" placeholder="例如：DEPT-XX-001" />
+          </el-form-item>
+          <el-form-item label="组织类型">
+            <el-select v-model="orgForm.type" placeholder="选择类型">
+              <el-option value="医院" label="医院" />
+              <el-option value="科室" label="科室" />
+              <el-option value="部门" label="部门" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="负责人">
+            <el-input v-model="orgForm.leader" placeholder="请输入负责人" />
+          </el-form-item>
+          <el-form-item label="联系方式">
+            <el-input v-model="orgForm.phone" placeholder="请输入联系方式" />
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="orgForm.description" type="textarea" :rows="2" placeholder="请输入描述" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="orgModalVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleOrgModalOk">确定</el-button>
+        </template>
+      </el-dialog>
     </template>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import { PlusOutlined, SearchOutlined, ApartmentOutlined, EditOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus, Search, Share, Edit } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 interface OrgNode {
@@ -374,7 +377,7 @@ function handleEditOrg(org: OrgNode) {
 
 function handleOrgModalOk() {
   if (!orgForm.name || !orgForm.code) {
-    message.warning('请填写组织名称和编码')
+    ElMessage.warning('请填写组织名称和编码')
     return
   }
   if (editingOrg.value) {
@@ -386,7 +389,7 @@ function handleOrgModalOk() {
       phone: orgForm.phone,
       description: orgForm.description,
     })
-    message.success('组织已更新')
+    ElMessage.success('组织已更新')
   } else {
     const newOrg: OrgNode = {
       id: Date.now(),
@@ -403,7 +406,7 @@ function handleOrgModalOk() {
       if (!root.children) root.children = []
       root.children.push(newOrg)
     }
-    message.success('组织已创建')
+    ElMessage.success('组织已创建')
   }
   orgModalVisible.value = false
 }
@@ -426,13 +429,13 @@ function handleOrgModalOk() {
 .org-page-title {
   font-size: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 
 .org-page-subtitle {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .org-page-header-right {
@@ -455,7 +458,7 @@ function handleOrgModalOk() {
 }
 
 .org-tree-card {
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 16px;
   background: #fff;
@@ -466,7 +469,7 @@ function handleOrgModalOk() {
 }
 
 .org-search-icon {
-  color: rgba(0, 0, 0, 0.25);
+  color: #94a3b8;
 }
 
 .org-tree-list {
@@ -486,19 +489,19 @@ function handleOrgModalOk() {
 }
 
 .org-tree-item:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(15, 23, 42, 0.04);
 }
 
 .org-tree-item-active {
-  background: rgba(22, 119, 255, 0.06);
+  background: rgba(14, 165, 233, 0.06);
 }
 
 .org-tree-item-active:hover {
-  background: rgba(22, 119, 255, 0.1);
+  background: rgba(14, 165, 233, 0.1);
 }
 
 .org-tree-item-expanded {
-  background: rgba(22, 119, 255, 0.04);
+  background: rgba(14, 165, 233, 0.04);
 }
 
 .org-tree-root {
@@ -520,21 +523,21 @@ function handleOrgModalOk() {
   width: 16px;
   height: 16px;
   font-size: 10px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   flex-shrink: 0;
   margin-right: 2px;
 }
 
 .org-tree-icon {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-right: 6px;
   flex-shrink: 0;
 }
 
 .org-tree-label {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -551,7 +554,7 @@ function handleOrgModalOk() {
 }
 
 .org-detail-card {
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 24px;
   background: #fff;
@@ -563,7 +566,7 @@ function handleOrgModalOk() {
   justify-content: space-between;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .org-detail-header-info {
@@ -575,13 +578,13 @@ function handleOrgModalOk() {
 .org-detail-title {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 
 .org-detail-desc {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .org-detail-edit-btn {
@@ -600,7 +603,7 @@ function handleOrgModalOk() {
 .org-section-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin-bottom: 16px;
 }
 
@@ -619,13 +622,13 @@ function handleOrgModalOk() {
 
 .org-info-label {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   white-space: nowrap;
 }
 
 .org-info-value {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 /* Sub-organization list */
@@ -638,7 +641,7 @@ function handleOrgModalOk() {
   display: flex;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .org-sub-item:last-child {
@@ -648,13 +651,13 @@ function handleOrgModalOk() {
 .org-sub-name {
   flex: 1;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .org-sub-code {
   width: 130px;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-right: 12px;
 }
 
@@ -668,13 +671,13 @@ function handleOrgModalOk() {
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   background: #fff;
 }
 
 .org-detail-empty-text {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.25);
+  color: #94a3b8;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <PageContainer title="系统配置" subtitle="管理系统全局参数与基础配置">
-    <a-spin :spinning="loading">
+    <div v-loading="loading" class="min-h-[200px]">
     <div class="config-cards">
       <div v-for="group in configGroups" :key="group.key" class="config-card">
         <div class="config-card-header">
@@ -12,11 +12,11 @@
             <span class="config-label">{{ item.label }}</span>
             <div class="config-value-area">
               <template v-if="item.editing">
-                <a-input
-                  v-model:value="item.editValue"
+                <el-input
+                  v-model="item.editValue"
                   size="small"
                   class="config-input"
-                  @pressEnter="saveItem(item)"
+                  @keyup.enter="saveItem(item)"
                 />
               </template>
               <template v-else>
@@ -36,19 +36,19 @@
         </div>
       </div>
     </div>
-    </a-spin>
+    </div>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import {
-  SettingOutlined,
-  DatabaseOutlined,
-  SafetyCertificateOutlined,
-  BellOutlined
-} from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+  Setting,
+  Coin,
+  CircleCheck,
+  Bell
+} from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getConfigs, updateConfig } from '@/api/system'
 
@@ -65,15 +65,15 @@ interface ConfigItem {
 interface ConfigGroup {
   key: string
   title: string
-  icon: typeof SettingOutlined
+  icon: typeof Setting
   items: ConfigItem[]
 }
 
-const groupIconMap: Record<string, typeof SettingOutlined> = {
-  basic: SettingOutlined,
-  storage: DatabaseOutlined,
-  security: SafetyCertificateOutlined,
-  notification: BellOutlined
+const groupIconMap: Record<string, typeof Setting> = {
+  basic: Setting,
+  storage: Coin,
+  security: CircleCheck,
+  notification: Bell
 }
 
 const groupTitleMap: Record<string, string> = {
@@ -116,11 +116,11 @@ async function loadConfigs() {
     configGroups.value = Array.from(groupMap.entries()).map(([key, items]) => ({
       key,
       title: groupTitleMap[key] || key,
-      icon: groupIconMap[key] || SettingOutlined,
+      icon: groupIconMap[key] || Setting,
       items
     }))
   } catch {
-    message.error('加载配置失败')
+    ElMessage.error('加载配置失败')
   } finally {
     loading.value = false
   }
@@ -146,10 +146,10 @@ async function saveItem(item: ConfigItem) {
     })
     item.value = item.editValue
     item.editing = false
-    message.success('配置保存成功')
+    ElMessage.success('配置保存成功')
     await loadConfigs()
   } catch {
-    message.error('保存配置失败')
+    ElMessage.error('保存配置失败')
   }
 }
 
@@ -164,7 +164,7 @@ onMounted(loadConfigs)
 }
 
 .config-card {
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -174,19 +174,19 @@ onMounted(loadConfigs)
   align-items: center;
   gap: 8px;
   padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
 }
 
 .card-icon {
   font-size: 18px;
-  color: #1890ff;
+  color: #0ea5e9;
 }
 
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .config-card-body {
@@ -197,7 +197,7 @@ onMounted(loadConfigs)
   display: flex;
   align-items: center;
   padding: 12px 20px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #f8fafc;
 }
 
 .config-row:last-child {
@@ -208,7 +208,7 @@ onMounted(loadConfigs)
   flex-shrink: 0;
   width: 180px;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 
 .config-value-area {
@@ -218,7 +218,7 @@ onMounted(loadConfigs)
 
 .config-value {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .config-input {
@@ -234,20 +234,20 @@ onMounted(loadConfigs)
 
 .action-link {
   font-size: 14px;
-  color: #1890ff;
+  color: #0ea5e9;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .action-link:hover {
-  color: #40a9ff;
+  color: #38bdf8;
 }
 
 .cancel-link {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .cancel-link:hover {
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 </style>

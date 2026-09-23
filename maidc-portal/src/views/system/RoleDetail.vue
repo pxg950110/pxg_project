@@ -3,11 +3,11 @@
     <!-- Header Row -->
     <div class="detail-header">
       <div class="detail-header-left">
-        <ArrowLeftOutlined class="back-icon" @click="handleGoBack" />
+        <el-icon class="back-icon" @click="handleGoBack"><ArrowLeft /></el-icon>
         <span class="detail-title">角色详情 - 模型管理员</span>
       </div>
       <div class="detail-header-right">
-        <a-button>编辑角色</a-button>
+        <el-button>编辑角色</el-button>
       </div>
     </div>
 
@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ArrowLeftOutlined } from '@ant-design/icons-vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 const router = useRouter()
@@ -119,9 +119,9 @@ const permissionMatrix = [
 ]
 
 const assignedUsers = [
-  { name: '张医生', initial: '张', department: '呼吸内科', color: '#1677FF' },
-  { name: '李医生', initial: '李', department: '影像科', color: '#52C41A' },
-  { name: '王工程师', initial: '王', department: 'AI研发部', color: '#FAAD14' },
+  { name: '张医生', initial: '张', department: '呼吸内科', color: '#0ea5e9' },
+  { name: '李医生', initial: '李', department: '影像科', color: '#10b981' },
+  { name: '王工程师', initial: '王', department: 'AI研发部', color: '#f59e0b' },
 ]
 </script>
 
@@ -142,19 +142,19 @@ const assignedUsers = [
 
 .back-icon {
   font-size: 18px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .back-icon:hover {
-  color: #1677ff;
+  color: #0ea5e9;
 }
 
 .detail-title {
   font-size: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .detail-header-right {
@@ -181,7 +181,7 @@ const assignedUsers = [
 
 /* Card */
 .card {
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   background: #fff;
   overflow: hidden;
@@ -189,13 +189,13 @@ const assignedUsers = [
 
 .card-header {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .card-header-title {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .card-body {
@@ -208,7 +208,7 @@ const assignedUsers = [
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
   gap: 16px;
 }
 
@@ -218,7 +218,7 @@ const assignedUsers = [
 
 .info-label {
   font-size: 14px;
-  color: #666;
+  color: #64748b;
   flex-shrink: 0;
 }
 
@@ -244,13 +244,13 @@ const assignedUsers = [
 
 .permission-table th {
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.65);
-  border-bottom: 1px solid #f0f0f0;
+  color: #64748b;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .permission-table td {
-  color: rgba(0, 0, 0, 0.88);
-  border-bottom: 1px solid #f0f0f0;
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .permission-table tbody tr:last-child td {
@@ -268,12 +268,12 @@ const assignedUsers = [
 }
 
 .perm-yes {
-  color: #52c41a;
+  color: #10b981;
   font-weight: 600;
 }
 
 .perm-no {
-  color: #ff4d4f;
+  color: #ef4444;
   font-weight: 600;
 }
 
@@ -283,7 +283,7 @@ const assignedUsers = [
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .user-row.last-row {
@@ -305,11 +305,11 @@ const assignedUsers = [
 
 .user-name {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .user-dept {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 </style>
