@@ -1,137 +1,150 @@
 <template>
   <PageContainer title="研究项目">
     <template #extra>
-      <a-button type="primary" @click="projectModal.open()">
-        <PlusOutlined /> 创建项目
-      </a-button>
+      <el-button type="primary" @click="projectModal.open()">
+        <el-icon class="mr-1"><Plus /></el-icon> 创建项目
+      </el-button>
     </template>
 
     <!-- Search & Filter Bar -->
     <div class="filter-bar">
-      <a-input
-        v-model:value="searchKeyword"
+      <el-input
+        v-model="searchKeyword"
         placeholder="搜索项目..."
-        allow-clear
+        clearable
         style="width: 280px"
-        @change="handleFilter"
+        @input="handleFilter"
       >
         <template #prefix>
-          <SearchOutlined style="color: rgba(0,0,0,0.25)" />
+          <el-icon style="color: #94a3b8"><Search /></el-icon>
         </template>
-      </a-input>
-      <a-select
-        v-model:value="filterStatus"
+      </el-input>
+      <el-select
+        v-model="filterStatus"
         placeholder="项目状态"
-        allow-clear
+        clearable
         style="width: 160px"
         @change="handleFilter"
       >
-        <a-select-option value="ACTIVE">进行中</a-select-option>
-        <a-select-option value="PLANNED">计划中</a-select-option>
-        <a-select-option value="COMPLETED">已完成</a-select-option>
-        <a-select-option value="SUSPENDED">已暂停</a-select-option>
-      </a-select>
-      <a-select
-        v-model:value="filterCategory"
+        <el-option value="ACTIVE" label="进行中" />
+        <el-option value="PLANNED" label="计划中" />
+        <el-option value="COMPLETED" label="已完成" />
+        <el-option value="SUSPENDED" label="已暂停" />
+      </el-select>
+      <el-select
+        v-model="filterCategory"
         placeholder="研究领域"
-        allow-clear
+        clearable
         style="width: 160px"
         @change="handleFilter"
       >
-        <a-select-option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</a-select-option>
-      </a-select>
+        <el-option v-for="cat in categories" :key="cat" :value="cat" :label="cat" />
+      </el-select>
     </div>
 
     <!-- Card Grid -->
-    <a-row :gutter="[16, 16]">
-      <a-col v-for="project in pagedProjects" :key="project.id" :span="8">
-        <a-card hoverable class="project-card" @click="router.push(`/data/rdr/projects/${project.id}`)">
-          <!-- Card Header -->
-          <div class="card-header">
-            <span class="project-name">{{ project.name }}</span>
-            <a-tag :color="statusColor(project.status)">{{ statusLabel(project.status) }}</a-tag>
-          </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <el-card
+        v-for="project in pagedProjects"
+        :key="project.id"
+        shadow="hover"
+        class="project-card cursor-pointer !rounded-xl !border-slate-200/80"
+        @click="router.push(`/data/rdr/projects/${project.id}`)"
+      >
+        <!-- Card Header -->
+        <div class="card-header">
+          <span class="project-name">{{ project.name }}</span>
+          <el-tag :type="statusColor(project.status)">{{ statusLabel(project.status) }}</el-tag>
+        </div>
 
-          <!-- PI -->
-          <div class="card-info-row">
-            <UserOutlined class="info-icon" />
-            <span class="info-label">负责人:</span>
-            <span>{{ project.pi }}</span>
-          </div>
+        <!-- PI -->
+        <div class="card-info-row">
+          <el-icon class="info-icon"><User /></el-icon>
+          <span class="info-label">负责人:</span>
+          <span>{{ project.pi }}</span>
+        </div>
 
-          <!-- Research Field -->
-          <div class="card-info-row">
-            <span class="info-label">研究领域:</span>
-            <a-tag color="blue" size="small">{{ project.field }}</a-tag>
-          </div>
+        <!-- Research Field -->
+        <div class="card-info-row">
+          <span class="info-label">研究领域:</span>
+          <el-tag type="primary" size="small">{{ project.field }}</el-tag>
+        </div>
 
-          <!-- Timeline -->
-          <div class="card-info-row">
-            <CalendarOutlined class="info-icon" />
-            <span class="timeline-text">{{ project.startDate }} ~ {{ project.endDate }}</span>
-          </div>
+        <!-- Timeline -->
+        <div class="card-info-row">
+          <el-icon class="info-icon"><Calendar /></el-icon>
+          <span class="timeline-text">{{ project.startDate }} ~ {{ project.endDate }}</span>
+        </div>
 
-          <!-- Team Size -->
-          <div class="card-info-row">
-            <TeamOutlined class="info-icon" />
-            <span>{{ project.teamSize }} 人</span>
-          </div>
+        <!-- Team Size -->
+        <div class="card-info-row">
+          <el-icon class="info-icon"><User /></el-icon>
+          <span>{{ project.teamSize }} 人</span>
+        </div>
 
-          <!-- Progress -->
-          <div class="card-progress">
-            <div class="progress-label">
-              <span>招募进度</span>
-              <span class="progress-percent">{{ project.progress }}%</span>
-            </div>
-            <a-progress
-              :percent="project.progress"
-              :stroke-color="progressColor(project.progress)"
-              :show-info="false"
-              size="small"
-            />
+        <!-- Progress -->
+        <div class="card-progress">
+          <div class="progress-label">
+            <span>招募进度</span>
+            <span class="progress-percent">{{ project.progress }}%</span>
           </div>
+          <el-progress
+            :percentage="project.progress"
+            :color="progressColor(project.progress)"
+            :stroke-width="6"
+            :show-text="false"
+          />
+        </div>
 
-          <!-- Action Link -->
-          <div class="card-action">
-            <a @click.stop="router.push(`/data/rdr/projects/${project.id}`)">
-              <EyeOutlined /> 查看详情 ->
-            </a>
-          </div>
-        </a-card>
-      </a-col>
-    </a-row>
+        <!-- Action Link -->
+        <div class="card-action">
+          <el-button link type="primary" @click.stop="router.push(`/data/rdr/projects/${project.id}`)">
+            <el-icon class="mr-1"><View /></el-icon> 查看详情 -&gt;
+          </el-button>
+        </div>
+      </el-card>
+    </div>
 
     <!-- Empty State -->
-    <a-empty v-if="filteredProjects.length === 0" description="暂无匹配项目" style="margin-top: 48px" />
+    <el-empty v-if="filteredProjects.length === 0" description="暂无匹配项目" :image-size="60" style="margin-top: 48px" />
 
     <!-- Pagination -->
     <div class="pagination-wrapper">
-      <a-pagination
-        v-model:current="currentPage"
+      <el-pagination
+        background
+        layout="prev, pager, next, jumper"
         :total="filteredProjects.length"
+        :current-page="currentPage"
         :page-size="pageSize"
-        show-quick-jumper
-        @change="onPageChange"
+        @current-change="onPageChange"
       />
     </div>
 
-    <!-- Create Project Modal -->
-    <a-modal v-model:open="projectModal.visible" title="新建研究项目" @ok="handleCreate" :confirm-loading="submitting" width="600px">
-      <a-form layout="vertical">
-        <a-form-item label="项目名称" required><a-input v-model:value="projectForm.name" /></a-form-item>
-        <a-form-item label="研究类型"><a-select v-model:value="projectForm.research_type">
-          <a-select-option value="CLINICAL">临床研究</a-select-option>
-          <a-select-option value="EPIDEMIOLOGICAL">流行病学研究</a-select-option>
-          <a-select-option value="BASIC">基础研究</a-select-option>
-        </a-select></a-form-item>
-        <a-form-item label="描述"><a-textarea v-model:value="projectForm.description" :rows="3" /></a-form-item>
-      </a-form>
-    </a-modal>
+    <!-- Create Project Dialog -->
+    <el-dialog v-model="projectModal.visible" title="新建研究项目" width="600px">
+      <el-form label-position="top">
+        <el-form-item label="项目名称" required><el-input v-model="projectForm.name" /></el-form-item>
+        <el-form-item label="研究类型"><el-select v-model="projectForm.research_type">
+          <el-option value="CLINICAL" label="临床研究" />
+          <el-option value="EPIDEMIOLOGICAL" label="流行病学研究" />
+          <el-option value="BASIC" label="基础研究" />
+        </el-select></el-form-item>
+        <el-form-item label="描述"><el-input v-model="projectForm.description" type="textarea" :rows="3" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="projectModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreate">确定</el-button>
+      </template>
+    </el-dialog>
 
-    <!-- Invite Modal -->
-    <a-modal v-model:open="inviteVisible" title="邀请成员" @ok="handleInvite" :confirm-loading="inviting">
-      <UserSelect v-model:value="inviteUserId" placeholder="选择用户" />
-    </a-modal>
+    <!-- Invite Dialog -->
+    <el-dialog v-model="inviteVisible" title="邀请成员" width="520px">
+      <UserSelect v-model="inviteUserId" placeholder="选择用户" />
+      <template #footer>
+        <el-button @click="inviteVisible = false">取消</el-button>
+        <el-button type="primary" :loading="inviting" @click="handleInvite">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
@@ -139,14 +152,13 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  PlusOutlined,
-  SearchOutlined,
-  TeamOutlined,
-  CalendarOutlined,
-  UserOutlined,
-  EyeOutlined,
-} from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+  Plus,
+  Search,
+  User,
+  Calendar,
+  View,
+} from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -206,12 +218,12 @@ function onPageChange(page: number) {
 // ---- Status helpers ----
 function statusColor(status: string): string {
   const map: Record<string, string> = {
-    ACTIVE: 'green',
-    PLANNED: 'blue',
-    COMPLETED: 'default',
-    SUSPENDED: 'red',
+    ACTIVE: 'success',
+    PLANNED: 'primary',
+    COMPLETED: 'info',
+    SUSPENDED: 'danger',
   }
-  return map[status] || 'default'
+  return map[status] || 'info'
 }
 
 function statusLabel(status: string): string {
@@ -225,10 +237,10 @@ function statusLabel(status: string): string {
 }
 
 function progressColor(percent: number): string {
-  if (percent >= 80) return '#52c41a'
-  if (percent >= 40) return '#1890ff'
-  if (percent > 0) return '#faad14'
-  return '#d9d9d9'
+  if (percent >= 80) return '#10b981'
+  if (percent >= 40) return '#0ea5e9'
+  if (percent > 0) return '#f59e0b'
+  return '#e2e8f0'
 }
 
 // ---- Create Project ----
@@ -238,7 +250,7 @@ async function handleCreate() {
   submitting.value = true
   try {
     await createProject(projectForm)
-    message.success('项目创建成功')
+    ElMessage.success('项目创建成功')
     projectModal.close()
     fetchData()
   } finally {
@@ -256,7 +268,7 @@ async function handleInvite() {
   inviting.value = true
   try {
     await request.post(`/rdr/projects/${invitingProjectId}/members`, { user_id: inviteUserId.value })
-    message.success('邀请成功')
+    ElMessage.success('邀请成功')
     inviteVisible.value = false
   } finally {
     inviting.value = false
@@ -281,7 +293,7 @@ onMounted(() => fetchData())
 }
 
 .project-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
   transform: translateY(-2px);
 }
 
@@ -295,7 +307,7 @@ onMounted(() => fetchData())
 .project-name {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   line-height: 1.4;
   flex: 1;
   margin-right: 8px;
@@ -307,16 +319,16 @@ onMounted(() => fetchData())
   gap: 6px;
   margin-bottom: 8px;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 
 .info-icon {
-  color: #1890ff;
+  color: #0ea5e9;
   font-size: 14px;
 }
 
 .info-label {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   white-space: nowrap;
 }
 
@@ -335,28 +347,19 @@ onMounted(() => fetchData())
   align-items: center;
   margin-bottom: 4px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .progress-percent {
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   font-weight: 500;
 }
 
 .card-action {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
   text-align: right;
-}
-
-.card-action a {
-  color: #1890ff;
-  font-size: 13px;
-}
-
-.card-action a:hover {
-  color: #40a9ff;
 }
 
 .pagination-wrapper {
@@ -364,6 +367,6 @@ onMounted(() => fetchData())
   justify-content: flex-end;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
 }
 </style>

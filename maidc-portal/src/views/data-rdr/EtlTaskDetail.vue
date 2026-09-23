@@ -1,142 +1,167 @@
 <template>
   <PageContainer :title="task?.name || 'ETL 任务详情'" :loading="loading">
     <template #extra>
-      <a-space>
-        <a-button
+      <div class="flex items-center gap-2">
+        <el-button
           v-if="task?.status === 'FAILED'"
-          type="primary"
-          danger
+          type="danger"
           @click="handleRetry"
           :loading="retrying"
         >
-          <ReloadOutlined /> 重试
-        </a-button>
-        <a-button
+          <el-icon class="mr-1"><Refresh /></el-icon> 重试
+        </el-button>
+        <el-button
           v-if="task?.status === 'RUNNING'"
           @click="handlePause"
         >
-          <PauseOutlined /> 暂停
-        </a-button>
-        <a-button @click="router.back()">返回</a-button>
-      </a-space>
+          <el-icon class="mr-1"><VideoPause /></el-icon> 暂停
+        </el-button>
+        <el-button @click="router.back()">返回</el-button>
+      </div>
     </template>
 
     <template v-if="task">
       <!-- Task Info Header -->
-      <a-card style="margin-bottom: 16px">
-        <a-descriptions :column="3" bordered size="small">
-          <a-descriptions-item label="任务名称">{{ task.name }}</a-descriptions-item>
-          <a-descriptions-item label="源数据">
-            <a-tag color="blue">{{ task.source_type }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="目标">
-            <a-tag color="green">{{ task.target_type }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="状态">
-            <a-badge :status="statusMap[task.status] || 'default'" :text="task.status" />
-          </a-descriptions-item>
-          <a-descriptions-item label="调度">
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm mb-4">
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="任务名称">{{ task.name }}</el-descriptions-item>
+          <el-descriptions-item label="源数据">
+            <el-tag type="primary">{{ task.source_type }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="目标">
+            <el-tag type="success">{{ task.target_type }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="inline-block h-2 w-2 rounded-full" :style="{ background: statusMap[task.status] || '#94a3b8' }" />
+              {{ task.status }}
+            </span>
+          </el-descriptions-item>
+          <el-descriptions-item label="调度">
             <span>{{ task.cron_expression ? `Cron: ${task.cron_expression}` : '手动执行' }}</span>
-          </a-descriptions-item>
-          <a-descriptions-item label="处理记录数">{{ task.records_processed?.toLocaleString() ?? '-' }}</a-descriptions-item>
-          <a-descriptions-item label="最后执行时间">{{ formatDateTime(task.last_execution_time) }}</a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ formatDateTime(task.created_at) }}</a-descriptions-item>
-        </a-descriptions>
-      </a-card>
+          </el-descriptions-item>
+          <el-descriptions-item label="处理记录数">{{ task.records_processed?.toLocaleString() ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="最后执行时间">{{ formatDateTime(task.last_execution_time) }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(task.created_at) }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
 
       <!-- Tabs -->
-      <a-card>
-        <a-tabs v-model:activeKey="activeTab">
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <el-tabs v-model="activeTab">
           <!-- Execution History Tab -->
-          <a-tab-pane key="history" tab="执行历史">
-            <a-table
-              :columns="historyColumns"
-              :data-source="history"
-              :loading="historyLoading"
+          <el-tab-pane label="执行历史" name="history">
+            <el-table
+              :data="history"
+              v-loading="historyLoading"
               size="small"
               row-key="id"
             >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'status'">
-                  <a-badge :status="statusMap[record.status] || 'default'" :text="record.status" />
+              <el-table-column label="运行ID" prop="run_id" width="100" />
+              <el-table-column label="开始时间" width="170">
+                <template #default="{ row }">{{ formatDateTime(row.start_time) }}</template>
+              </el-table-column>
+              <el-table-column label="结束时间" width="170">
+                <template #default="{ row }">{{ row.end_time ? formatDateTime(row.end_time) : '-' }}</template>
+              </el-table-column>
+              <el-table-column label="耗时" width="80">
+                <template #default="{ row }">{{ row.duration ? row.duration + 's' : '-' }}</template>
+              </el-table-column>
+              <el-table-column label="状态" width="100">
+                <template #default="{ row }">
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="inline-block h-2 w-2 rounded-full" :style="{ background: statusMap[row.status] || '#94a3b8' }" />
+                    {{ row.status }}
+                  </span>
                 </template>
-                <template v-if="column.key === 'start_time'">
-                  {{ formatDateTime(record.start_time) }}
-                </template>
-                <template v-if="column.key === 'end_time'">
-                  {{ record.end_time ? formatDateTime(record.end_time) : '-' }}
-                </template>
-                <template v-if="column.key === 'duration'">
-                  {{ record.duration ? record.duration + 's' : '-' }}
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+              </el-table-column>
+              <el-table-column label="记录数" prop="records_processed" width="100" />
+            </el-table>
+          </el-tab-pane>
 
           <!-- Current Run Tab -->
-          <a-tab-pane key="current" tab="当前运行">
+          <el-tab-pane label="当前运行" name="current">
             <template v-if="task.status === 'RUNNING'">
-              <a-card title="执行进度" size="small">
-                <a-steps :current="currentStep" status="process">
-                  <a-step v-for="(step, idx) in runSteps" :key="idx" :title="step.title" :description="step.description">
+              <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+                <template #header>执行进度</template>
+                <el-steps :active="currentStep" process-status="process" align-center>
+                  <el-step
+                    v-for="(step, idx) in runSteps"
+                    :key="idx"
+                    :title="step.title"
+                    :description="step.description"
+                  >
                     <template #icon>
-                      <LoadingOutlined v-if="idx === currentStep" spin />
-                      <CheckCircleOutlined v-else-if="idx < currentStep" style="color: #52c41a" />
-                      <ClockCircleOutlined v-else />
+                      <el-icon v-if="idx === currentStep" class="is-loading"><Loading /></el-icon>
+                      <el-icon v-else-if="idx < currentStep" color="#10b981"><CircleCheck /></el-icon>
+                      <el-icon v-else><Clock /></el-icon>
                     </template>
-                  </a-step>
-                </a-steps>
-                <div style="margin-top: 24px; text-align: center">
-                  <a-progress :percent="runProgress" :status="runProgress < 100 ? 'active' : 'success'" />
-                  <p style="margin-top: 8px; color: rgba(0,0,0,0.45)">
+                  </el-step>
+                </el-steps>
+                <div class="mt-6 text-center">
+                  <el-progress
+                    :percentage="runProgress"
+                    :stroke-width="6"
+                    :status="runProgress < 100 ? undefined : 'success'"
+                  />
+                  <p class="mt-2 text-slate-500">
                     已处理 {{ runRecordsProcessed?.toLocaleString() }} 条记录
                   </p>
                 </div>
-              </a-card>
+              </el-card>
             </template>
-            <a-empty v-else description="当前没有正在运行的任务" />
-          </a-tab-pane>
+            <el-empty v-else description="当前没有正在运行的任务" :image-size="60" />
+          </el-tab-pane>
 
           <!-- Transformation Log Tab -->
-          <a-tab-pane key="log" tab="转换日志">
-            <div style="margin-bottom: 12px">
-              <a-select v-model:value="logLevel" style="width: 120px" @change="loadLogs">
-                <a-select-option value="">全部</a-select-option>
-                <a-select-option value="INFO">INFO</a-select-option>
-                <a-select-option value="WARN">WARN</a-select-option>
-                <a-select-option value="ERROR">ERROR</a-select-option>
-              </a-select>
+          <el-tab-pane label="转换日志" name="log">
+            <div class="mb-3">
+              <el-select v-model="logLevel" style="width: 120px" @change="loadLogs">
+                <el-option value="" label="全部" />
+                <el-option value="INFO" label="INFO" />
+                <el-option value="WARN" label="WARN" />
+                <el-option value="ERROR" label="ERROR" />
+              </el-select>
             </div>
-            <a-table
-              :columns="logColumns"
-              :data-source="logs"
-              :loading="logsLoading"
+            <el-table
+              :data="pagedLogs"
+              v-loading="logsLoading"
               size="small"
               row-key="id"
-              :pagination="{ pageSize: 50 }"
             >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'timestamp'">
-                  {{ formatDateTime(record.timestamp) }}
+              <el-table-column label="时间" width="170">
+                <template #default="{ row }">{{ formatDateTime(row.timestamp) }}</template>
+              </el-table-column>
+              <el-table-column label="级别" width="80">
+                <template #default="{ row }">
+                  <el-tag :type="logLevelColorMap[row.level] || 'info'" size="small">{{ row.level }}</el-tag>
                 </template>
-                <template v-if="column.key === 'level'">
-                  <a-tag :color="logLevelColorMap[record.level] || 'default'" size="small">{{ record.level }}</a-tag>
+              </el-table-column>
+              <el-table-column label="消息">
+                <template #default="{ row }">
+                  <span class="log-message">{{ row.message }}</span>
                 </template>
-                <template v-if="column.key === 'message'">
-                  <span class="log-message">{{ record.message }}</span>
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+              </el-table-column>
+            </el-table>
+            <el-pagination
+              class="mt-4 justify-end"
+              background
+              layout="total, prev, pager, next"
+              :total="logs.length"
+              :current-page="logPage"
+              :page-size="50"
+              @current-change="(page: number) => (logPage = page)"
+            />
+          </el-tab-pane>
 
           <!-- Config Tab -->
-          <a-tab-pane key="config" tab="配置">
-            <a-card size="small">
+          <el-tab-pane label="配置" name="config">
+            <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
               <CodeEditor :model-value="configJson" :read-only="true" language="JSON" />
-            </a-card>
-          </a-tab-pane>
-        </a-tabs>
-      </a-card>
+            </el-card>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
     </template>
   </PageContainer>
 </template>
@@ -145,13 +170,13 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  ReloadOutlined,
-  PauseOutlined,
-  LoadingOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-} from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+  Refresh,
+  VideoPause,
+  Loading,
+  CircleCheck,
+  Clock,
+} from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import request from '@/utils/request'
@@ -174,6 +199,7 @@ const historyLoading = ref(false)
 const logs = ref<any[]>([])
 const logsLoading = ref(false)
 const logLevel = ref('')
+const logPage = ref(1)
 // Current run
 const runProgress = ref(0)
 const runRecordsProcessed = ref(0)
@@ -181,18 +207,18 @@ const currentStep = ref(0)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const statusMap: Record<string, string> = {
-  PENDING: 'default',
-  RUNNING: 'processing',
-  COMPLETED: 'success',
-  FAILED: 'error',
-  PAUSED: 'warning',
+  PENDING: '#94a3b8',
+  RUNNING: '#0ea5e9',
+  COMPLETED: '#10b981',
+  FAILED: '#ef4444',
+  PAUSED: '#f59e0b',
 }
 
 const logLevelColorMap: Record<string, string> = {
-  INFO: 'blue',
-  WARN: 'orange',
-  ERROR: 'red',
-  DEBUG: 'default',
+  INFO: 'primary',
+  WARN: 'warning',
+  ERROR: 'danger',
+  DEBUG: 'info',
 }
 
 const runSteps = [
@@ -203,20 +229,11 @@ const runSteps = [
   { title: '验证', description: '校验数据质量' },
 ]
 
-const historyColumns = [
-  { title: '运行ID', dataIndex: 'run_id', key: 'run_id', width: 100 },
-  { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 170 },
-  { title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 170 },
-  { title: '耗时', dataIndex: 'duration', key: 'duration', width: 80 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '记录数', dataIndex: 'records_processed', key: 'records_processed', width: 100 },
-]
-
-const logColumns = [
-  { title: '时间', dataIndex: 'timestamp', key: 'timestamp', width: 170 },
-  { title: '级别', dataIndex: 'level', key: 'level', width: 80 },
-  { title: '消息', dataIndex: 'message', key: 'message' },
-]
+const pagedLogs = computed(() => {
+  const pageSize = 50
+  const start = (logPage.value - 1) * pageSize
+  return logs.value.slice(start, start + pageSize)
+})
 
 const configJson = computed(() => {
   if (!task.value?.config) return '{\n  \n}'
@@ -250,6 +267,7 @@ async function loadLogs() {
     if (logLevel.value) params.level = logLevel.value
     const res = await request.get(`/etl/tasks/${route.params.id}/logs`, { params })
     logs.value = res.data.data?.items || res.data.data || []
+    logPage.value = 1
   } finally {
     logsLoading.value = false
   }
@@ -286,7 +304,7 @@ async function handleRetry() {
   retrying.value = true
   try {
     await request.post(`/etl/tasks/${route.params.id}/retry`)
-    message.success('任务已重新启动')
+    ElMessage.success('任务已重新启动')
     loadTask()
   } finally {
     retrying.value = false
@@ -296,7 +314,7 @@ async function handleRetry() {
 async function handlePause() {
   try {
     await request.post(`/etl/tasks/${route.params.id}/pause`)
-    message.info('任务已暂停')
+    ElMessage.info('任务已暂停')
     stopPolling()
     loadTask()
   } catch {
