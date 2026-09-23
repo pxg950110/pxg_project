@@ -55,7 +55,7 @@
 
     <!-- Empty State -->
     <div v-if="filteredMessages.length === 0" class="empty-state">
-      <span>暂无消息</span>
+      <el-empty description="暂无消息" :image-size="60" />
     </div>
   </PageContainer>
 </template>
@@ -63,7 +63,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { message as antMessage } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getMessages, markAsRead, markAllAsRead } from '@/api/msg'
 import { useTable } from '@/hooks/useTable'
@@ -80,9 +80,9 @@ interface MessageItem {
 }
 
 const TYPE_MAP: Record<string, { label: string; color: string }> = {
-  SYSTEM: { label: '系统', color: '#1677ff' },
-  ALERT: { label: '告警', color: '#ff4d4f' },
-  APPROVAL: { label: '审批', color: '#52c41a' },
+  SYSTEM: { label: '系统', color: '#0ea5e9' },
+  ALERT: { label: '告警', color: '#ef4444' },
+  APPROVAL: { label: '审批', color: '#10b981' },
 }
 
 const router = useRouter()
@@ -104,7 +104,7 @@ const filteredMessages = computed(() => {
   const list = messages.value.map((m: MessageItem) => ({
     ...m,
     typeLabel: m.typeLabel || TYPE_MAP[m.type]?.label || m.type,
-    typeColor: m.typeColor || TYPE_MAP[m.type]?.color || '#1677ff',
+    typeColor: m.typeColor || TYPE_MAP[m.type]?.color || '#0ea5e9',
   }))
   if (activeTab.value === 'unread') return list.filter((m: MessageItem) => !m.isRead)
   if (activeTab.value === 'read') return list.filter((m: MessageItem) => m.isRead)
@@ -122,13 +122,13 @@ function handleViewDetail(msg: MessageItem) {
 
 async function handleMarkRead(msg: MessageItem) {
   await markAsRead(msg.id)
-  antMessage.success('已标记为已读')
+  ElMessage.success('已标记为已读')
   fetchData()
 }
 
 async function handleMarkAllRead() {
   await markAllAsRead()
-  antMessage.success('已全部标记为已读')
+  ElMessage.success('已全部标记为已读')
   fetchData()
 }
 
@@ -140,9 +140,9 @@ onMounted(() => fetchData())
 .mark-all-btn {
   padding: 5px 16px;
   font-size: 14px;
-  color: #1677ff;
-  background: #e6f4ff;
-  border: 1px solid #91caff;
+  color: #0ea5e9;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
@@ -150,8 +150,8 @@ onMounted(() => fetchData())
 }
 
 .mark-all-btn:hover {
-  background: #bae0ff;
-  border-color: #1677ff;
+  background: #e0f2fe;
+  border-color: #0ea5e9;
 }
 
 /* Custom Tab Pills */
@@ -168,25 +168,25 @@ onMounted(() => fetchData())
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid #d9d9d9;
+  border: 1px solid #e2e8f0;
   background: #fff;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 
 .tab-pill:hover {
-  color: #1677ff;
-  border-color: #1677ff;
+  color: #0ea5e9;
+  border-color: #0ea5e9;
 }
 
 .tab-pill--active {
-  background: #1677ff;
+  background: #0ea5e9;
   color: #fff;
-  border-color: #1677ff;
+  border-color: #0ea5e9;
 }
 
 .tab-pill--active:hover {
-  background: #4096ff;
-  border-color: #4096ff;
+  background: #38bdf8;
+  border-color: #38bdf8;
   color: #fff;
 }
 
@@ -202,28 +202,28 @@ onMounted(() => fetchData())
   padding: 16px 20px;
   border-radius: 8px;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   transition: all 0.2s;
 }
 
 .message-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .message-card--first-unread {
-  background: #e6f4ff;
-  border: 1px solid #91caff;
-  border-left: 3px solid #1677ff;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-left: 3px solid #0ea5e9;
 }
 
 .message-card--unread {
   background: #fff;
-  border: 1px solid #d9d9d9;
+  border: 1px solid #e2e8f0;
 }
 
 .message-card--read {
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
 }
 
 /* Card Top Row */
@@ -250,7 +250,7 @@ onMounted(() => fetchData())
 
 .message-card__title {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -263,7 +263,7 @@ onMounted(() => fetchData())
 
 .message-card__time {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   white-space: nowrap;
   margin-left: auto;
 }
@@ -278,21 +278,21 @@ onMounted(() => fetchData())
 
 .message-card__link {
   font-size: 13px;
-  color: #1677ff;
+  color: #0ea5e9;
   cursor: pointer;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .message-card__link:hover {
-  color: #4096ff;
+  color: #38bdf8;
 }
 
 /* Empty State */
 .empty-state {
   text-align: center;
   padding: 48px 0;
-  color: rgba(0, 0, 0, 0.25);
+  color: #cbd5e1;
   font-size: 14px;
 }
 </style>

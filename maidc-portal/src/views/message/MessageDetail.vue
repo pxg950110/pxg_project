@@ -3,17 +3,17 @@
     <template #extra>
       <div class="detail-header">
         <div class="detail-header-left">
-          <ArrowLeftOutlined class="back-icon" @click="goBack" />
+          <el-icon class="back-icon" @click="goBack"><ArrowLeft /></el-icon>
           <span class="detail-title">消息详情</span>
         </div>
       </div>
     </template>
 
-    <a-card class="message-card" :bordered="false">
+    <el-card shadow="never" class="message-card !rounded-xl !border-slate-200/80 shadow-clinical-sm">
       <!-- Card Header -->
       <div class="msg-card-header">
         <div class="msg-card-header-left">
-          <a-tag :color="msgData.typeColor">{{ msgData.typeLabel }}</a-tag>
+          <el-tag type="primary">{{ msgData.typeLabel }}</el-tag>
           <span class="msg-title-text">{{ msgData.title }}</span>
         </div>
         <span class="msg-time">{{ msgData.time }}</span>
@@ -23,7 +23,7 @@
       <div class="msg-card-body">
         <div class="msg-content">{{ msgData.content }}</div>
 
-        <a-divider />
+        <el-divider />
 
         <div class="msg-details">
           <div class="msg-details-title">附加信息</div>
@@ -41,13 +41,13 @@
           </div>
         </div>
       </div>
-    </a-card>
+    </el-card>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ArrowLeftOutlined } from '@ant-design/icons-vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 const router = useRouter()
@@ -60,7 +60,6 @@ const msgData = {
   id: 1,
   type: 'SYSTEM',
   typeLabel: '系统通知',
-  typeColor: 'blue',
   title: '模型部署完成通知',
   time: '2026-04-12 14:30:00',
   content:
@@ -87,24 +86,24 @@ const msgData = {
 
 .back-icon {
   font-size: 18px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .back-icon:hover {
-  color: #1677ff;
+  color: #0ea5e9;
 }
 
 .detail-title {
   font-size: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .message-card {
   border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
 }
 
 .msg-card-header {
@@ -112,7 +111,7 @@ const msgData = {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .msg-card-header-left {
@@ -124,12 +123,12 @@ const msgData = {
 .msg-title-text {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .msg-time {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .msg-card-body {
@@ -139,7 +138,7 @@ const msgData = {
 .msg-content {
   font-size: 14px;
   line-height: 1.8;
-  color: rgba(0, 0, 0, 0.75);
+  color: #334155;
   white-space: pre-line;
 }
 
@@ -150,7 +149,7 @@ const msgData = {
 .msg-details-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin-bottom: 12px;
 }
 
@@ -161,18 +160,18 @@ const msgData = {
 }
 
 .msg-detail-row + .msg-detail-row {
-  border-top: 1px solid #fafafa;
+  border-top: 1px solid #f8fafc;
 }
 
 .msg-detail-label {
   width: 80px;
   flex-shrink: 0;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .msg-detail-value {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 </style>
