@@ -1,58 +1,83 @@
 <template>
   <PageContainer title="告警规则">
     <template #extra>
-      <a-button type="primary" @click="ruleModal.open()">
-        <PlusOutlined /> 新建规则
-      </a-button>
+      <el-button type="primary" @click="ruleModal.open()">
+        <el-icon class="mr-1"><Plus /></el-icon>
+        新建规则
+      </el-button>
     </template>
 
-    <a-table :columns="columns" :data-source="rules" :loading="loading" row-key="id">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'severity'">
-          <StatusBadge :status="record.severity" type="alert" />
+    <el-table :data="rules" row-key="id" v-loading="loading">
+      <el-table-column label="规则名称" prop="name" min-width="180" />
+      <el-table-column label="级别" width="100">
+        <template #default="{ row }">
+          <StatusBadge :status="row.severity" type="alert" />
         </template>
-        <template v-if="column.key === 'enabled'">
-          <a-switch :checked="record.enabled" @change="(v: boolean) => handleToggle(record, v)" />
+      </el-table-column>
+      <el-table-column label="指标" prop="metric_name" width="140" />
+      <el-table-column label="启用" width="90">
+        <template #default="{ row }">
+          <el-switch :model-value="row.enabled" @change="(v) => handleToggle(row, Boolean(v))" />
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="openEdit(record)">编辑</a>
-            <a-popconfirm title="确定删除？" @confirm="handleDelete(record.id)">
-              <a class="danger-link">删除</a>
-            </a-popconfirm>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="140">
+        <template #default="{ row }">
+          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+          <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)">
+            <template #reference>
+              <el-button link type="danger">删除</el-button>
+            </template>
+          </el-popconfirm>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
 
-    <a-modal v-model:open="ruleModal.visible" :title="editingId ? '编辑规则' : '新建规则'" @ok="handleSave" :confirm-loading="submitting" width="600px">
-      <a-form layout="vertical">
-        <a-form-item label="规则名称" required><a-input v-model:value="ruleForm.name" /></a-form-item>
-        <a-form-item label="告警级别"><a-select v-model:value="ruleForm.severity">
-          <a-select-option value="INFO">提示</a-select-option>
-          <a-select-option value="WARNING">警告</a-select-option>
-          <a-select-option value="CRITICAL">严重</a-select-option>
-        </a-select></a-form-item>
-        <a-form-item label="指标"><a-select v-model:value="ruleForm.metric_name">
-          <a-select-option value="inference_latency">推理延迟</a-select-option>
-          <a-select-option value="error_rate">错误率</a-select-option>
-          <a-select-option value="gpu_usage">GPU利用率</a-select-option>
-        </a-select></a-form-item>
-        <a-row :gutter="16">
-          <a-col :span="12"><a-form-item label="条件"><a-select v-model:value="ruleForm.operator">
-            <a-select-option value="GT">大于</a-select-option><a-select-option value="LT">小于</a-select-option>
-          </a-select></a-form-item></a-col>
-          <a-col :span="12"><a-form-item label="阈值"><a-input-number v-model:value="ruleForm.threshold" style="width:100%" /></a-form-item></a-col>
-        </a-row>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="ruleModal.visible" :title="editingId ? '编辑规则' : '新建规则'" width="600px">
+      <el-form label-position="top">
+        <el-form-item label="规则名称" required>
+          <el-input v-model="ruleForm.name" />
+        </el-form-item>
+        <el-form-item label="告警级别">
+          <el-select v-model="ruleForm.severity" style="width: 100%">
+            <el-option label="提示" value="INFO" />
+            <el-option label="警告" value="WARNING" />
+            <el-option label="严重" value="CRITICAL" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="指标">
+          <el-select v-model="ruleForm.metric_name" style="width: 100%">
+            <el-option label="推理延迟" value="inference_latency" />
+            <el-option label="错误率" value="error_rate" />
+            <el-option label="GPU利用率" value="gpu_usage" />
+          </el-select>
+        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="条件">
+              <el-select v-model="ruleForm.operator" style="width: 100%">
+                <el-option label="大于" value="GT" />
+                <el-option label="小于" value="LT" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="阈值">
+              <el-input-number v-model="ruleForm.threshold" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="ruleModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSave">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -63,15 +88,6 @@ const submitting = ref(false)
 const loading = ref(false)
 const rules = ref<any[]>([])
 const editingId = ref<number | null>(null)
-
-const columns = [
-  { title: '规则名称', dataIndex: 'name', key: 'name' },
-  { title: '级别', dataIndex: 'severity', key: 'severity', width: 80 },
-  { title: '指标', dataIndex: 'metric_name', key: 'metric_name', width: 120 },
-  { title: '条件', key: 'condition', width: 100 },
-  { title: '启用', dataIndex: 'enabled', key: 'enabled', width: 80 },
-  { title: '操作', key: 'action', width: 120 },
-]
 
 const ruleForm = reactive({ name: '', severity: 'WARNING', metric_name: '', operator: 'GT', threshold: 0 })
 
@@ -92,7 +108,7 @@ async function handleSave() {
   try {
     if (editingId.value) await request.put(`/alert-rules/${editingId.value}`, ruleForm)
     else await request.post('/alert-rules', ruleForm)
-    message.success('保存成功')
+    ElMessage.success('保存成功')
     ruleModal.close()
     editingId.value = null
     loadRules()
@@ -101,7 +117,7 @@ async function handleSave() {
 
 async function handleDelete(id: number) {
   await request.delete(`/alert-rules/${id}`)
-  message.success('规则已删除')
+  ElMessage.success('规则已删除')
   loadRules()
 }
 
@@ -112,7 +128,3 @@ async function handleToggle(record: any, enabled: boolean) {
 
 onMounted(loadRules)
 </script>
-
-<style scoped>
-.danger-link { color: #ff4d4f; }
-</style>
