@@ -3,6 +3,7 @@ package com.maidc.data.controller;
 import com.maidc.common.core.result.PageResult;
 import com.maidc.common.core.result.R;
 import com.maidc.common.log.annotation.OperLog;
+import com.maidc.data.dto.EncounterDetailDTO;
 import com.maidc.data.dto.PatientCreateDTO;
 import com.maidc.data.dto.PatientQueryDTO;
 import com.maidc.data.entity.*;
@@ -52,6 +53,8 @@ public class CdrController {
     private final CheckupComparisonService checkupComparisonService;
     private final OrgService orgService;
     private final DocumentTemplateService documentTemplateService;
+    private final EncounterSubresourceService encounterSubresourceService;
+    private final PatientEncounterService patientEncounterService;
 
     // ==================== Patient ====================
 
@@ -100,6 +103,68 @@ public class CdrController {
     @GetMapping("/encounters/{id}")
     public R<EncounterVO> getEncounter(@PathVariable Long id) {
         return R.ok(encounterService.getEncounter(id));
+    }
+
+    // ==================== Encounter 子资源（前端 data.ts 嵌套契约） ====================
+
+    /**
+     * 就诊详情（患者-就诊两级路径）。
+     * <p>先校验 encounter 归属患者，再复用 PatientEncounterService 的聚合详情。
+     */
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/patients/{patientId}/encounters/{encounterId}")
+    public R<EncounterDetailDTO> getEncounterDetailOfPatient(
+            @PathVariable Long patientId, @PathVariable Long encounterId) {
+        encounterSubresourceService.requireEncounterOfPatient(patientId, encounterId);
+        return R.ok(patientEncounterService.getEncounterDetail(encounterId));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/patients/{patientId}/encounters/{encounterId}/diagnoses")
+    public R<List<DiagnosisEntity>> listEncounterDiagnoses(
+            @PathVariable Long patientId, @PathVariable Long encounterId,
+            @RequestParam(required = false) String type) {
+        return R.ok(encounterSubresourceService.diagnoses(patientId, encounterId, type));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/patients/{patientId}/encounters/{encounterId}/lab-results")
+    public R<List<LabTestEntity>> listEncounterLabResults(
+            @PathVariable Long patientId, @PathVariable Long encounterId,
+            @RequestParam(required = false) String category) {
+        return R.ok(encounterSubresourceService.labResults(patientId, encounterId, category));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/patients/{patientId}/encounters/{encounterId}/imaging")
+    public R<List<ImagingExamEntity>> listEncounterImaging(
+            @PathVariable Long patientId, @PathVariable Long encounterId) {
+        return R.ok(encounterSubresourceService.imaging(patientId, encounterId));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/patients/{patientId}/encounters/{encounterId}/medications")
+    public R<List<MedicationEntity>> listEncounterMedications(
+            @PathVariable Long patientId, @PathVariable Long encounterId,
+            @RequestParam(required = false) String status) {
+        return R.ok(encounterSubresourceService.medications(patientId, encounterId, status));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/patients/{patientId}/encounters/{encounterId}/vital-signs")
+    public R<List<VitalSignEntity>> listEncounterVitalSigns(
+            @PathVariable Long patientId, @PathVariable Long encounterId) {
+        return R.ok(encounterSubresourceService.vitalSigns(patientId, encounterId));
+    }
+
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/patients/{patientId}/encounters/{encounterId}/notes")
+    public R<Page<ClinicalNoteEntity>> listEncounterNotes(
+            @PathVariable Long patientId, @PathVariable Long encounterId,
+            @RequestParam(required = false) String keyword) {
+        encounterSubresourceService.requireEncounterOfPatient(patientId, encounterId);
+        return R.ok(clinicalNoteService.searchNotes(
+                encounterId, null, null, null, null, null, null, keyword, 1, 500));
     }
 
     // ==================== LabTest ====================
