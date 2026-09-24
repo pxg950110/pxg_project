@@ -1,30 +1,41 @@
 <template>
   <div class="dict-type-panel">
-    <a-input-search v-model:value="search" placeholder="搜索分类" allow-clear
-      style="margin-bottom: 12px" @search="filterCategories" />
-    <div class="category-tree">
-      <a-spin :spinning="loading">
-        <a-tree
-          v-model:selectedKeys="selectedKeys"
-          :tree-data="filteredTree"
-          :expanded-keys="expandedKeys"
-          :field-names="{ title: 'name', key: 'id', children: 'children' }"
-          @select="onSelect"
-          @expand="onExpand"
-          show-line
-        >
-          <template #title="{ name, code }">
-            <span>{{ name }}</span>
-            <span class="category-code">{{ code }}</span>
-          </template>
-        </a-tree>
-      </a-spin>
+    <div class="mb-3 flex items-center gap-2">
+      <el-input
+        v-model="search"
+        placeholder="搜索分类"
+        clearable
+        :suffix-icon="Search"
+        @keyup.enter="filterCategories(search)"
+        @clear="filterCategories('')"
+      />
+      <el-button :icon="Search" @click="filterCategories(search)">搜索</el-button>
+    </div>
+    <div v-loading="loading" class="category-tree min-h-[200px]">
+      <el-tree
+        ref="treeRef"
+        :data="filteredTree"
+        node-key="id"
+        :props="{ label: 'name', children: 'children' }"
+        highlight-current
+        :expand-on-click-node="false"
+        :default-expanded-keys="expandedKeys"
+        @node-click="onNodeClick"
+        @node-expand="onNodeExpand"
+        @node-collapse="onNodeCollapse"
+      >
+        <template #default="{ data }">
+          <span>{{ data.name }}</span>
+          <span class="category-code">{{ data.code }}</span>
+        </template>
+      </el-tree>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { Search } from '@element-plus/icons-vue'
 import { getDrugCategories, type DrugCategory } from '@/api/medical-dictionary'
 
 const emit = defineEmits<{
@@ -38,6 +49,7 @@ const tree = ref<DrugCategory[]>([])
 const filteredTree = ref<DrugCategory[]>([])
 const selectedKeys = ref<number[]>([])
 const expandedKeys = ref<number[]>([])
+const treeRef = ref()
 
 async function fetchTree() {
   loading.value = true
@@ -73,16 +85,29 @@ function filterNodes(nodes: DrugCategory[], keyword: string): DrugCategory[] {
   }, [])
 }
 
-function onSelect(keys: (number | string)[]) {
-  emit('select', keys.length ? (keys[0] as number) : undefined)
+/** el-tree 点击选中（再次点击已选节点取消选中，保持原树选择的切换语义） */
+function onNodeClick(data: DrugCategory) {
+  if (selectedKeys.value.length && selectedKeys.value[0] === data.id) {
+    selectedKeys.value = []
+    treeRef.value?.setCurrentKey(null)
+    emit('select', undefined)
+  } else {
+    selectedKeys.value = [data.id]
+    emit('select', data.id)
+  }
 }
 
-function onExpand(keys: (number | string)[]) {
-  expandedKeys.value = keys as number[]
+function onNodeExpand(data: DrugCategory) {
+  if (!expandedKeys.value.includes(data.id)) expandedKeys.value.push(data.id)
+}
+
+function onNodeCollapse(data: DrugCategory) {
+  expandedKeys.value = expandedKeys.value.filter(k => k !== data.id)
 }
 
 function clearSelection() {
   selectedKeys.value = []
+  treeRef.value?.setCurrentKey(null)
 }
 
 defineExpose({ clearSelection })
@@ -97,7 +122,7 @@ onMounted(fetchTree)
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 14px;
 }
@@ -107,10 +132,19 @@ onMounted(fetchTree)
   overflow-y: auto;
   border-radius: 6px;
   padding: 4px;
+
+  :deep(.el-tree) {
+    --el-tree-node-content-height: 30px;
+    background: transparent;
+
+    .el-tree-node__content {
+      border-radius: 6px;
+    }
+  }
 }
 
 .category-code {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   font-size: 12px;
   margin-left: 8px;
 }

@@ -1,83 +1,109 @@
 <template>
   <PageContainer title="编码映射">
     <!-- Filter bar -->
-    <a-card :bordered="false" style="margin-bottom: 16px">
-      <a-row :gutter="16" align="middle">
-        <a-col :span="7">
-          <span style="margin-right: 8px">源编码体系:</span>
-          <a-select v-model:value="sourceSystemId" placeholder="选择源体系" allow-clear
-            style="width: calc(100% - 100px)" @change="fetchMappings">
-            <a-select-option v-for="cs in codeSystems" :key="cs.id" :value="cs.id">{{ cs.name }}</a-select-option>
-          </a-select>
-        </a-col>
-        <a-col :span="7">
-          <span style="margin-right: 8px">目标编码体系:</span>
-          <a-select v-model:value="targetSystemId" placeholder="选择目标体系" allow-clear
-            style="width: calc(100% - 100px)" @change="fetchMappings">
-            <a-select-option v-for="cs in codeSystems" :key="cs.id" :value="cs.id">{{ cs.name }}</a-select-option>
-          </a-select>
-        </a-col>
-        <a-col :span="10" style="text-align: right">
-          <a-button type="primary" @click="handleCreateMapping" :disabled="!sourceSystemId || !targetSystemId">
-            <template #icon><PlusOutlined /></template>
+    <el-card shadow="never" style="margin-bottom: 16px">
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <span class="shrink-0 text-sm">源编码体系:</span>
+          <el-select v-model="sourceSystemId" placeholder="选择源体系" clearable class="min-w-0 flex-1" @change="fetchMappings">
+            <el-option v-for="cs in codeSystems" :key="cs.id" :value="cs.id" :label="cs.name" />
+          </el-select>
+        </div>
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <span class="shrink-0 text-sm">目标编码体系:</span>
+          <el-select v-model="targetSystemId" placeholder="选择目标体系" clearable class="min-w-0 flex-1" @change="fetchMappings">
+            <el-option v-for="cs in codeSystems" :key="cs.id" :value="cs.id" :label="cs.name" />
+          </el-select>
+        </div>
+        <div class="ml-auto">
+          <el-button type="primary" :disabled="!sourceSystemId || !targetSystemId" @click="handleCreateMapping">
+            <el-icon class="mr-1"><Plus /></el-icon>
             新增映射
-          </a-button>
-        </a-col>
-      </a-row>
-    </a-card>
+          </el-button>
+        </div>
+      </div>
+    </el-card>
 
     <!-- Mappings table -->
-    <a-table :columns="columns" :data-source="mappings" :loading="loading"
-      row-key="id" :pagination="pagination">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'mappingType'">
-          <a-tag :color="mappingTypeColor(record.mappingType)">{{ record.mappingType }}</a-tag>
+    <el-table :data="mappings" v-loading="loading" row-key="id">
+      <el-table-column label="源概念编码" prop="sourceConceptCode" width="150" />
+      <el-table-column label="源概念名称" prop="sourceConceptName" width="180" show-overflow-tooltip />
+      <el-table-column label="目标概念编码" prop="targetConceptCode" width="150" />
+      <el-table-column label="目标概念名称" prop="targetConceptName" width="180" show-overflow-tooltip />
+      <el-table-column label="映射类型" width="120">
+        <template #default="{ row }">
+          <el-tag :type="mappingTypeTagType(row.mappingType)" :style="mappingTypeTagStyle(row.mappingType)">{{ row.mappingType }}</el-tag>
         </template>
-        <template v-if="column.key === 'action'">
-          <a-popconfirm title="确定删除此映射？" @confirm="handleDelete(record)">
-            <a-button type="link" danger size="small">删除</a-button>
-          </a-popconfirm>
+      </el-table-column>
+      <el-table-column label="置信度" prop="confidence" width="80">
+        <template #default="{ row }">
+          {{ row.confidence != null ? `${(row.confidence * 100).toFixed(0)}%` : '-' }}
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+      <el-table-column label="操作" width="80" fixed="right">
+        <template #default="{ row }">
+          <el-popconfirm title="确定删除此映射？" @confirm="handleDelete(row)">
+            <template #reference>
+              <el-button link type="danger" size="small">删除</el-button>
+            </template>
+          </el-popconfirm>
+        </template>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- Create mapping modal -->
-    <a-modal v-model:open="modalVisible" title="新增映射" :width="600"
-      @ok="handleSubmit" @cancel="handleModalCancel" destroy-on-close>
-      <a-form ref="formRef" :model="formState" :rules="formRules"
-        :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="源概念ID" name="sourceConceptId">
-          <a-input-number v-model:value="formState.sourceConceptId" placeholder="输入源概念ID" style="width: 100%" />
-        </a-form-item>
-        <a-form-item label="目标概念ID" name="targetConceptId">
-          <a-input-number v-model:value="formState.targetConceptId" placeholder="输入目标概念ID" style="width: 100%" />
-        </a-form-item>
-        <a-form-item label="映射类型" name="mappingType">
-          <a-select v-model:value="formState.mappingType" placeholder="选择映射类型">
-            <a-select-option value="SAME_AS">相同 (SAME_AS)</a-select-option>
-            <a-select-option value="BROADER_THAN">更宽 (BROADER_THAN)</a-select-option>
-            <a-select-option value="NARROWER_THAN">更窄 (NARROWER_THAN)</a-select-option>
-            <a-select-option value="CLOSE_ENOUGH">近似 (CLOSE_ENOUGH)</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="置信度" name="confidence">
-          <a-slider v-model:value="formState.confidence" :min="0" :max="100" :step="5"
+    <el-dialog v-model="modalVisible" title="新增映射" width="600px" :destroy-on-close="true">
+      <el-form ref="formRef" :model="formState" :rules="formRules" label-width="100px">
+        <el-form-item label="源概念ID" prop="sourceConceptId">
+          <el-input-number v-model="formState.sourceConceptId" placeholder="输入源概念ID" class="w-full" />
+        </el-form-item>
+        <el-form-item label="目标概念ID" prop="targetConceptId">
+          <el-input-number v-model="formState.targetConceptId" placeholder="输入目标概念ID" class="w-full" />
+        </el-form-item>
+        <el-form-item label="映射类型" prop="mappingType">
+          <el-select v-model="formState.mappingType" placeholder="选择映射类型" class="w-full">
+            <el-option value="SAME_AS" label="相同 (SAME_AS)" />
+            <el-option value="BROADER_THAN" label="更宽 (BROADER_THAN)" />
+            <el-option value="NARROWER_THAN" label="更窄 (NARROWER_THAN)" />
+            <el-option value="CLOSE_ENOUGH" label="近似 (CLOSE_ENOUGH)" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="置信度" prop="confidence">
+          <el-slider v-model="formState.confidence" :min="0" :max="100" :step="5"
             :marks="{ 0: '0%', 50: '50%', 100: '100%' }" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleModalCancel">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import { type FormInstance, type FormItemRule } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getCodeSystems, getConceptMappings, createMapping, deleteMapping } from '@/api/masterdata'
 
 defineOptions({ name: 'MappingManager' })
+
+type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
+const PURPLE_TAG_STYLE = { color: '#8b5cf6', background: '#f5f3ff', borderColor: '#ddd6fe' }
 
 const codeSystems = ref<any[]>([])
 const sourceSystemId = ref<number | undefined>(undefined)
@@ -85,21 +111,15 @@ const targetSystemId = ref<number | undefined>(undefined)
 
 const loading = ref(false)
 const mappings = ref<any[]>([])
-const pagination = reactive({ current: 1, pageSize: 20, total: 0, showSizeChanger: true })
+const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 
-const columns = [
-  { title: '源概念编码', dataIndex: 'sourceConceptCode', key: 'sourceConceptCode', width: 150 },
-  { title: '源概念名称', dataIndex: 'sourceConceptName', key: 'sourceConceptName', width: 180, ellipsis: true },
-  { title: '目标概念编码', dataIndex: 'targetConceptCode', key: 'targetConceptCode', width: 150 },
-  { title: '目标概念名称', dataIndex: 'targetConceptName', key: 'targetConceptName', width: 180, ellipsis: true },
-  { title: '映射类型', key: 'mappingType', width: 120 },
-  { title: '置信度', dataIndex: 'confidence', key: 'confidence', width: 80, customRender: ({ text }: any) => text != null ? `${(text * 100).toFixed(0)}%` : '-' },
-  { title: '操作', key: 'action', width: 80, fixed: 'right' as const },
-]
+function mappingTypeTagType(type: string): TagType {
+  const types: Record<string, TagType> = { SAME_AS: 'success', BROADER_THAN: 'primary', NARROWER_THAN: 'warning', CLOSE_ENOUGH: 'info' }
+  return types[type] || 'info'
+}
 
-function mappingTypeColor(type: string) {
-  const colors: Record<string, string> = { SAME_AS: 'green', BROADER_THAN: 'blue', NARROWER_THAN: 'orange', CLOSE_ENOUGH: 'purple' }
-  return colors[type] || 'default'
+function mappingTypeTagStyle(type: string) {
+  return type === 'CLOSE_ENOUGH' ? PURPLE_TAG_STYLE : undefined
 }
 
 async function fetchCodeSystems() {
@@ -131,6 +151,17 @@ async function fetchMappings() {
   }
 }
 
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchMappings()
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchMappings()
+}
+
 // Modal
 const modalVisible = ref(false)
 const formRef = ref<FormInstance>()
@@ -142,7 +173,7 @@ const formState = reactive({
   confidence: 100,
 })
 
-const formRules: Record<string, Rule[]> = {
+const formRules: Record<string, FormItemRule[]> = {
   sourceConceptId: [{ required: true, message: '请输入源概念ID' }],
   targetConceptId: [{ required: true, message: '请输入目标概念ID' }],
   mappingType: [{ required: true, message: '请选择映射类型' }],
@@ -159,7 +190,7 @@ function handleModalCancel() {
 }
 
 async function handleSubmit() {
-  await formRef.value?.validateFields()
+  await formRef.value?.validate()
   await createMapping({
     sourceConceptId: formState.sourceConceptId,
     targetConceptId: formState.targetConceptId,
@@ -168,14 +199,14 @@ async function handleSubmit() {
     sourceCodeSystemId: sourceSystemId.value,
     targetCodeSystemId: targetSystemId.value,
   })
-  message.success('映射创建成功')
+  ElMessage.success('映射创建成功')
   handleModalCancel()
   fetchMappings()
 }
 
 async function handleDelete(record: any) {
   await deleteMapping(record.id)
-  message.success('删除成功')
+  ElMessage.success('删除成功')
   fetchMappings()
 }
 

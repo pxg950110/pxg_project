@@ -1,119 +1,129 @@
 <template>
   <component :is="embedded ? 'div' : PageContainer" :title="embedded ? undefined : '数据元概念管理'" class="dec-wrapper">
     <template v-if="!embedded" #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
+      <el-button type="primary" @click="handleCreate">
+        <el-icon class="mr-1"><Plus /></el-icon>
         新增数据元概念
-      </a-button>
+      </el-button>
     </template>
 
     <div class="dec-container">
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <a-row :gutter="12" align="middle">
-          <a-col :span="8">
-            <a-input-search
-              v-model:value="keyword"
-              placeholder="搜索代码、名称、定义"
-              enter-button="搜索"
-              @search="fetchList(1)"
-              allow-clear
-            />
-          </a-col>
-          <a-col :span="6">
-            <a-select
-              v-model:value="conceptDomainId"
-              placeholder="所属概念域"
-              allow-clear
-              show-search
-              :filter-option="filterOption"
-              style="width: 100%"
-              @change="fetchList(1)"
-            >
-              <a-select-option v-for="cd in conceptDomains" :key="cd.id" :value="cd.id">
-                {{ cd.name }} ({{ cd.code }})
-              </a-select-option>
-            </a-select>
-          </a-col>
-          <a-col :span="4">
-            <a-select v-model:value="status" placeholder="审核状态" allow-clear style="width: 100%" @change="fetchList(1)">
-              <a-select-option value="DRAFT">草稿</a-select-option>
-              <a-select-option value="APPROVED">已批准</a-select-option>
-              <a-select-option value="RETIRED">已废止</a-select-option>
-            </a-select>
-          </a-col>
-          <a-col :span="6" style="text-align: right">
-            <a-space>
-              <a-button @click="resetFilters">重置</a-button>
-              <a-button v-if="embedded" type="primary" @click="handleCreate">
-                <template #icon><PlusOutlined /></template>
-                新增数据元概念
-              </a-button>
-            </a-space>
-          </a-col>
-        </a-row>
+        <div class="flex flex-wrap items-center gap-3">
+          <el-input
+            v-model="keyword"
+            placeholder="搜索代码、名称、定义"
+            clearable
+            :suffix-icon="Search"
+            style="flex: 1; max-width: 360px"
+            @keyup.enter="fetchList(1)"
+            @clear="fetchList(1)"
+          />
+          <el-select
+            v-model="conceptDomainId"
+            placeholder="所属概念域"
+            clearable
+            filterable
+            style="width: 220px"
+            @change="fetchList(1)"
+          >
+            <el-option v-for="cd in conceptDomains" :key="cd.id" :value="cd.id" :label="`${cd.name} (${cd.code})`">
+              {{ cd.name }} ({{ cd.code }})
+            </el-option>
+          </el-select>
+          <el-select v-model="status" placeholder="审核状态" clearable style="width: 140px" @change="fetchList(1)">
+            <el-option value="DRAFT" label="草稿" />
+            <el-option value="APPROVED" label="已批准" />
+            <el-option value="RETIRED" label="已废止" />
+          </el-select>
+          <div class="ml-auto flex items-center gap-2">
+            <el-button @click="resetFilters">重置</el-button>
+            <el-button v-if="embedded" type="primary" @click="handleCreate">
+              <el-icon class="mr-1"><Plus /></el-icon>
+              新增数据元概念
+            </el-button>
+          </div>
+        </div>
       </div>
 
       <!-- Table Panel -->
       <div class="table-panel">
-        <a-table
-          :columns="columns"
-          :data-source="dataList"
-          :loading="loading"
+        <el-table
+          :data="dataList"
+          v-loading="loading"
           row-key="id"
-          size="middle"
-          :pagination="pagination"
-          @change="handleTableChange"
-          :scroll="{ x: 1200, y: 'calc(100vh - 420px)' }"
+          size="default"
+          style="width: 100%"
         >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'code'">
-              <span class="code-tag">{{ record.code }}</span>
+          <el-table-column label="代码 (Code)" width="140" fixed="left">
+            <template #default="{ row }">
+              <span class="code-tag">{{ row.code }}</span>
             </template>
-
-            <template v-if="column.key === 'name'">
+          </el-table-column>
+          <el-table-column label="数据元概念名称" width="220">
+            <template #default="{ row }">
               <div class="name-cell">
-                <span class="name-main" @click="openDetail(record)">{{ record.name }}</span>
-                <span v-if="record.nameEn" class="name-sub">{{ record.nameEn }}</span>
+                <span class="name-main" @click="openDetail(row)">{{ row.name }}</span>
+                <span v-if="row.nameEn" class="name-sub">{{ row.nameEn }}</span>
               </div>
             </template>
-
-            <template v-if="column.key === 'objectClass'">
-              <span class="oc-tag">{{ record.objectClassName || record.objectClassCode || '-' }}</span>
+          </el-table-column>
+          <el-table-column label="对象类 (Object Class)" width="150">
+            <template #default="{ row }">
+              <span class="oc-tag">{{ row.objectClassName || row.objectClassCode || '-' }}</span>
             </template>
-
-            <template v-if="column.key === 'property'">
-              <span class="prop-tag">{{ record.propertyName || record.propertyCode || '-' }}</span>
+          </el-table-column>
+          <el-table-column label="特性 (Property)" width="150">
+            <template #default="{ row }">
+              <span class="prop-tag">{{ row.propertyName || row.propertyCode || '-' }}</span>
             </template>
-
-            <template v-if="column.key === 'conceptDomainName'">
-              <a v-if="record.conceptDomainName" class="concept-link" @click="goToConceptDomain(record)">
-                {{ record.conceptDomainName }}
+          </el-table-column>
+          <el-table-column label="关联概念域" width="160">
+            <template #default="{ row }">
+              <a v-if="row.conceptDomainName" class="concept-link" @click="goToConceptDomain(row)">
+                {{ row.conceptDomainName }}
               </a>
               <span v-else class="text-dim">-</span>
             </template>
-
-            <template v-if="column.key === 'status'">
-              <span :class="['status-badge', record.status ? record.status.toLowerCase() : 'draft']">
-                {{ statusLabel(record.status) }}
+          </el-table-column>
+          <el-table-column label="定义说明" prop="definition" show-overflow-tooltip />
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <span :class="['status-badge', row.status ? row.status.toLowerCase() : 'draft']">
+                {{ statusLabel(row.status) }}
               </span>
             </template>
-
-            <template v-if="column.key === 'action'">
-              <a-space>
-                <a-button type="link" size="small" class="action-btn" @click="openDetail(record)">
+          </el-table-column>
+          <el-table-column label="操作" width="150" fixed="right">
+            <template #default="{ row }">
+              <div class="flex items-center">
+                <el-button link type="primary" size="small" class="action-btn" @click="openDetail(row)">
                   查看
-                </a-button>
-                <a-button type="link" size="small" class="action-btn" @click="handleEdit(record)">
+                </el-button>
+                <el-button link type="primary" size="small" class="action-btn" @click="handleEdit(row)">
                   编辑
-                </a-button>
-                <a-popconfirm title="确认删除该数据元概念？" ok-text="确认" cancel-text="取消" @confirm="handleDelete(record)">
-                  <a-button type="link" size="small" danger>删除</a-button>
-                </a-popconfirm>
-              </a-space>
+                </el-button>
+                <el-popconfirm title="确认删除该数据元概念？" confirm-button-text="确认" cancel-button-text="取消" @confirm="handleDelete(row)">
+                  <template #reference>
+                    <el-button link type="danger" size="small">删除</el-button>
+                  </template>
+                </el-popconfirm>
+              </div>
             </template>
-          </template>
-        </a-table>
+          </el-table-column>
+        </el-table>
+        <el-pagination
+          class="mt-4 justify-end"
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="pagination.total"
+          :current-page="pagination.current"
+          :page-size="pagination.pageSize"
+          :page-sizes="[10, 15, 20, 50, 100]"
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
       </div>
     </div>
 
@@ -127,8 +137,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Plus, Search } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
   dataElementConceptApi,
@@ -168,20 +178,7 @@ const pagination = reactive({
   current: 1,
   pageSize: 15,
   total: 0,
-  showSizeChanger: true,
-  showTotal: (total: number) => `共 ${total} 条数据元概念`,
 })
-
-const columns = [
-  { title: '代码 (Code)', key: 'code', dataIndex: 'code', width: 140, fixed: 'left' },
-  { title: '数据元概念名称', key: 'name', width: 220 },
-  { title: '对象类 (Object Class)', key: 'objectClass', width: 150 },
-  { title: '特性 (Property)', key: 'property', width: 150 },
-  { title: '关联概念域', key: 'conceptDomainName', width: 160 },
-  { title: '定义说明', dataIndex: 'definition', ellipsis: true },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '操作', key: 'action', width: 150, fixed: 'right' },
-]
 
 const statusLabel = (st?: string) => {
   const map: Record<string, string> = {
@@ -190,11 +187,6 @@ const statusLabel = (st?: string) => {
     RETIRED: '已废止',
   }
   return (st && map[st]) || st || '草稿'
-}
-
-const filterOption = (input: string, option: any) => {
-  const text = String(option.children?.map ? option.children.map((c: any) => c.children || '').join('') : option.children || '')
-  return text.toLowerCase().includes(input.toLowerCase())
 }
 
 const fetchConceptDomains = async () => {
@@ -222,15 +214,19 @@ const fetchList = async (page = pagination.current) => {
     pagination.total = data.totalElements ?? dataList.value.length
     pagination.current = page
   } catch (error) {
-    message.error('获取数据元概念列表失败')
+    ElMessage.error('获取数据元概念列表失败')
   } finally {
     loading.value = false
   }
 }
 
-const handleTableChange = (pag: any) => {
-  pagination.pageSize = pag.pageSize
-  fetchList(pag.current)
+const handlePageChange = (page: number) => {
+  fetchList(page)
+}
+
+const handleSizeChange = (size: number) => {
+  pagination.pageSize = size
+  fetchList(1)
 }
 
 const resetFilters = () => {
@@ -251,10 +247,10 @@ const handleEdit = (record: DataElementConcept) => {
 const handleDelete = async (record: DataElementConcept) => {
   try {
     await dataElementConceptApi.delete(record.id)
-    message.success('删除成功')
+    ElMessage.success('删除成功')
     fetchList(pagination.current)
   } catch (error) {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 
@@ -308,7 +304,7 @@ defineExpose({
 .filter-bar {
   padding: 14px 18px;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
 }
 
@@ -317,7 +313,7 @@ defineExpose({
   padding: 16px;
   overflow: hidden;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
 }
 
@@ -338,17 +334,17 @@ defineExpose({
 
   .name-main {
     font-weight: 500;
-    color: rgba(0, 0, 0, 0.88);
+    color: #0f172a;
     cursor: pointer;
     &:hover {
-      color: #1677ff;
+      color: #0ea5e9;
       text-decoration: underline;
     }
   }
 
   .name-sub {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.45);
+    color: #94a3b8;
   }
 }
 
@@ -371,9 +367,9 @@ defineExpose({
 }
 
 .concept-link {
-  color: #1677ff;
+  color: #0ea5e9;
   &:hover {
-    color: #4096ff;
+    color: #38bdf8;
     text-decoration: underline;
   }
 }
@@ -384,28 +380,28 @@ defineExpose({
   border-radius: 4px;
 
   &.draft {
-    background: #fafafa;
-    color: rgba(0, 0, 0, 0.45);
+    background: #f8fafc;
+    color: #94a3b8;
   }
   &.approved {
-    background: #f6ffed;
-    color: #52c41a;
+    background: #ecfdf5;
+    color: #10b981;
   }
   &.retired {
-    background: #fff1f0;
-    color: #ff4d4f;
+    background: #fef2f2;
+    color: #ef4444;
   }
 }
 
 .text-dim {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .action-btn {
-  color: #1677ff;
+  color: #0ea5e9;
   padding: 0 4px;
   &:hover {
-    color: #4096ff;
+    color: #38bdf8;
   }
 }
 </style>

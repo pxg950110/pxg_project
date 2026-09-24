@@ -1,24 +1,22 @@
 <template>
   <div class="dict-type-panel">
-    <a-input-search v-model:value="search" placeholder="搜索章节" allow-clear
-      style="margin-bottom: 12px" />
-    <div class="chapter-list">
-      <a-spin :spinning="loading">
-        <a-menu v-model:selectedKeys="selectedKeys" mode="inline">
-          <a-menu-item v-for="chapter in filteredChapters" :key="chapter.chapterCode || ''">
-            <div class="chapter-item">
-              <div class="chapter-code">{{ chapter.chapterCode }}</div>
-              <div class="chapter-name">{{ chapter.chapterName }}</div>
-            </div>
-          </a-menu-item>
-        </a-menu>
-      </a-spin>
+    <el-input v-model="search" placeholder="搜索章节" clearable :suffix-icon="Search" class="mb-3" />
+    <div v-loading="loading" class="chapter-list min-h-[200px]">
+      <el-menu :default-active="selectedKeys[0] ?? ''" @select="onMenuSelect">
+        <el-menu-item v-for="chapter in filteredChapters" :key="chapter.chapterCode || ''" :index="chapter.chapterCode || ''">
+          <div class="chapter-item">
+            <div class="chapter-code">{{ chapter.chapterCode }}</div>
+            <div class="chapter-name">{{ chapter.chapterName }}</div>
+          </div>
+        </el-menu-item>
+      </el-menu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { Search } from '@element-plus/icons-vue'
 import { getDiagnoses, type Diagnosis } from '@/api/medical-dictionary'
 
 const emit = defineEmits<{
@@ -60,6 +58,11 @@ function onSelect(keys: (number | string)[]) {
   emit('select', keys.length ? String(keys[0]) : undefined)
 }
 
+/** el-menu 选中项变化时同步 selectedKeys（保持原先菜单选中键的状态语义） */
+function onMenuSelect(index: string) {
+  selectedKeys.value = [index]
+}
+
 function clearSelection() {
   selectedKeys.value = []
 }
@@ -76,7 +79,7 @@ onMounted(fetchChapters)
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 14px;
 }
@@ -86,10 +89,11 @@ onMounted(fetchChapters)
   overflow-y: auto;
   border-radius: 6px;
 
-  :deep(.ant-menu) {
-    border-inline-end: none !important;
+  :deep(.el-menu) {
+    border-right: none;
+    background: transparent;
 
-    .ant-menu-item {
+    .el-menu-item {
       height: auto;
       line-height: normal;
       padding: 8px 12px;
@@ -107,12 +111,12 @@ onMounted(fetchChapters)
 
 .chapter-code {
   font-size: 11px;
-  color: #1677ff;
+  color: #0ea5e9;
   font-family: 'JetBrains Mono', Consolas, monospace;
 }
 
 .chapter-name {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 </style>

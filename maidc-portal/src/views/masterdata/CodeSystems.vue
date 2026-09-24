@@ -1,19 +1,19 @@
 <template>
   <PageContainer title="编码体系">
     <template #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
+      <el-button type="primary" @click="handleCreate">
+        <el-icon class="mr-1"><Plus /></el-icon>
         新增编码体系
-      </a-button>
+      </el-button>
     </template>
 
     <div style="display: flex; gap: 16px; height: calc(100vh - 180px)">
       <!-- Left: Code System List -->
       <div style="width: 320px; flex-shrink: 0; display: flex; flex-direction: column">
-        <a-input-search v-model:value="csSearch" placeholder="检索编码体系" allow-clear
+        <el-input v-model="csSearch" placeholder="检索编码体系" clearable :suffix-icon="Search"
           style="margin-bottom: 12px" />
         <div class="cs-list" style="flex: 1; overflow-y: auto">
-          <a-spin :spinning="csLoading">
+          <div v-loading="csLoading" style="min-height: 200px">
             <div
               v-for="cs in filteredCodeSystems" :key="cs.id"
               class="cs-card" :class="{ active: selectedCs?.id === cs.id }"
@@ -21,26 +21,26 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px">
                 <span style="font-weight: 600; font-size: 14px">{{ cs.name }}</span>
                 <div style="display: flex; gap: 4px">
-                  <a-tag :color="cs.category === 'LOCAL' ? 'orange' : 'blue'" size="small">
+                  <el-tag :type="cs.category === 'LOCAL' ? 'warning' : 'primary'" size="small">
                     {{ cs.category === 'LOCAL' ? '非标' : cs.category === 'STANDARD' ? '标准' : cs.category || '标准' }}
-                  </a-tag>
-                  <a-tag v-if="cs.status" :color="cs.status === 'ACTIVE' ? 'green' : cs.status === 'DRAFT' ? 'orange' : 'default'" size="small">
+                  </el-tag>
+                  <el-tag v-if="cs.status" :type="cs.status === 'ACTIVE' ? 'success' : cs.status === 'DRAFT' ? 'warning' : 'info'" size="small">
                     {{ cs.status === 'ACTIVE' ? '启用' : cs.status === 'DRAFT' ? '草稿' : cs.status }}
-                  </a-tag>
+                  </el-tag>
                 </div>
               </div>
-              <div style="color: #999; font-size: 12px; margin-bottom: 4px">{{ cs.code }} · v{{ cs.version || '-' }}</div>
-              <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; color: #666">
+              <div style="color: #94a3b8; font-size: 12px; margin-bottom: 4px">{{ cs.code }} · v{{ cs.version || '-' }}</div>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; color: #64748b">
                 <span>概念: <b>{{ statsMap[cs.id]?.conceptCount ?? '-' }}</b></span>
-                <span>
-                  <ApartmentOutlined v-if="cs.hierarchySupport" style="color: #1890ff" />
+                <span style="display: inline-flex; align-items: center">
+                  <el-icon v-if="cs.hierarchySupport" style="color: #0ea5e9"><Share /></el-icon>
                   {{ cs.hierarchySupport ? '层级' : '' }}
                 </span>
-                <a style="margin-left: auto; font-size: 12px" @click.stop="handleEdit(cs)">编辑</a>
+                <a style="margin-left: auto; font-size: 12px; color: #0ea5e9" @click.stop="handleEdit(cs)">编辑</a>
               </div>
             </div>
-            <a-empty v-if="!csLoading && filteredCodeSystems.length === 0" description="无匹配编码体系" :image-style="{ height: '40px' }" />
-          </a-spin>
+            <el-empty v-if="!csLoading && filteredCodeSystems.length === 0" description="无匹配编码体系" :image-size="40" />
+          </div>
         </div>
       </div>
 
@@ -48,146 +48,166 @@
       <div style="flex: 1; display: flex; flex-direction: column; min-width: 0">
         <template v-if="selectedCs">
           <!-- Filter bar -->
-          <a-card :bordered="false" style="margin-bottom: 12px; padding: 8px 16px" size="small">
-            <a-row :gutter="12" align="middle">
-              <a-col :span="5">
-                <a-select v-model:value="conceptFilters.domain" placeholder="选择领域" allow-clear
-                  style="width: 100%" @change="fetchConcepts(1)">
-                  <a-select-option v-for="d in domains" :key="d" :value="d">{{ domainMap[d] || d }}</a-select-option>
-                </a-select>
-              </a-col>
-              <a-col :span="9">
-                <a-input-search v-model:value="conceptFilters.keyword" placeholder="搜索概念编码或名称"
-                  enter-button @search="fetchConcepts(1)" allow-clear @clear="fetchConcepts(1)" />
-              </a-col>
-              <a-col :span="4">
-                <a-button @click="resetConceptFilters">重置</a-button>
-              </a-col>
-              <a-col :span="6" style="text-align: right; color: #999">
+          <el-card shadow="never" :body-style="{ padding: '8px 16px' }" style="margin-bottom: 12px">
+            <div class="flex flex-wrap items-center gap-3">
+              <el-select v-model="conceptFilters.domain" placeholder="选择领域" clearable
+                style="width: 180px" @change="fetchConcepts(1)">
+                <el-option v-for="d in domains" :key="d" :value="d" :label="domainMap[d] || d" />
+              </el-select>
+              <el-input v-model="conceptFilters.keyword" placeholder="搜索概念编码或名称"
+                clearable :suffix-icon="Search" style="width: 320px"
+                @keyup.enter="fetchConcepts(1)" @clear="fetchConcepts(1)" />
+              <el-button @click="resetConceptFilters">重置</el-button>
+              <span class="ml-auto text-sm" style="color: #94a3b8">
                 {{ selectedCs.name }} · 共 {{ pagination.total }} 条概念
-              </a-col>
-            </a-row>
-          </a-card>
+              </span>
+            </div>
+          </el-card>
 
           <!-- Concept table -->
-          <a-table :columns="conceptColumns" :data-source="tableData" :loading="conceptLoading"
-            :pagination="pagination" @change="handleTableChange" row-key="id"
-            :custom-row="(record: any) => ({ onClick: () => openDetail(record) })"
-            style="cursor: pointer; flex: 1" size="small">
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <a-tag :color="record.status === 'ACTIVE' ? 'green' : record.status === 'DRAFT' ? 'orange' : 'default'">
-                  {{ record.status === 'ACTIVE' ? '启用' : record.status === 'DRAFT' ? '草稿' : record.status }}
-                </a-tag>
-              </template>
-              <template v-if="column.key === 'domain'">
-                <a-tag>{{ record.domain || '-' }}</a-tag>
-              </template>
-            </template>
-          </a-table>
+          <div style="flex: 1; min-height: 0">
+            <el-table :data="tableData" v-loading="conceptLoading" row-key="id" size="small"
+              style="cursor: pointer; width: 100%" height="100%"
+              @row-click="openDetail">
+              <el-table-column label="概念编码" prop="conceptCode" width="150" show-overflow-tooltip />
+              <el-table-column label="名称" prop="name" show-overflow-tooltip />
+              <el-table-column label="英文名" prop="nameEn" width="180" show-overflow-tooltip />
+              <el-table-column label="领域" width="110">
+                <template #default="{ row }">
+                  <el-tag>{{ row.domain || '-' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="状态" width="80">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'ACTIVE' ? 'success' : row.status === 'DRAFT' ? 'warning' : 'info'">
+                    {{ row.status === 'ACTIVE' ? '启用' : row.status === 'DRAFT' ? '草稿' : row.status }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+          <el-pagination
+            class="mt-3 justify-end"
+            background
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="pagination.total"
+            :current-page="pagination.current"
+            :page-size="pagination.pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            @current-change="handlePageChange"
+            @size-change="handleSizeChange"
+          />
         </template>
-        <a-empty v-else description="请从左侧选择一个编码体系" style="margin-top: 120px" />
+        <el-empty v-else description="请从左侧选择一个编码体系" :image-size="60" style="margin-top: 120px" />
       </div>
     </div>
 
     <!-- Concept detail drawer -->
-    <a-drawer v-model:open="drawerVisible" :title="currentConcept?.name || '概念详情'" width="640" destroy-on-close>
+    <el-drawer v-model="drawerVisible" :title="currentConcept?.name || '概念详情'" size="640px" :destroy-on-close="true">
       <template v-if="currentConcept">
-        <a-descriptions bordered :column="2" size="small" style="margin-bottom: 16px">
-          <a-descriptions-item label="概念编码">{{ currentConcept.conceptCode }}</a-descriptions-item>
-          <a-descriptions-item label="状态">
-            <a-tag :color="currentConcept.status === 'ACTIVE' ? 'green' : 'orange'">{{ currentConcept.status }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="名称">{{ currentConcept.name }}</a-descriptions-item>
-          <a-descriptions-item label="英文名">{{ currentConcept.nameEn || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="领域">{{ currentConcept.domain || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="编码体系">{{ selectedCs?.name || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="描述" :span="2">{{ currentConcept.description || '-' }}</a-descriptions-item>
-        </a-descriptions>
+        <el-descriptions border :column="2" size="small" style="margin-bottom: 16px">
+          <el-descriptions-item label="概念编码">{{ currentConcept.conceptCode }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="currentConcept.status === 'ACTIVE' ? 'success' : 'warning'">{{ currentConcept.status }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="名称">{{ currentConcept.name }}</el-descriptions-item>
+          <el-descriptions-item label="英文名">{{ currentConcept.nameEn || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="领域">{{ currentConcept.domain || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="编码体系">{{ selectedCs?.name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="描述" :span="2">{{ currentConcept.description || '-' }}</el-descriptions-item>
+        </el-descriptions>
 
         <div v-if="ancestors.length > 0" style="margin-bottom: 16px">
           <strong>层级路径：</strong>
-          <a-breadcrumb>
-            <a-breadcrumb-item v-for="a in ancestors" :key="a.id">{{ a.name }}</a-breadcrumb-item>
-            <a-breadcrumb-item>{{ currentConcept.name }}</a-breadcrumb-item>
-          </a-breadcrumb>
+          <el-breadcrumb separator="/" style="display: inline-block; margin-left: 4px">
+            <el-breadcrumb-item v-for="a in ancestors" :key="a.id">{{ a.name }}</el-breadcrumb-item>
+            <el-breadcrumb-item>{{ currentConcept.name }}</el-breadcrumb-item>
+          </el-breadcrumb>
         </div>
 
-        <a-tabs v-model:activeKey="detailTab">
-          <a-tab-pane key="properties" tab="属性">
+        <el-tabs v-model="detailTab">
+          <el-tab-pane label="属性" name="properties">
             <div v-if="currentConcept.properties">
-              <pre style="background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 12px; overflow-x: auto">{{
+              <pre style="background: #f8fafc; padding: 12px; border-radius: 4px; font-size: 12px; overflow-x: auto">{{
                 typeof currentConcept.properties === 'string'
                   ? JSON.stringify(JSON.parse(currentConcept.properties), null, 2)
                   : JSON.stringify(currentConcept.properties, null, 2)
               }}</pre>
             </div>
-            <a-empty v-else description="无额外属性" />
-          </a-tab-pane>
-          <a-tab-pane key="mappings" tab="映射">
-            <a-table :columns="mappingColumns" :data-source="conceptMappings" :loading="mappingsLoading"
-              row-key="id" size="small" :pagination="false">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'mappingType'">
-                  <a-tag>{{ record.mappingType }}</a-tag>
+            <el-empty v-else description="无额外属性" :image-size="60" />
+          </el-tab-pane>
+          <el-tab-pane label="映射" name="mappings">
+            <el-table :data="conceptMappings" v-loading="mappingsLoading" row-key="id" size="small">
+              <el-table-column label="目标编码" prop="targetConceptCode" width="140" />
+              <el-table-column label="目标名称" prop="targetConceptName" width="180" />
+              <el-table-column label="映射类型" width="100">
+                <template #default="{ row }">
+                  <el-tag>{{ row.mappingType }}</el-tag>
                 </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
-          <a-tab-pane key="synonyms" tab="同义词">
-            <a-table :columns="synonymColumns" :data-source="conceptSynonyms" :loading="synonymsLoading"
-              row-key="id" size="small" :pagination="false" />
-          </a-tab-pane>
-          <a-tab-pane key="children" tab="子概念">
-            <a-table :columns="childColumns" :data-source="conceptChildren" :loading="childrenLoading"
-              row-key="id" size="small" :pagination="false">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'status'">
-                  <a-tag :color="record.status === 'ACTIVE' ? 'green' : 'orange'">{{ record.status }}</a-tag>
+              </el-table-column>
+              <el-table-column label="目标体系" prop="targetCodeSystem" width="120" />
+            </el-table>
+          </el-tab-pane>
+          <el-tab-pane label="同义词" name="synonyms">
+            <el-table :data="conceptSynonyms" v-loading="synonymsLoading" row-key="id" size="small">
+              <el-table-column label="同义词" prop="synonym" />
+              <el-table-column label="语言" prop="language" width="80" />
+            </el-table>
+          </el-tab-pane>
+          <el-tab-pane label="子概念" name="children">
+            <el-table :data="conceptChildren" v-loading="childrenLoading" row-key="id" size="small">
+              <el-table-column label="概念编码" prop="conceptCode" width="140" />
+              <el-table-column label="名称" prop="name" width="180" />
+              <el-table-column label="状态" width="80">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'warning'">{{ row.status }}</el-tag>
                 </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
-        </a-tabs>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+        </el-tabs>
       </template>
-    </a-drawer>
+    </el-drawer>
 
     <!-- CodeSystem create/edit modal -->
-    <a-modal v-model:open="modalVisible" :title="isEdit ? '编辑编码体系' : '新增编码体系'"
-      :width="600" @ok="handleSubmit" @cancel="handleModalCancel" destroy-on-close>
-      <a-form ref="formRef" :model="formState" :rules="formRules"
-        :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-        <a-form-item label="编码" name="code">
-          <a-input v-model:value="formState.code" placeholder="如 ICD-10, LOINC, SNOMED" :disabled="isEdit" />
-        </a-form-item>
-        <a-form-item label="名称" name="name">
-          <a-input v-model:value="formState.name" placeholder="编码体系名称" />
-        </a-form-item>
-        <a-form-item label="版本" name="version">
-          <a-input v-model:value="formState.version" placeholder="如 2024 版" />
-        </a-form-item>
-        <a-form-item label="描述" name="description">
-          <a-textarea v-model:value="formState.description" :rows="3" placeholder="编码体系描述" />
-        </a-form-item>
-        <a-form-item label="分类" name="category">
-          <a-select v-model:value="formState.category" placeholder="选择分类">
-            <a-select-option value="STANDARD">标准编码</a-select-option>
-            <a-select-option value="LOCAL">非标编码</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="层级支持" name="hierarchySupport">
-          <a-switch v-model:checked="formState.hierarchySupport" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="modalVisible" :title="isEdit ? '编辑编码体系' : '新增编码体系'"
+      width="600px" :destroy-on-close="true">
+      <el-form ref="formRef" :model="formState" :rules="formRules" label-width="100px">
+        <el-form-item label="编码" prop="code">
+          <el-input v-model="formState.code" placeholder="如 ICD-10, LOINC, SNOMED" :disabled="isEdit" />
+        </el-form-item>
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="formState.name" placeholder="编码体系名称" />
+        </el-form-item>
+        <el-form-item label="版本" prop="version">
+          <el-input v-model="formState.version" placeholder="如 2024 版" />
+        </el-form-item>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="formState.description" type="textarea" :rows="3" placeholder="编码体系描述" />
+        </el-form-item>
+        <el-form-item label="分类" prop="category">
+          <el-select v-model="formState.category" placeholder="选择分类" class="w-full">
+            <el-option value="STANDARD" label="标准编码" />
+            <el-option value="LOCAL" label="非标编码" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="层级支持" prop="hierarchySupport">
+          <el-switch v-model="formState.hierarchySupport" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleModalCancel">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined, ApartmentOutlined } from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+import { ElMessage } from 'element-plus'
+import { Plus, Search, Share } from '@element-plus/icons-vue'
+import { type FormInstance, type FormItemRule } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
   getCodeSystems, getCodeSystemStats, createCodeSystem, updateCodeSystem,
@@ -259,17 +279,7 @@ const pagination = reactive({
   current: 1,
   pageSize: 20,
   total: 0,
-  showSizeChanger: true,
-  showTotal: (total: number) => `共 ${total} 条`,
 })
-
-const conceptColumns = [
-  { title: '概念编码', dataIndex: 'conceptCode', key: 'conceptCode', width: 150, ellipsis: true },
-  { title: '名称', dataIndex: 'name', key: 'name', ellipsis: true },
-  { title: '英文名', dataIndex: 'nameEn', key: 'nameEn', width: 180, ellipsis: true },
-  { title: '领域', key: 'domain', width: 110 },
-  { title: '状态', key: 'status', width: 80 },
-]
 
 async function fetchConcepts(page = 1) {
   if (!selectedCs.value) return
@@ -291,10 +301,15 @@ async function fetchConcepts(page = 1) {
   }
 }
 
-function handleTableChange(pag: any) {
-  pagination.current = pag.current
-  pagination.pageSize = pag.pageSize
-  fetchConcepts(pag.current)
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchConcepts(page)
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchConcepts(1)
 }
 
 function resetConceptFilters() {
@@ -314,22 +329,6 @@ const conceptChildren = ref<any[]>([])
 const mappingsLoading = ref(false)
 const synonymsLoading = ref(false)
 const childrenLoading = ref(false)
-
-const mappingColumns = [
-  { title: '目标编码', dataIndex: 'targetConceptCode', key: 'targetConceptCode', width: 140 },
-  { title: '目标名称', dataIndex: 'targetConceptName', key: 'targetConceptName', width: 180 },
-  { title: '映射类型', key: 'mappingType', width: 100 },
-  { title: '目标体系', dataIndex: 'targetCodeSystem', key: 'targetCodeSystem', width: 120 },
-]
-const synonymColumns = [
-  { title: '同义词', dataIndex: 'synonym', key: 'synonym' },
-  { title: '语言', dataIndex: 'language', key: 'language', width: 80 },
-]
-const childColumns = [
-  { title: '概念编码', dataIndex: 'conceptCode', key: 'conceptCode', width: 140 },
-  { title: '名称', dataIndex: 'name', key: 'name', width: 180 },
-  { title: '状态', key: 'status', width: 80 },
-]
 
 async function openDetail(record: any) {
   drawerVisible.value = true
@@ -381,7 +380,7 @@ const formState = reactive({
   category: 'STANDARD',
   hierarchySupport: false,
 })
-const formRules: Record<string, Rule[]> = {
+const formRules: Record<string, FormItemRule[]> = {
   code: [{ required: true, message: '请输入编码' }],
   name: [{ required: true, message: '请输入名称' }],
 }
@@ -412,14 +411,14 @@ function handleModalCancel() {
 }
 
 async function handleSubmit() {
-  await formRef.value?.validateFields()
+  await formRef.value?.validate()
   const data = { ...formState }
   if (isEdit.value) {
     await updateCodeSystem(editingId.value!, data)
-    message.success('更新成功')
+    ElMessage.success('更新成功')
   } else {
     await createCodeSystem(data)
-    message.success('创建成功')
+    ElMessage.success('创建成功')
   }
   handleModalCancel()
   fetchCodeSystems()
@@ -434,18 +433,18 @@ onMounted(() => {
 <style scoped>
 .cs-card {
   padding: 12px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 6px;
   margin-bottom: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 .cs-card:hover {
-  border-color: #91caff;
-  background: #f6f9ff;
+  border-color: #7dd3fc;
+  background: #f0f9ff;
 }
 .cs-card.active {
-  border-color: #1677ff;
-  background: #e8f4ff;
+  border-color: #0ea5e9;
+  background: #f0f9ff;
 }
 </style>

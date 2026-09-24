@@ -30,12 +30,12 @@
 <script setup lang="ts">
 import { ref, markRaw } from 'vue'
 import {
-  MedicineBoxOutlined,
-  HeartOutlined,
-  ExperimentOutlined,
-  ScanOutlined,
-  DollarOutlined,
-} from '@ant-design/icons-vue'
+  FirstAidKit,
+  Notebook,
+  Histogram,
+  View,
+  Money,
+} from '@element-plus/icons-vue'
 import DrugList from './DrugList.vue'
 import DiagnosisList from './DiagnosisList.vue'
 import LabItemList from './LabItemList.vue'
@@ -45,11 +45,11 @@ import FeeItemList from './FeeItemList.vue'
 const currentTab = ref<string>('drugs')
 
 const dictTabs = [
-  { key: 'drugs', label: '药品字典 (Drugs)', icon: markRaw(MedicineBoxOutlined) },
-  { key: 'diagnoses', label: '诊断字典 (ICD-10)', icon: markRaw(HeartOutlined) },
-  { key: 'labs', label: '检验项目 (Labs)', icon: markRaw(ExperimentOutlined) },
-  { key: 'exams', label: '检查项目 (Exams)', icon: markRaw(ScanOutlined) },
-  { key: 'fees', label: '收费项目 (Fee Items)', icon: markRaw(DollarOutlined) },
+  { key: 'drugs', label: '药品字典 (Drugs)', icon: markRaw(FirstAidKit) },
+  { key: 'diagnoses', label: '诊断字典 (ICD-10)', icon: markRaw(Notebook) },
+  { key: 'labs', label: '检验项目 (Labs)', icon: markRaw(Histogram) },
+  { key: 'exams', label: '检查项目 (Exams)', icon: markRaw(View) },
+  { key: 'fees', label: '收费项目 (Fee Items)', icon: markRaw(Money) },
 ]
 </script>
 
@@ -67,7 +67,7 @@ const dictTabs = [
   display: flex;
   align-items: center;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
 }
 
 .dict-tab-group {
@@ -82,8 +82,8 @@ const dictTabs = [
   align-items: center;
   gap: 8px;
   background: transparent;
-  border: 1px solid #f0f0f0;
-  color: rgba(0, 0, 0, 0.65);
+  border: 1px solid #f1f5f9;
+  color: #64748b;
   font-size: 13px;
   font-weight: 500;
   padding: 6px 14px;
@@ -96,15 +96,15 @@ const dictTabs = [
   }
 
   &:hover {
-    background: #f0f7ff;
-    border-color: #91caff;
-    color: #1677ff;
+    background: #f0f9ff;
+    border-color: #7dd3fc;
+    color: #0ea5e9;
   }
 
   &.active {
-    background: #e6f4ff;
-    border-color: #1677ff;
-    color: #1677ff;
+    background: #e0f2fe;
+    border-color: #0ea5e9;
+    color: #0ea5e9;
     font-weight: 600;
   }
 }

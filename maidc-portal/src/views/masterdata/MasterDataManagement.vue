@@ -13,24 +13,24 @@
       </div>
 
       <div class="hub-actions">
-        <a-dropdown :trigger="['click']">
-          <a-button type="primary" class="hub-create-btn">
-            <PlusOutlined style="margin-right: 6px" /> 快速新建标准
-          </a-button>
-          <template #overlay>
-            <a-menu @click="handleQuickCreate">
-              <a-menu-item key="concept-domain">
-                <AppstoreOutlined style="color: #1677ff; margin-right: 8px" /> 新建概念域 (Concept Domain)
-              </a-menu-item>
-              <a-menu-item key="value-domain">
-                <DatabaseOutlined style="color: #38bdf8; margin-right: 8px" /> 新建值域 (Value Domain)
-              </a-menu-item>
-              <a-menu-item key="data-element-concept">
-                <BranchesOutlined style="color: #818cf8; margin-right: 8px" /> 新建数据元概念 (DEC)
-              </a-menu-item>
-            </a-menu>
+        <el-dropdown trigger="click" @command="handleQuickCreateCommand">
+          <el-button type="primary" class="hub-create-btn">
+            <el-icon style="margin-right: 6px"><Plus /></el-icon> 快速新建标准
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="concept-domain">
+                <el-icon style="color: #0ea5e9; margin-right: 8px"><Menu /></el-icon> 新建概念域 (Concept Domain)
+              </el-dropdown-item>
+              <el-dropdown-item command="value-domain">
+                <el-icon style="color: #38bdf8; margin-right: 8px"><Coin /></el-icon> 新建值域 (Value Domain)
+              </el-dropdown-item>
+              <el-dropdown-item command="data-element-concept">
+                <el-icon style="color: #818cf8; margin-right: 8px"><Connection /></el-icon> 新建数据元概念 (DEC)
+              </el-dropdown-item>
+            </el-dropdown-menu>
           </template>
-        </a-dropdown>
+        </el-dropdown>
       </div>
     </div>
 
@@ -101,27 +101,30 @@
               <span style="font-weight: 600">标准体系分类目录</span>
             </div>
             <div style="margin-bottom: 12px">
-              <a-input-search
-                v-model:value="searchKeyword"
+              <el-input
+                v-model="searchKeyword"
                 placeholder="搜索标准代码或名称..."
-                allow-clear
+                clearable
+                :suffix-icon="Search"
               />
             </div>
-            <a-tree
-              v-model:selectedKeys="treeSelectedKeys"
-              v-model:expandedKeys="treeExpandedKeys"
-              :tree-data="treeData"
-              :field-names="{ title: 'name', key: 'id', children: 'children' }"
-              @select="handleTreeSelect"
+            <el-tree
+              :data="treeData"
+              node-key="id"
+              :props="{ label: 'name', children: 'children' }"
+              :default-expanded-keys="treeExpandedKeys"
+              :expand-on-click-node="false"
+              highlight-current
+              @node-click="handleTreeSelect"
             >
-              <template #title="{ name, type, count }">
-                <span>
-                  <component :is="getTypeIcon(type)" style="margin-right: 6px; color: #1677ff" />
-                  {{ name }}
-                  <span v-if="count" class="tree-count">{{ count }}</span>
+              <template #default="{ data }">
+                <span style="display: inline-flex; align-items: center">
+                  <el-icon style="margin-right: 6px; color: #0ea5e9; font-size: 14px"><component :is="getTypeIcon(data.type)" /></el-icon>
+                  {{ data.name }}
+                  <span v-if="data.count" class="tree-count">{{ data.count }}</span>
                 </span>
               </template>
-            </a-tree>
+            </el-tree>
           </div>
 
           <!-- Right: Dynamic preview -->
@@ -142,7 +145,7 @@
               @edit="handleEditValueSet"
             />
             <div v-else class="empty-state-box">
-              <DatabaseOutlined style="font-size: 40px; color: #64748b; margin-bottom: 12px" />
+              <el-icon style="font-size: 40px; color: #64748b; margin-bottom: 12px"><Coin /></el-icon>
               <div style="color: #94a3b8; font-size: 14px">请从左侧标准体系目录选择具体节点查看详情</div>
             </div>
           </div>
@@ -160,17 +163,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, onMounted } from 'vue'
+import { ref, markRaw, onMounted } from 'vue'
 import {
-  PlusOutlined,
-  AppstoreOutlined,
-  DatabaseOutlined,
-  BranchesOutlined,
-  MedicineBoxOutlined,
-  ApartmentOutlined,
-  FolderOutlined,
-  UnorderedListOutlined,
-} from '@ant-design/icons-vue'
+  Plus,
+  Menu,
+  Coin,
+  Connection,
+  FirstAidKit,
+  Share,
+  Folder,
+  List,
+  Search,
+} from '@element-plus/icons-vue'
 import MasterDataMetrics from './components/MasterDataMetrics.vue'
 import ConceptDomainList from './ConceptDomainList.vue'
 import ValueDomainList from './ValueDomainList.vue'
@@ -206,11 +210,11 @@ const codeSystemFormRef = ref()
 const valueSetFormRef = ref()
 
 const mainTabs = [
-  { key: 'concept-domains', label: '概念域与值含义 (CD & VM)', icon: markRaw(AppstoreOutlined), badge: 'WS/T 303' },
-  { key: 'value-domains', label: '值域与允许值 (VD & PV)', icon: markRaw(DatabaseOutlined) },
-  { key: 'data-element-concepts', label: '数据元概念 (DEC)', icon: markRaw(BranchesOutlined) },
-  { key: 'dictionaries', label: '常用临床字典 (Dictionaries)', icon: markRaw(MedicineBoxOutlined), badge: '5大字典' },
-  { key: 'catalog-tree', label: '编码体系与目录树全景', icon: markRaw(ApartmentOutlined) },
+  { key: 'concept-domains', label: '概念域与值含义 (CD & VM)', icon: markRaw(Menu), badge: 'WS/T 303' },
+  { key: 'value-domains', label: '值域与允许值 (VD & PV)', icon: markRaw(Coin) },
+  { key: 'data-element-concepts', label: '数据元概念 (DEC)', icon: markRaw(Connection) },
+  { key: 'dictionaries', label: '常用临床字典 (Dictionaries)', icon: markRaw(FirstAidKit), badge: '5大字典' },
+  { key: 'catalog-tree', label: '编码体系与目录树全景', icon: markRaw(Share) },
 ]
 
 // Tab switching
@@ -247,6 +251,10 @@ const handleQuickCreate = ({ key }: { key: string }) => {
   }
 }
 
+const handleQuickCreateCommand = (cmd: string | number | object) => {
+  handleQuickCreate({ key: String(cmd) })
+}
+
 const handleMetricCreate = (type: string) => {
   if (type === 'concept-domain') {
     conceptDomainFormRef.value?.open()
@@ -267,7 +275,6 @@ const handleModalSuccess = () => {
 
 // Tree view state
 const searchKeyword = ref('')
-const treeSelectedKeys = ref<string[]>([])
 const treeExpandedKeys = ref<string[]>(['concept-domains', 'code-systems', 'value-sets'])
 const treeCurrentView = ref<string>('')
 const treeSelectedId = ref<number>()
@@ -295,19 +302,18 @@ const treeData = ref<any[]>([
 
 const getTypeIcon = (type: string) => {
   const icons: Record<string, any> = {
-    folder: FolderOutlined,
-    'concept-domain': AppstoreOutlined,
-    'code-system': DatabaseOutlined,
-    'value-set': UnorderedListOutlined,
+    folder: Folder,
+    'concept-domain': Menu,
+    'code-system': Coin,
+    'value-set': List,
   }
-  return icons[type] || FolderOutlined
+  return icons[type] || Folder
 }
 
-const handleTreeSelect = (keys: string[], { node }: any) => {
-  if (node.type !== 'folder') {
-    treeSelectedKeys.value = keys
-    treeCurrentView.value = node.type
-    treeSelectedId.value = node.id
+const handleTreeSelect = (data: any) => {
+  if (data.type !== 'folder') {
+    treeCurrentView.value = data.type
+    treeSelectedId.value = data.id
   }
 }
 
@@ -401,16 +407,16 @@ onMounted(() => {
 .standard-pill {
   font-size: 11px;
   font-weight: 600;
-  background: #e6f4ff;
-  color: #1677ff;
-  border: 1px solid #91caff;
+  background: #f0f9ff;
+  color: #0ea5e9;
+  border: 1px solid #7dd3fc;
   padding: 2px 10px;
   border-radius: 999px;
 }
 
 .hub-subtitle {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin: 0;
 }
 
@@ -424,7 +430,7 @@ onMounted(() => {
   padding: 6px 8px;
   border-radius: 8px;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
 }
 
 .tab-buttons {
@@ -440,7 +446,7 @@ onMounted(() => {
   gap: 8px;
   background: transparent;
   border: 1px solid transparent;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   font-size: 13px;
   font-weight: 500;
   padding: 8px 16px;
@@ -454,25 +460,25 @@ onMounted(() => {
   }
 
   &:hover {
-    color: #1677ff;
-    background: #f0f7ff;
+    color: #0ea5e9;
+    background: #f0f9ff;
   }
 
   &.active {
-    background: #e6f4ff;
-    border-color: #91caff;
-    color: #1677ff;
+    background: #f0f9ff;
+    border-color: #7dd3fc;
+    color: #0ea5e9;
     font-weight: 600;
   }
 }
 
 .tab-badge {
   font-size: 10px;
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.45);
+  background: #f8fafc;
+  color: #94a3b8;
   padding: 1px 6px;
   border-radius: 999px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
 }
 
 .hub-tab-content {
@@ -498,13 +504,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
 }
 
 .tree-header {
   padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
   margin-bottom: 12px;
 }
 
@@ -514,14 +520,14 @@ onMounted(() => {
   padding: 16px;
   overflow-y: auto;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
 }
 
 .tree-count {
   font-size: 11px;
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.45);
+  background: #f8fafc;
+  color: #94a3b8;
   padding: 1px 6px;
   border-radius: 999px;
   margin-left: 6px;

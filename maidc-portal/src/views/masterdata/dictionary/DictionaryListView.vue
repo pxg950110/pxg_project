@@ -2,16 +2,16 @@
   <div :class="embedded ? 'dict-list-view dict-list-view--embedded' : 'dict-list-view'">
     <div v-if="!embedded" class="dict-header">
       <h2 class="dict-title">{{ schema.title }}</h2>
-      <a-space>
-        <a-button v-if="schema.showImport" @click="handleImport">
-          <template #icon><UploadOutlined /></template>
+      <div class="flex items-center gap-2">
+        <el-button v-if="schema.showImport" @click="handleImport">
+          <el-icon class="mr-1"><Upload /></el-icon>
           导入
-        </a-button>
-        <a-button v-if="canCreate" type="primary" @click="handleCreate">
-          <template #icon><PlusOutlined /></template>
+        </el-button>
+        <el-button v-if="canCreate" type="primary" @click="handleCreate">
+          <el-icon class="mr-1"><Plus /></el-icon>
           {{ schema.newLabel }}
-        </a-button>
-      </a-space>
+        </el-button>
+      </div>
     </div>
 
     <div class="dict-layout">
@@ -25,75 +25,112 @@
 
       <div class="dict-item-panel">
         <!-- 筛选栏 -->
-        <a-card :bordered="false" class="filter-card" size="small">
-          <a-row :gutter="12" align="middle">
-            <a-col v-for="filter in schema.filters" :key="filter.name" :span="4">
-              <a-select v-model:value="filters[filter.name]" :placeholder="filter.placeholder" allow-clear
-                style="width: 100%" @change="fetchData(1)">
-                <a-select-option v-for="opt in optionsOf(filter)" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </a-select-option>
-              </a-select>
-            </a-col>
-            <a-col :span="8">
-              <a-input-search v-model:value="filters.keyword" :placeholder="schema.keywordPlaceholder"
-                enter-button @search="fetchData(1)" allow-clear />
-            </a-col>
-            <a-col :span="3">
-              <a-button @click="resetFilters">重置</a-button>
-            </a-col>
-          </a-row>
-        </a-card>
+        <el-card shadow="never" class="filter-card" :body-style="{ padding: '12px' }">
+          <div class="flex flex-wrap items-center gap-3">
+            <el-select
+              v-for="filter in schema.filters"
+              :key="filter.name"
+              v-model="filters[filter.name]"
+              :placeholder="filter.placeholder"
+              clearable
+              class="w-44"
+              @change="fetchData(1)"
+            >
+              <el-option v-for="opt in optionsOf(filter)" :key="opt.value" :value="opt.value" :label="opt.label" />
+            </el-select>
+            <el-input
+              v-model="filters.keyword"
+              :placeholder="schema.keywordPlaceholder"
+              clearable
+              :suffix-icon="Search"
+              class="min-w-48 flex-1 md:max-w-sm"
+              @keyup.enter="fetchData(1)"
+              @clear="fetchData(1)"
+            />
+            <el-button :icon="Search" @click="fetchData(1)">搜索</el-button>
+            <el-button @click="resetFilters">重置</el-button>
+          </div>
+        </el-card>
 
         <!-- 数据表格 -->
         <div class="table-card">
-          <a-table class="dict-table" :columns="schema.columns" :data-source="tableData" :loading="loading"
-            :pagination="pagination" @change="handleTableChange" row-key="id"
-            :scroll="{ x: schema.scrollX, y: 'calc(100vh - 360px)' }" size="small">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'name'">
-              <a @click="openDetail(record)">{{ record.name }}</a>
-            </template>
-            <template v-else-if="column.key === 'status'">
-              <a-tag :color="statusTagOf(record.status).color">{{ statusTagOf(record.status).label }}</a-tag>
-            </template>
-            <template v-else-if="column.key === 'price'">
-              {{ record.price ? `¥${record.price}` : '-' }}
-            </template>
-            <template v-else-if="column.key === 'insuranceType' || column.key === 'feeType'">
-              <a-tag v-if="record[column.key]" :color="TYPE_TAG_COLORS[record[column.key]] || 'default'">
-                {{ record[column.key] }}
-              </a-tag>
-              <span v-else>-</span>
-            </template>
-            <template v-else-if="column.key === 'refRange'">
-              {{ formatRefRange(record) }}
-            </template>
-            <template v-else-if="column.key === 'actions'">
-              <a-space>
-                <a v-if="canUpdate" @click="handleEdit(record)">编辑</a>
-                <a-popconfirm v-if="canDelete" title="确认删除?" @confirm="handleDelete(record.id)">
-                  <a class="danger-link">删除</a>
-                </a-popconfirm>
-                <span v-if="!canUpdate && !canDelete">-</span>
-              </a-space>
-            </template>
-            <template v-else>{{ record[column.dataIndex ?? column.key] ?? '-' }}</template>
-            </template>
-          </a-table>
+          <el-table
+            v-loading="loading"
+            class="dict-table"
+            :data="tableData"
+            row-key="id"
+            size="small"
+            max-height="calc(100vh - 360px)"
+          >
+            <el-table-column
+              v-for="col in schema.columns"
+              :key="col.key ?? col.dataIndex"
+              :prop="col.dataIndex ?? col.key"
+              :label="col.title"
+              :width="col.width"
+              :fixed="col.fixed"
+              :show-overflow-tooltip="col.ellipsis"
+            >
+              <template #default="{ row }">
+                <template v-if="col.key === 'name'">
+                  <el-button link type="primary" @click="openDetail(row)">{{ row.name }}</el-button>
+                </template>
+                <template v-else-if="col.key === 'status'">
+                  <el-tag :type="toTagType(statusTagOf(row.status).color)">{{ statusTagOf(row.status).label }}</el-tag>
+                </template>
+                <template v-else-if="col.key === 'price'">
+                  {{ row.price ? `¥${row.price}` : '-' }}
+                </template>
+                <template v-else-if="col.key === 'insuranceType' || col.key === 'feeType'">
+                  <el-tag v-if="row[col.key]" :type="toTagType(TYPE_TAG_COLORS[row[col.key]] || 'default')">
+                    {{ row[col.key] }}
+                  </el-tag>
+                  <span v-else>-</span>
+                </template>
+                <template v-else-if="col.key === 'refRange'">
+                  {{ formatRefRange(row) }}
+                </template>
+                <template v-else-if="col.key === 'actions'">
+                  <div class="flex items-center gap-2">
+                    <el-button v-if="canUpdate" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+                    <el-popconfirm v-if="canDelete" title="确认删除?" @confirm="handleDelete(row.id)">
+                      <template #reference>
+                        <el-button link type="danger" size="small">删除</el-button>
+                      </template>
+                    </el-popconfirm>
+                    <span v-if="!canUpdate && !canDelete">-</span>
+                  </div>
+                </template>
+                <template v-else>{{ row[col.dataIndex ?? col.key] ?? '-' }}</template>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <div class="mt-3 flex justify-end">
+            <el-pagination
+              background
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="pagination.total"
+              :current-page="pagination.current"
+              :page-size="pagination.pageSize"
+              :page-sizes="[10, 20, 50, 100]"
+              @current-change="handlePageChange"
+              @size-change="handleSizeChange"
+            />
+          </div>
         </div>
       </div>
     </div>
 
     <!-- 详情抽屉 -->
-    <a-drawer v-model:open="drawerVisible" :title="schema.detailTitle" width="600" destroy-on-close>
-      <a-descriptions :column="2" bordered size="small" v-if="currentItem">
+    <el-drawer v-model="drawerVisible" :title="schema.detailTitle" size="600px" :destroy-on-close="true">
+      <el-descriptions v-if="currentItem" :column="2" border size="small">
         <template v-for="field in schema.detailFields" :key="field.name">
-          <a-descriptions-item :label="field.label" :span="field.span || 1">
+          <el-descriptions-item :label="field.label" :span="field.span || 1">
             <template v-if="field.render === 'tag'">
-              <a-tag v-if="tagLabel(currentItem[field.name])" :color="tagColor(currentItem[field.name])">
+              <el-tag v-if="tagLabel(currentItem[field.name])" :type="toTagType(tagColor(currentItem[field.name]))">
                 {{ tagLabel(currentItem[field.name]) }}
-              </a-tag>
+              </el-tag>
               <span v-else>-</span>
             </template>
             <template v-else-if="field.render === 'price'">
@@ -103,60 +140,61 @@
               {{ formatRefRange(currentItem) }}
             </template>
             <template v-else-if="field.render === 'rx'">
-              <a-tag :color="currentItem[field.name] ? 'blue' : 'green'">
+              <el-tag :type="currentItem[field.name] ? 'primary' : 'success'">
                 {{ currentItem[field.name] ? '处方药' : '非处方药' }}
-              </a-tag>
+              </el-tag>
             </template>
             <template v-else>{{ currentItem[field.name] ?? '-' }}</template>
-          </a-descriptions-item>
+          </el-descriptions-item>
         </template>
-      </a-descriptions>
-    </a-drawer>
+      </el-descriptions>
+    </el-drawer>
 
     <!-- 新增/编辑弹窗 -->
-    <a-modal v-model:open="modalVisible" :title="isEdit ? schema.editLabel : schema.newLabel"
-      :width="schema.modalWidth" @ok="handleSubmit" @cancel="handleModalCancel" destroy-on-close
-      :confirm-loading="submitting">
-      <a-form ref="formRef" :model="formData" :rules="rules" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-row :gutter="16">
-          <template v-for="field in gridFields" :key="field.name">
-            <a-col :span="12">
-              <a-form-item :label="field.label" :name="field.name">
-                <a-input v-if="field.type === 'input'" v-model:value="formData[field.name]"
-                  :placeholder="field.placeholder" :disabled="isEdit && field.disabledOnEdit" />
-                <a-input-number v-else-if="field.type === 'number'" v-model:value="formData[field.name]"
-                  :min="0" :precision="field.name === 'price' ? 2 : undefined"
-                  style="width: 100%" :placeholder="field.placeholder" />
-                <a-select v-else-if="field.type === 'select'" v-model:value="formData[field.name]"
-                  :placeholder="field.placeholder" :allow-clear="!field.required">
-                  <a-select-option v-for="opt in optionsOf(field)" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </a-select-option>
-                </a-select>
-                <a-tree-select v-else-if="field.type === 'tree-select'" v-model:value="formData[field.name]"
-                  :tree-data="drugCategoryTree"
-                  :field-names="{ label: 'name', value: 'id', children: 'children' }"
-                  placeholder="选择分类" allow-clear tree-line />
-              </a-form-item>
-            </a-col>
-          </template>
-        </a-row>
-        <template v-for="field in fullFields" :key="field.name">
-          <a-form-item :label="field.label" :name="field.name" :label-col="{ span: 3 }" :wrapper-col="{ span: 20 }">
-            <a-textarea v-if="field.type === 'textarea'" v-model:value="formData[field.name]"
-              :placeholder="field.placeholder" :rows="2" />
-          </a-form-item>
-        </template>
-      </a-form>
-    </a-modal>
+    <el-dialog
+      v-model="modalVisible"
+      :title="isEdit ? schema.editLabel : schema.newLabel"
+      :width="schema.modalWidth"
+      destroy-on-close
+      @close="handleModalCancel"
+    >
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px">
+        <div class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
+          <el-form-item v-for="field in gridFields" :key="field.name" :label="field.label" :prop="field.name">
+            <el-input v-if="field.type === 'input'" v-model="formData[field.name]"
+              :placeholder="field.placeholder" :disabled="isEdit && field.disabledOnEdit" />
+            <el-input-number v-else-if="field.type === 'number'" v-model="formData[field.name]"
+              :min="0" :precision="field.name === 'price' ? 2 : undefined"
+              class="!w-full" :placeholder="field.placeholder" />
+            <el-select v-else-if="field.type === 'select'" v-model="formData[field.name]"
+              :placeholder="field.placeholder" :clearable="!field.required">
+              <el-option v-for="opt in optionsOf(field)" :key="opt.value" :value="opt.value" :label="opt.label" />
+            </el-select>
+            <el-tree-select v-else-if="field.type === 'tree-select'" v-model="formData[field.name]"
+              :data="drugCategoryTree"
+              node-key="id"
+              :props="{ label: 'name', children: 'children' }"
+              placeholder="选择分类" clearable />
+          </el-form-item>
+        </div>
+        <el-form-item v-for="field in fullFields" :key="field.name" :label="field.label" :prop="field.name">
+          <el-input v-if="field.type === 'textarea'" v-model="formData[field.name]"
+            type="textarea" :rows="2" :placeholder="field.placeholder" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="modalVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, type Component } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
-import type { FormInstance } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
+import type { FormInstance } from 'element-plus'
+import { Plus, Upload, Search } from '@element-plus/icons-vue'
 import { usePermission } from '@/hooks/usePermission'
 import DrugCategoryTree from './DrugCategoryTree.vue'
 import IcdChapterMenu from './IcdChapterMenu.vue'
@@ -205,8 +243,6 @@ const pagination = reactive({
   current: 1,
   pageSize: 20,
   total: 0,
-  showSizeChanger: true,
-  showTotal: (total: number) => `共 ${total} 条`,
 })
 
 const dynamicOptions = reactive<Record<string, Array<{ label: string; value: any }>>>({})
@@ -249,9 +285,13 @@ async function fetchData(page = 1) {
   }
 }
 
-function handleTableChange(pag: any) {
-  pagination.pageSize = pag.pageSize
-  fetchData(pag.current)
+function handlePageChange(page: number) {
+  fetchData(page)
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  fetchData(1)
 }
 
 function resetFilters() {
@@ -272,7 +312,7 @@ function onSideLoaded(tree: any[]) {
 }
 
 function handleImport() {
-  message.info('导入功能开发中')
+  ElMessage.info('导入功能开发中')
 }
 
 // ==================== 详情抽屉 ====================
@@ -300,6 +340,20 @@ function tagLabel(value: any) {
 
 function tagColor(value: any) {
   return STATUS_TAG[value]?.color ?? TYPE_TAG_COLORS[value] ?? 'default'
+}
+
+/** AntD 色值名 → el-tag 类型（config 中 STATUS_TAG / TYPE_TAG_COLORS 仍为 AntD 色名） */
+function toTagType(color?: string): 'danger' | 'warning' | 'success' | 'primary' | 'info' {
+  switch (color) {
+    case 'red': return 'danger'
+    case 'orange':
+    case 'gold':
+    case 'volcano': return 'warning'
+    case 'green': return 'success'
+    case 'blue':
+    case 'geekblue': return 'primary'
+    default: return 'info'
+  }
 }
 
 function formatRefRange(record: DictionaryRecord) {
@@ -359,15 +413,15 @@ async function handleSubmit() {
   try {
     if (isEdit.value && editingId.value) {
       await api.update(editingId.value, { ...formData })
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await api.create({ ...formData })
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     modalVisible.value = false
     fetchData(pagination.current)
   } catch {
-    message.error(isEdit.value ? '更新失败' : '创建失败')
+    ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
   } finally {
     submitting.value = false
   }
@@ -381,10 +435,10 @@ function handleModalCancel() {
 async function handleDelete(id: number) {
   try {
     await api.remove(id)
-    message.success('删除成功')
+    ElMessage.success('删除成功')
     fetchData(pagination.current)
   } catch {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 
@@ -414,7 +468,7 @@ onMounted(() => {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: rgba(0, 0, 0, 0.88);
+    color: #0f172a;
   }
 }
 
@@ -439,7 +493,7 @@ onMounted(() => {
 
 :deep(.filter-card) {
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
 }
 
@@ -447,191 +501,8 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 8px;
-}
-
-.danger-link {
-  color: #ff4d4f;
-}
-
-/* ==================== 深色皮肤（仅内嵌主数据管理页时） ==================== */
-.dict-skin-dark {
-  :deep(.dict-type-panel),
-  :deep(.filter-card),
-  :deep(.table-card) {
-    background: var(--tech-panel-bg);
-    border-color: var(--tech-panel-border);
-  }
-
-  :deep(.dict-header .dict-title),
-  :deep(.table-card),
-  :deep(.filter-card) {
-    color: var(--tech-text-body, #e6edf6);
-  }
-
-  /* 深色表格 */
-  :deep(.dict-table) {
-    background: transparent;
-
-    .ant-table {
-      background: transparent;
-      color: var(--tech-text-body, #e6edf6);
-    }
-
-    .ant-table-thead > tr > th {
-      background: rgba(15, 26, 46, 0.8) !important;
-      color: var(--tech-text-muted, #94a3b8) !important;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
-
-      &::before {
-        background-color: transparent !important;
-      }
-    }
-
-    .ant-table-tbody > tr > td {
-      background: transparent;
-      color: var(--tech-text-body, #e6edf6);
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-    }
-
-    .ant-table-tbody > tr:hover > td,
-    .ant-table-tbody > tr.ant-table-row-selected > td {
-      background: rgba(34, 211, 238, 0.06) !important;
-    }
-
-    .ant-table-tbody > tr td.ant-table-cell-fix-right {
-      background: rgba(15, 26, 46, 0.72);
-    }
-
-    .ant-table-tbody > tr:hover td.ant-table-cell-fix-right {
-      background: rgba(20, 34, 60, 0.85);
-    }
-
-    a {
-      color: var(--tech-primary, #22d3ee);
-    }
-
-    .ant-pagination .ant-pagination-item,
-    .ant-pagination .ant-pagination-prev .ant-pagination-item-link,
-    .ant-pagination .ant-pagination-next .ant-pagination-item-link {
-      background: rgba(15, 26, 46, 0.6);
-      border-color: rgba(148, 163, 184, 0.16);
-
-      a {
-        color: var(--tech-text-body, #e6edf6);
-      }
-    }
-
-    .ant-pagination .ant-pagination-item-active {
-      border-color: var(--tech-primary, #22d3ee);
-
-      a {
-        color: var(--tech-primary, #22d3ee);
-      }
-    }
-  }
-
-  /* 深色筛选输入 */
-  :deep(.filter-card) {
-    .ant-select .ant-select-selector,
-    .ant-input-affix-wrapper,
-    .ant-input {
-      background: var(--tech-input-bg, rgba(6, 11, 22, 0.6)) !important;
-      border-color: var(--tech-input-border, rgba(148, 163, 184, 0.2)) !important;
-      color: var(--tech-text-body, #e6edf6) !important;
-    }
-
-    .ant-select-selection-placeholder,
-    .ant-input::placeholder {
-      color: var(--tech-text-dim, #64748b);
-    }
-
-    .ant-select-arrow,
-    .ant-input-search-button .anticon {
-      color: var(--tech-text-muted, #94a3b8);
-    }
-
-    .ant-btn {
-      background: rgba(15, 26, 46, 0.6);
-      border-color: rgba(148, 163, 184, 0.16);
-      color: var(--tech-text-body, #e6edf6);
-    }
-  }
-
-  /* 深色侧栏（分类树 / ICD 章节菜单） */
-  :deep(.dict-type-panel) {
-    color: var(--tech-text-body, #e6edf6);
-
-    .ant-input-affix-wrapper,
-    .ant-input {
-      background: var(--tech-input-bg, rgba(6, 11, 22, 0.6)) !important;
-      border-color: var(--tech-input-border, rgba(148, 163, 184, 0.2)) !important;
-      color: var(--tech-text-body, #e6edf6) !important;
-    }
-
-    .ant-input::placeholder {
-      color: var(--tech-text-dim, #64748b);
-    }
-
-    .ant-input-search-button .anticon {
-      color: var(--tech-text-muted, #94a3b8);
-    }
-
-    .category-code {
-      color: var(--tech-text-dim, #64748b);
-    }
-
-    .ant-tree {
-      background: transparent;
-      color: var(--tech-text-body, #e6edf6);
-
-      .ant-tree-node-content-wrapper:hover {
-        background: rgba(34, 211, 238, 0.08);
-        color: var(--tech-primary, #22d3ee);
-      }
-
-      .ant-tree-node-content-wrapper.ant-tree-node-selected {
-        background: rgba(34, 211, 238, 0.16) !important;
-        color: var(--tech-primary, #22d3ee);
-      }
-
-      .ant-tree-switcher {
-        color: var(--tech-text-muted, #94a3b8);
-      }
-
-      .ant-tree-indent-unit::before {
-        border-color: rgba(148, 163, 184, 0.2);
-      }
-    }
-
-    .chapter-list .ant-menu {
-      background: transparent;
-      border-inline-end: none !important;
-
-      .ant-menu-item {
-        color: var(--tech-text-body, #cbd5e1);
-
-        &:hover {
-          background: rgba(34, 211, 238, 0.08);
-          color: var(--tech-primary, #22d3ee);
-        }
-
-        &-selected {
-          background: rgba(34, 211, 238, 0.16);
-          color: var(--tech-primary, #22d3ee);
-        }
-      }
-    }
-
-    .chapter-code {
-      color: #38bdf8;
-    }
-
-    .chapter-name {
-      color: #f1f5f9;
-    }
-  }
 }
 </style>

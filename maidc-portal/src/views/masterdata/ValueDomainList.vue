@@ -1,127 +1,141 @@
 <template>
   <component :is="embedded ? 'div' : PageContainer" :title="embedded ? undefined : '值域管理'" class="value-domain-wrapper">
     <template v-if="!embedded" #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
+      <el-button type="primary" @click="handleCreate">
+        <el-icon class="mr-1"><Plus /></el-icon>
         新增值域
-      </a-button>
+      </el-button>
     </template>
 
     <div class="value-domain-container">
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <a-row :gutter="12" align="middle">
-          <a-col :span="6">
-            <a-input-search
-              v-model:value="keyword"
-              placeholder="搜索值域代码、名称"
-              enter-button="搜索"
-              @search="fetchList(1)"
-              allow-clear
-            />
-          </a-col>
-          <a-col :span="4">
-            <a-select v-model:value="domainType" placeholder="值域类型" allow-clear style="width: 100%" @change="fetchList(1)">
-              <a-select-option value="ENUMERABLE">可枚举值域</a-select-option>
-              <a-select-option value="NON_ENUMERABLE">不可枚举值域</a-select-option>
-            </a-select>
-          </a-col>
-          <a-col :span="6">
-            <a-select
-              v-model:value="conceptDomainId"
-              placeholder="所属概念域"
-              allow-clear
-              show-search
-              :filter-option="filterOption"
-              style="width: 100%"
-              @change="fetchList(1)"
-            >
-              <a-select-option v-for="cd in conceptDomains" :key="cd.id" :value="cd.id">
-                {{ cd.name }} ({{ cd.code }})
-              </a-select-option>
-            </a-select>
-          </a-col>
-          <a-col :span="4">
-            <a-select v-model:value="status" placeholder="审核状态" allow-clear style="width: 100%" @change="fetchList(1)">
-              <a-select-option value="DRAFT">草稿</a-select-option>
-              <a-select-option value="APPROVED">已批准</a-select-option>
-              <a-select-option value="RETIRED">已废止</a-select-option>
-            </a-select>
-          </a-col>
-          <a-col :span="4" style="text-align: right">
-            <a-space>
-              <a-button @click="resetFilters">重置</a-button>
-              <a-button v-if="embedded" type="primary" @click="handleCreate">
-                <template #icon><PlusOutlined /></template>
-                新增值域
-              </a-button>
-            </a-space>
-          </a-col>
-        </a-row>
+        <div class="flex flex-wrap items-center gap-3">
+          <el-input
+            v-model="keyword"
+            placeholder="搜索值域代码、名称"
+            clearable
+            :suffix-icon="Search"
+            style="width: 260px"
+            @keyup.enter="fetchList(1)"
+            @clear="fetchList(1)"
+          />
+          <el-select v-model="domainType" placeholder="值域类型" clearable style="width: 150px" @change="fetchList(1)">
+            <el-option value="ENUMERABLE" label="可枚举值域" />
+            <el-option value="NON_ENUMERABLE" label="不可枚举值域" />
+          </el-select>
+          <el-select
+            v-model="conceptDomainId"
+            placeholder="所属概念域"
+            clearable
+            filterable
+            style="width: 220px"
+            @change="fetchList(1)"
+          >
+            <el-option v-for="cd in conceptDomains" :key="cd.id" :value="cd.id" :label="`${cd.name} (${cd.code})`">
+              {{ cd.name }} ({{ cd.code }})
+            </el-option>
+          </el-select>
+          <el-select v-model="status" placeholder="审核状态" clearable style="width: 130px" @change="fetchList(1)">
+            <el-option value="DRAFT" label="草稿" />
+            <el-option value="APPROVED" label="已批准" />
+            <el-option value="RETIRED" label="已废止" />
+          </el-select>
+          <div class="ml-auto flex items-center gap-2">
+            <el-button @click="resetFilters">重置</el-button>
+            <el-button v-if="embedded" type="primary" @click="handleCreate">
+              <el-icon class="mr-1"><Plus /></el-icon>
+              新增值域
+            </el-button>
+          </div>
+        </div>
       </div>
 
       <!-- Table Panel -->
       <div class="table-panel">
-        <a-table
-          :columns="columns"
-          :data-source="dataList"
-          :loading="loading"
+        <el-table
+          :data="dataList"
+          v-loading="loading"
           row-key="id"
-          size="middle"
-          :pagination="pagination"
-          @change="handleTableChange"
-          :scroll="{ x: 1300, y: 'calc(100vh - 420px)' }"
+          size="default"
+          style="width: 100%"
         >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'code'">
-              <span class="code-tag">{{ record.code }}</span>
+          <el-table-column label="代码 (Code)" width="140" fixed="left">
+            <template #default="{ row }">
+              <span class="code-tag">{{ row.code }}</span>
             </template>
-
-            <template v-if="column.key === 'name'">
+          </el-table-column>
+          <el-table-column label="值域名称" width="220">
+            <template #default="{ row }">
               <div class="name-cell">
-                <span class="name-main" @click="openDetail(record)">{{ record.name }}</span>
-                <span v-if="record.nameEn" class="name-sub">{{ record.nameEn }}</span>
+                <span class="name-main" @click="openDetail(row)">{{ row.name }}</span>
+                <span v-if="row.nameEn" class="name-sub">{{ row.nameEn }}</span>
               </div>
             </template>
-
-            <template v-if="column.key === 'domainType'">
-              <span :class="['domain-tag', record.domainType === 'ENUMERABLE' ? 'enumerable' : 'non-enumerable']">
-                {{ record.domainType === 'ENUMERABLE' ? '● 可枚举' : '○ 不可枚举' }}
+          </el-table-column>
+          <el-table-column label="类型" width="120">
+            <template #default="{ row }">
+              <span :class="['domain-tag', row.domainType === 'ENUMERABLE' ? 'enumerable' : 'non-enumerable']">
+                {{ row.domainType === 'ENUMERABLE' ? '● 可枚举' : '○ 不可枚举' }}
               </span>
             </template>
-
-            <template v-if="column.key === 'dataType'">
-              <span class="data-type-badge">{{ dataTypeLabel(record.dataType) }}</span>
+          </el-table-column>
+          <el-table-column label="数据类型" width="110">
+            <template #default="{ row }">
+              <span class="data-type-badge">{{ dataTypeLabel(row.dataType) }}</span>
             </template>
-
-            <template v-if="column.key === 'conceptDomainName'">
-              <a v-if="record.conceptDomainName" class="concept-link" @click="goToConceptDomain(record)">
-                {{ record.conceptDomainName }}
+          </el-table-column>
+          <el-table-column label="长度" width="90">
+            <template #default="{ row }">
+              {{ row.minLength === row.maxLength ? row.maxLength || '-' : `${row.minLength || 0}-${row.maxLength || '-'}` }}
+            </template>
+          </el-table-column>
+          <el-table-column label="计量单位" prop="unitName" width="100" />
+          <el-table-column label="表示类" prop="representationClass" width="100" />
+          <el-table-column label="所属概念域" width="180">
+            <template #default="{ row }">
+              <a v-if="row.conceptDomainName" class="concept-link" @click="goToConceptDomain(row)">
+                {{ row.conceptDomainName }}
               </a>
               <span v-else class="text-dim">-</span>
             </template>
-
-            <template v-if="column.key === 'status'">
-              <span :class="['status-badge', record.status ? record.status.toLowerCase() : 'draft']">
-                {{ statusLabel(record.status) }}
+          </el-table-column>
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <span :class="['status-badge', row.status ? row.status.toLowerCase() : 'draft']">
+                {{ statusLabel(row.status) }}
               </span>
             </template>
-
-            <template v-if="column.key === 'action'">
-              <a-space>
-                <a-button type="link" size="small" class="action-btn" @click="openDetail(record)">
+          </el-table-column>
+          <el-table-column label="操作" width="180" fixed="right">
+            <template #default="{ row }">
+              <div class="flex items-center">
+                <el-button link type="primary" size="small" class="action-btn" @click="openDetail(row)">
                   允许值 / 详情
-                </a-button>
-                <a-button type="link" size="small" class="action-btn" @click="handleEdit(record)">
+                </el-button>
+                <el-button link type="primary" size="small" class="action-btn" @click="handleEdit(row)">
                   编辑
-                </a-button>
-                <a-popconfirm title="确认删除该值域？" ok-text="确认" cancel-text="取消" @confirm="handleDelete(record)">
-                  <a-button type="link" size="small" danger>删除</a-button>
-                </a-popconfirm>
-              </a-space>
+                </el-button>
+                <el-popconfirm title="确认删除该值域？" confirm-button-text="确认" cancel-button-text="取消" @confirm="handleDelete(row)">
+                  <template #reference>
+                    <el-button link type="danger" size="small">删除</el-button>
+                  </template>
+                </el-popconfirm>
+              </div>
             </template>
-          </template>
-        </a-table>
+          </el-table-column>
+        </el-table>
+        <el-pagination
+          class="mt-4 justify-end"
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="pagination.total"
+          :current-page="pagination.current"
+          :page-size="pagination.pageSize"
+          :page-sizes="[10, 15, 20, 50, 100]"
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
       </div>
     </div>
 
@@ -139,8 +153,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Plus, Search } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { valueDomainApi, conceptDomainApi, type ValueDomain, type ConceptDomain } from '@/api/dataElementStandard'
 import ValueDomainFormModal from './components/ValueDomainFormModal.vue'
@@ -176,27 +190,7 @@ const pagination = reactive({
   current: 1,
   pageSize: 15,
   total: 0,
-  showSizeChanger: true,
-  showTotal: (total: number) => `共 ${total} 个值域`,
 })
-
-const columns = [
-  { title: '代码 (Code)', key: 'code', dataIndex: 'code', width: 140, fixed: 'left' },
-  { title: '值域名称', key: 'name', width: 220 },
-  { title: '类型', key: 'domainType', width: 120 },
-  { title: '数据类型', key: 'dataType', width: 110 },
-  {
-    title: '长度',
-    width: 90,
-    customRender: ({ record }: any) =>
-      record.minLength === record.maxLength ? record.maxLength || '-' : `${record.minLength || 0}-${record.maxLength || '-'}`,
-  },
-  { title: '计量单位', dataIndex: 'unitName', width: 100 },
-  { title: '表示类', key: 'representationClass', dataIndex: 'representationClass', width: 100 },
-  { title: '所属概念域', key: 'conceptDomainName', width: 180 },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '操作', key: 'action', width: 180, fixed: 'right' },
-]
 
 const dataTypeLabels: Record<string, string> = {
   STRING: '字符串 (S)',
@@ -218,11 +212,6 @@ const statusLabel = (st?: string) => {
     RETIRED: '已废止',
   }
   return (st && map[st]) || st || '草稿'
-}
-
-const filterOption = (input: string, option: any) => {
-  const text = String(option.children?.map ? option.children.map((c: any) => c.children || '').join('') : option.children || '')
-  return text.toLowerCase().includes(input.toLowerCase())
 }
 
 const fetchConceptDomains = async () => {
@@ -251,15 +240,19 @@ const fetchList = async (page = pagination.current) => {
     pagination.total = data.totalElements ?? dataList.value.length
     pagination.current = page
   } catch (error) {
-    message.error('获取值域列表失败')
+    ElMessage.error('获取值域列表失败')
   } finally {
     loading.value = false
   }
 }
 
-const handleTableChange = (pag: any) => {
-  pagination.pageSize = pag.pageSize
-  fetchList(pag.current)
+const handlePageChange = (page: number) => {
+  fetchList(page)
+}
+
+const handleSizeChange = (size: number) => {
+  pagination.pageSize = size
+  fetchList(1)
 }
 
 const resetFilters = () => {
@@ -281,10 +274,10 @@ const handleEdit = (record: ValueDomain) => {
 const handleDelete = async (record: ValueDomain) => {
   try {
     await valueDomainApi.delete(record.id)
-    message.success('删除成功')
+    ElMessage.success('删除成功')
     fetchList(pagination.current)
   } catch (error) {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 
@@ -338,7 +331,7 @@ defineExpose({
 .filter-bar {
   padding: 14px 18px;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
 }
 
@@ -347,7 +340,7 @@ defineExpose({
   padding: 16px;
   overflow: hidden;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
 }
 
@@ -368,17 +361,17 @@ defineExpose({
 
   .name-main {
     font-weight: 500;
-    color: rgba(0, 0, 0, 0.88);
+    color: #0f172a;
     cursor: pointer;
     &:hover {
-      color: #1677ff;
+      color: #0ea5e9;
       text-decoration: underline;
     }
   }
 
   .name-sub {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.45);
+    color: #94a3b8;
   }
 }
 
@@ -389,15 +382,15 @@ defineExpose({
   display: inline-block;
 
   &.enumerable {
-    background: #e6f4ff;
-    color: #1677ff;
-    border: 1px solid #91caff;
+    background: #f0f9ff;
+    color: #0ea5e9;
+    border: 1px solid #7dd3fc;
   }
 
   &.non-enumerable {
-    background: #f6ffed;
-    color: #52c41a;
-    border: 1px solid #b7eb8f;
+    background: #ecfdf5;
+    color: #10b981;
+    border: 1px solid #a7f3d0;
   }
 }
 
@@ -411,9 +404,9 @@ defineExpose({
 }
 
 .concept-link {
-  color: #1677ff;
+  color: #0ea5e9;
   &:hover {
-    color: #4096ff;
+    color: #38bdf8;
     text-decoration: underline;
   }
 }
@@ -424,28 +417,28 @@ defineExpose({
   border-radius: 4px;
 
   &.draft {
-    background: #fafafa;
-    color: rgba(0, 0, 0, 0.45);
+    background: #f8fafc;
+    color: #94a3b8;
   }
   &.approved {
-    background: #f6ffed;
-    color: #52c41a;
+    background: #ecfdf5;
+    color: #10b981;
   }
   &.retired {
-    background: #fff1f0;
-    color: #ff4d4f;
+    background: #fef2f2;
+    color: #ef4444;
   }
 }
 
 .text-dim {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .action-btn {
-  color: #1677ff;
+  color: #0ea5e9;
   padding: 0 4px;
   &:hover {
-    color: #4096ff;
+    color: #38bdf8;
   }
 }
 </style>

@@ -4,7 +4,7 @@
     <div class="metric-card" @click="emit('switch-tab', 'concept-domains')">
       <div class="metric-card-top">
         <div class="metric-icon-box concept">
-          <AppstoreOutlined />
+          <Menu />
         </div>
         <div class="metric-badge">WS/T 303</div>
       </div>
@@ -20,9 +20,9 @@
         </div>
       </div>
       <div class="metric-action-row">
-        <span class="action-link">查看明细 & 值含义 <ArrowRightOutlined /></span>
+        <span class="action-link">查看明细 & 值含义 <ArrowRight /></span>
         <button class="mini-add-btn" @click.stop="emit('create', 'concept-domain')" title="新建概念域">
-          <PlusOutlined /> 新建
+          <el-icon class="mr-0.5"><Plus /></el-icon> 新建
         </button>
       </div>
     </div>
@@ -31,7 +31,7 @@
     <div class="metric-card" @click="emit('switch-tab', 'value-domains')">
       <div class="metric-card-top">
         <div class="metric-icon-box value-domain">
-          <DatabaseOutlined />
+          <Coin />
         </div>
         <div class="metric-badge">表示格式</div>
       </div>
@@ -46,9 +46,9 @@
         </div>
       </div>
       <div class="metric-action-row">
-        <span class="action-link">管理值域规则 <ArrowRightOutlined /></span>
+        <span class="action-link">管理值域规则 <ArrowRight /></span>
         <button class="mini-add-btn" @click.stop="emit('create', 'value-domain')" title="新建值域">
-          <PlusOutlined /> 新建
+          <el-icon class="mr-0.5"><Plus /></el-icon> 新建
         </button>
       </div>
     </div>
@@ -57,7 +57,7 @@
     <div class="metric-card" @click="emit('switch-tab', 'data-element-concepts')">
       <div class="metric-card-top">
         <div class="metric-icon-box dec">
-          <BranchesOutlined />
+          <Share />
         </div>
         <div class="metric-badge">OC + Property</div>
       </div>
@@ -72,9 +72,9 @@
         </div>
       </div>
       <div class="metric-action-row">
-        <span class="action-link">查看语义血缘 <ArrowRightOutlined /></span>
+        <span class="action-link">查看语义血缘 <ArrowRight /></span>
         <button class="mini-add-btn" @click.stop="emit('create', 'data-element-concept')" title="新建数据元概念">
-          <PlusOutlined /> 新建
+          <el-icon class="mr-0.5"><Plus /></el-icon> 新建
         </button>
       </div>
     </div>
@@ -83,7 +83,7 @@
     <div class="metric-card" @click="emit('switch-tab', 'dictionaries')">
       <div class="metric-card-top">
         <div class="metric-icon-box dict">
-          <MedicineBoxOutlined />
+          <FirstAidKit />
         </div>
         <div class="metric-badge">5大临床字典</div>
       </div>
@@ -100,7 +100,7 @@
         </div>
       </div>
       <div class="metric-action-row">
-        <span class="action-link">进入字典维护工作台 <ArrowRightOutlined /></span>
+        <span class="action-link">进入字典维护工作台 <ArrowRight /></span>
       </div>
     </div>
   </div>
@@ -109,13 +109,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import {
-  AppstoreOutlined,
-  DatabaseOutlined,
-  BranchesOutlined,
-  MedicineBoxOutlined,
-  PlusOutlined,
-  ArrowRightOutlined,
-} from '@ant-design/icons-vue'
+  Menu,
+  Coin,
+  Share,
+  FirstAidKit,
+  Plus,
+  ArrowRight,
+} from '@element-plus/icons-vue'
 import {
   conceptDomainApi,
   valueDomainApi,
@@ -234,15 +234,15 @@ defineExpose({
   flex-direction: column;
   justify-content: space-between;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   min-height: 146px;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: #91caff;
+    border-color: #7dd3fc;
     .action-link {
-      color: #1677ff;
+      color: #0ea5e9;
     }
   }
 }
@@ -264,9 +264,9 @@ defineExpose({
   font-size: 18px;
 
   &.concept {
-    background: #e6f4ff;
-    color: #1677ff;
-    border: 1px solid #91caff;
+    background: #f0f9ff;
+    color: #0ea5e9;
+    border: 1px solid #7dd3fc;
   }
 
   &.value-domain {
@@ -282,9 +282,9 @@ defineExpose({
   }
 
   &.dict {
-    background: #f6ffed;
-    color: #52c41a;
-    border: 1px solid #b7eb8f;
+    background: #f0fdf4;
+    color: #10b981;
+    border: 1px solid #bbf7d0;
   }
 }
 
@@ -293,14 +293,14 @@ defineExpose({
   font-weight: 500;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.45);
-  border: 1px solid #f0f0f0;
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #f1f5f9;
 }
 
 .metric-title {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #64748b;
   font-weight: 500;
   margin-bottom: 4px;
 }
@@ -314,14 +314,14 @@ defineExpose({
   .metric-num {
     font-size: 26px;
     font-weight: 700;
-    color: rgba(0, 0, 0, 0.88);
+    color: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     letter-spacing: -0.02em;
   }
 
   .metric-unit {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.45);
+    color: #64748b;
   }
 }
 
@@ -334,7 +334,7 @@ defineExpose({
 
   .sub-text {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.45);
+    color: #64748b;
   }
 
   .sub-pill {
@@ -348,8 +348,8 @@ defineExpose({
     }
 
     &.green {
-      background: #f6ffed;
-      color: #52c41a;
+      background: #f0fdf4;
+      color: #10b981;
     }
 
     &.purple {
@@ -365,11 +365,11 @@ defineExpose({
   justify-content: space-between;
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
 
   .action-link {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.45);
+    color: #64748b;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -377,18 +377,20 @@ defineExpose({
   }
 
   .mini-add-btn {
-    background: #e6f4ff;
-    border: 1px solid #91caff;
-    color: #1677ff;
+    background: #f0f9ff;
+    border: 1px solid #7dd3fc;
+    color: #0ea5e9;
     font-size: 11px;
     font-weight: 500;
     padding: 2px 8px;
     border-radius: 6px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
     transition: all 0.2s;
 
     &:hover {
-      background: #1677ff;
+      background: #0ea5e9;
       color: #fff;
     }
   }

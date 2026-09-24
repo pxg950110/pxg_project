@@ -1,100 +1,110 @@
 <template>
-  <a-modal
-    v-model:open="visible"
+  <el-dialog
+    v-model="visible"
     title="导入数据元"
-    :footer="null"
-    width="600"
-    destroy-on-close
-    @cancel="handleClose"
+    width="600px"
+    :destroy-on-close="true"
+    @close="handleClose"
   >
     <!-- Step 1: Upload -->
     <div v-if="step === 'upload'">
       <div style="margin-bottom: 12px; display: flex; justify-content: flex-end">
-        <a-button size="small" @click="handleDownloadTemplate">
-          <template #icon><DownloadOutlined /></template>
+        <el-button size="small" @click="handleDownloadTemplate">
+          <el-icon class="mr-1"><Download /></el-icon>
           下载模板
-        </a-button>
+        </el-button>
       </div>
-      <a-upload-dragger
+      <el-upload
+        drag
+        action="#"
         :before-upload="handleBeforeUpload"
-        :show-upload-list="false"
+        :show-file-list="false"
         accept=".xlsx"
       >
-        <p class="ant-upload-drag-icon"><InboxOutlined /></p>
-        <p class="ant-upload-text">点击或拖拽 Excel 文件上传</p>
-        <p class="ant-upload-hint">仅支持 .xlsx 格式，文件大小不超过 10MB</p>
-      </a-upload-dragger>
+        <el-icon class="el-icon--upload" style="color: #0ea5e9"><UploadFilled /></el-icon>
+        <div class="el-upload__text">点击或拖拽 Excel 文件上传</div>
+        <template #tip>
+          <div class="el-upload__tip">仅支持 .xlsx 格式，文件大小不超过 10MB</div>
+        </template>
+      </el-upload>
       <div v-if="file" style="margin-top: 12px; display: flex; align-items: center; gap: 8px">
-        <FileExcelOutlined style="color: #52c41a; font-size: 20px" />
+        <el-icon style="color: #10b981; font-size: 20px"><Document /></el-icon>
         <span>{{ file.name }}</span>
-        <span style="color: #999">({{ (file.size / 1024).toFixed(1) }} KB)</span>
+        <span style="color: #94a3b8">({{ (file.size / 1024).toFixed(1) }} KB)</span>
       </div>
       <div style="margin-top: 16px; text-align: right">
-        <a-space>
-          <a-button @click="handleClose">取消</a-button>
-          <a-button type="primary" :disabled="!file" :loading="uploading" @click="handleUpload">
+        <div class="inline-flex items-center gap-3">
+          <el-button @click="visible = false">取消</el-button>
+          <el-button type="primary" :disabled="!file" :loading="uploading" @click="handleUpload">
             开始导入
-          </a-button>
-        </a-space>
+          </el-button>
+        </div>
       </div>
     </div>
 
     <!-- Step 2: Progress -->
     <div v-else-if="step === 'progress'">
-      <a-result status="info" title="正在导入...">
+      <el-result icon="info" title="正在导入...">
         <template #extra>
           <div style="width: 100%">
-            <a-progress :percent="progressPercent" :status="progressStatus" />
-            <div style="margin-top: 12px; color: #666; font-size: 13px">
+            <el-progress :percentage="progressPercent" :status="progressStatus" :stroke-width="6" />
+            <div style="margin-top: 12px; color: #64748b; font-size: 13px">
               <div>总行数: {{ taskInfo.totalRows || '-' }}</div>
               <div>已处理: {{ taskInfo.processedRows || 0 }}</div>
               <div>失败: {{ taskInfo.failedRows || 0 }}</div>
             </div>
           </div>
         </template>
-      </a-result>
+      </el-result>
     </div>
 
     <!-- Step 3: Result -->
     <div v-else-if="step === 'result'">
-      <a-result
-        :status="taskInfo.status === 'COMPLETED' ? 'success' : 'error'"
+      <el-result
+        :icon="taskInfo.status === 'COMPLETED' ? 'success' : 'error'"
         :title="taskInfo.status === 'COMPLETED' ? '导入完成' : '导入失败'"
       >
         <template #extra>
-          <div v-if="taskInfo.status === 'COMPLETED'" style="font-size: 14px">
-            <a-row :gutter="16">
-              <a-col :span="6"><a-statistic title="总行数" :value="taskInfo.totalRows" /></a-col>
-              <a-col :span="6"><a-statistic title="成功" :value="taskInfo.processedRows" value-style="color: #52c41a" /></a-col>
-              <a-col :span="6"><a-statistic title="失败" :value="taskInfo.failedRows" value-style="color: #ff4d4f" /></a-col>
-              <a-col :span="6">
-                <a-statistic
-                  title="跳过"
-                  :value="Math.max(0, (taskInfo.totalRows || 0) - (taskInfo.processedRows || 0) - (taskInfo.failedRows || 0))"
-                />
-              </a-col>
-            </a-row>
+          <div v-if="taskInfo.status === 'COMPLETED'" class="grid grid-cols-4 gap-4" style="font-size: 14px">
+            <div class="text-center">
+              <div style="color: #64748b; font-size: 13px; margin-bottom: 4px">总行数</div>
+              <div style="font-size: 20px; font-weight: 600">{{ taskInfo.totalRows }}</div>
+            </div>
+            <div class="text-center">
+              <div style="color: #64748b; font-size: 13px; margin-bottom: 4px">成功</div>
+              <div style="font-size: 20px; font-weight: 600; color: #10b981">{{ taskInfo.processedRows }}</div>
+            </div>
+            <div class="text-center">
+              <div style="color: #64748b; font-size: 13px; margin-bottom: 4px">失败</div>
+              <div style="font-size: 20px; font-weight: 600; color: #ef4444">{{ taskInfo.failedRows }}</div>
+            </div>
+            <div class="text-center">
+              <div style="color: #64748b; font-size: 13px; margin-bottom: 4px">跳过</div>
+              <div style="font-size: 20px; font-weight: 600">{{
+                Math.max(0, (taskInfo.totalRows || 0) - (taskInfo.processedRows || 0) - (taskInfo.failedRows || 0))
+              }}</div>
+            </div>
           </div>
-          <div v-else style="color: #ff4d4f; font-size: 13px; max-height: 200px; overflow-y: auto; text-align: left">
+          <div v-else style="color: #ef4444; font-size: 13px; max-height: 200px; overflow-y: auto; text-align: left">
             {{ taskInfo.errorMessage || '未知错误' }}
           </div>
           <div style="margin-top: 16px">
-            <a-button type="primary" @click="handleClose">关闭</a-button>
+            <el-button type="primary" @click="visible = false">关闭</el-button>
           </div>
         </template>
-      </a-result>
+      </el-result>
     </div>
-  </a-modal>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import {
-  InboxOutlined,
-  DownloadOutlined,
-  FileExcelOutlined,
-} from '@ant-design/icons-vue'
+  UploadFilled,
+  Download,
+  Document,
+} from '@element-plus/icons-vue'
 import {
   importDataElements,
   getDataElementImportStatus,
@@ -121,7 +131,7 @@ const progressPercent = computed(() => {
 const progressStatus = computed(() => {
   if (taskInfo.value.status === 'FAILED') return 'exception' as const
   if (taskInfo.value.status === 'COMPLETED') return 'success' as const
-  return 'active' as const
+  return undefined
 })
 
 function open() {
@@ -160,7 +170,7 @@ async function handleDownloadTemplate() {
     a.click()
     window.URL.revokeObjectURL(url)
   } catch {
-    message.error('下载模板失败')
+    ElMessage.error('下载模板失败')
   }
 }
 
@@ -174,7 +184,7 @@ async function handleUpload() {
     step.value = 'progress'
     startPolling(task.id)
   } catch {
-    message.error('上传失败')
+    ElMessage.error('上传失败')
   } finally {
     uploading.value = false
   }
