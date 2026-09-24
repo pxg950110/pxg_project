@@ -1,6 +1,4 @@
-import type { BadgeProps } from 'ant-design-vue'
-
-type BadgeColor = Exclude<BadgeProps['color'], undefined>
+export type BadgeColor = string
 
 interface StatusMeta {
   text: string

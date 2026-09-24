@@ -73,12 +73,13 @@ public class EtlConfigGenerator {
             yaml.append("  column_options:\n");
             for (EtlFieldMappingEntity mapping : mappings) {
                 yaml.append("    ").append(mapping.getTargetColumn()).append(": ");
-                if ("DIRECT".equals(mapping.getTransformType())) {
-                    yaml.append("{value_from: ").append(mapping.getSourceColumn()).append("}\n");
+                if (isComputedTransform(mapping.getTransformType())) {
+                    // SELECT 层已算出同名别名列，此处直通
+                    yaml.append("{value_from: ").append(mapping.getTargetColumn()).append("}\n");
                 } else if ("CONSTANT".equals(mapping.getTransformType())) {
                     yaml.append("{value: \"").append(escapeYaml(mapping.getDefaultValue())).append("\"}\n");
                 } else {
-                    // Default: pass through as value_from
+                    // DIRECT and default: pass through as value_from
                     yaml.append("{value_from: ").append(mapping.getSourceColumn()).append("}\n");
                 }
             }
@@ -90,13 +91,58 @@ public class EtlConfigGenerator {
     }
 
     /**
-     * Build comma-separated list of source columns from field mappings.
+     * Build comma-separated SELECT list from field mappings.
+     * DIRECT/CONSTANT/未知类型保持既有直通行为；MAP/DATE_FMT/LOOKUP/EXPRESSION 在 SELECT 层
+     * 生成受控 SQL 片段并以目标列名作为别名（Embulk column_options 相应 value_from 该别名）。
      */
     String buildSelectClause(List<EtlFieldMappingEntity> mappings) {
         return mappings.stream()
                 .filter(m -> m.getSourceColumn() != null && !m.getSourceColumn().isBlank())
-                .map(EtlFieldMappingEntity::getSourceColumn)
+                .map(this::selectExpression)
                 .collect(Collectors.joining(", "));
+    }
+
+    private String selectExpression(EtlFieldMappingEntity m) {
+        String source = m.getSourceColumn();
+        String type = m.getTransformType();
+        if ("MAP".equals(type)) {
+            return "CASE " + guardedExpr(m) + " END AS " + m.getTargetColumn();
+        }
+        if ("DATE_FMT".equals(type)) {
+            String expr = m.getTransformExpr();
+            if (expr == null || expr.isBlank()) {
+                return "CAST(" + source + " AS VARCHAR) AS " + m.getTargetColumn();
+            }
+            return "TO_CHAR(" + source + ", " + guardedExpr(m) + ") AS " + m.getTargetColumn();
+        }
+        if ("LOOKUP".equals(type)) {
+            return "(" + guardedExpr(m) + ") AS " + m.getTargetColumn();
+        }
+        if ("EXPRESSION".equals(type)) {
+            return guardedExpr(m) + " AS " + m.getTargetColumn();
+        }
+        return source;
+    }
+
+    /**
+     * transform_expr 由管理端受控录入，但仍拒绝会破坏查询语句的片段（语句终止符/行注释）。
+     */
+    private String guardedExpr(EtlFieldMappingEntity m) {
+        String expr = m.getTransformExpr();
+        if (expr == null || expr.isBlank()) {
+            throw new IllegalArgumentException(
+                    "transform_expr is required for " + m.getTransformType() + " on target column " + m.getTargetColumn());
+        }
+        String normalized = expr.trim();
+        if (normalized.contains(";") || normalized.contains("--") || normalized.contains("/*")) {
+            throw new IllegalArgumentException(
+                    "transform_expr must not contain statement terminators or comments (target column " + m.getTargetColumn() + ")");
+        }
+        return normalized;
+    }
+
+    private boolean isComputedTransform(String type) {
+        return "MAP".equals(type) || "DATE_FMT".equals(type) || "LOOKUP".equals(type) || "EXPRESSION".equals(type);
     }
 
     /**

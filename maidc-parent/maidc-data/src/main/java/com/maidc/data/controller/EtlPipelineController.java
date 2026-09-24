@@ -5,6 +5,7 @@ import com.maidc.data.dto.etl.EtlExecutionQueryDTO;
 import com.maidc.data.dto.etl.EtlPipelineCreateDTO;
 import com.maidc.data.dto.etl.EtlPipelineQueryDTO;
 import com.maidc.data.service.etl.EtlExecutionService;
+import com.maidc.data.service.etl.EtlPipelineGraphService;
 import com.maidc.data.service.etl.EtlPipelineService;
 import com.maidc.data.vo.EtlExecutionVO;
 import com.maidc.data.vo.EtlPipelineDetailVO;
@@ -26,6 +27,7 @@ public class EtlPipelineController {
     private static final String ORG_ID_HEADER = "X-Org-Id";
 
     private final EtlPipelineService pipelineService;
+    private final EtlPipelineGraphService graphService;
     private final EtlExecutionService executionService;
 
     @PreAuthorize("hasPermission('data:read')")
@@ -98,7 +100,7 @@ public class EtlPipelineController {
     @PreAuthorize("hasPermission('data:read')")
     @GetMapping("/{id}/graph")
     public R<Map<String, Object>> getPipelineGraph(@PathVariable Long id) {
-        return R.ok(pipelineService.getPipelineGraph(id));
+        return R.ok(graphService.getPipelineGraph(id));
     }
 
     @PreAuthorize("hasPermission('data:update')")
@@ -108,13 +110,13 @@ public class EtlPipelineController {
                                       HttpServletRequest request) {
         String orgIdHeader = request.getHeader(ORG_ID_HEADER);
         Long orgId = orgIdHeader != null ? Long.valueOf(orgIdHeader) : 0L;
-        pipelineService.savePipelineGraph(id, graphData, orgId);
+        graphService.savePipelineGraph(id, graphData, orgId);
         return R.ok();
     }
 
     @PreAuthorize("hasPermission('data:read')")
     @GetMapping("/{id}/preview")
     public R<String> previewEmbulkYaml(@PathVariable Long id) {
-        return R.ok(pipelineService.previewEmbulkYaml(id));
+        return R.ok(graphService.previewEmbulkYaml(id));
     }
 }

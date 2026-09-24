@@ -51,22 +51,22 @@ class AuditQueryTest {
     void queryAuditLogs_withFilters_returnsPageResult() {
         // Arrange
         AuditLogQueryDTO queryDTO = new AuditLogQueryDTO();
-        queryDTO.setModule("data");
+        queryDTO.setServiceName("data");
         queryDTO.setOperation("export");
         queryDTO.setUsername("admin");
         queryDTO.setPage(1);
         queryDTO.setPageSize(10);
 
         AuditLogEntity entity = new AuditLogEntity();
-        entity.setId("audit-001");
-        entity.setModule("data");
+        entity.setId(1L);
+        entity.setServiceName("data");
         entity.setOperation("export");
         entity.setUsername("admin");
-        entity.setStatus((short) 1);
+        entity.setStatus("SUCCESS");
 
         AuditLogVO vo = new AuditLogVO();
-        vo.setId("audit-001");
-        vo.setModule("data");
+        vo.setId(1L);
+        vo.setServiceName("data");
         vo.setOperation("export");
         vo.setUsername("admin");
 
@@ -81,7 +81,7 @@ class AuditQueryTest {
         assertNotNull(result);
         assertEquals(1, result.getTotal());
         assertEquals(1, result.getItems().size());
-        assertEquals("audit-001", result.getItems().get(0).getId());
+        assertEquals(1L, result.getItems().get(0).getId());
         verify(auditLogRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -94,7 +94,7 @@ class AuditQueryTest {
         AuditLogQueryDTO queryDTO = new AuditLogQueryDTO();
         queryDTO.setStartTime(startTime);
         queryDTO.setEndTime(endTime);
-        queryDTO.setStatus((short) 0);
+        queryDTO.setStatus("FAILURE");
         queryDTO.setPage(1);
         queryDTO.setPageSize(20);
 
@@ -114,16 +114,16 @@ class AuditQueryTest {
     @Test
     void getAuditLogDetail_existingId_returnsVO() {
         // Arrange
-        String auditId = "audit-123";
+        Long auditId = 123L;
         AuditLogEntity entity = new AuditLogEntity();
         entity.setId(auditId);
-        entity.setModule("model");
+        entity.setServiceName("model");
         entity.setOperation("deploy");
         entity.setUsername("engineer");
 
         AuditLogVO expectedVO = new AuditLogVO();
         expectedVO.setId(auditId);
-        expectedVO.setModule("model");
+        expectedVO.setServiceName("model");
         expectedVO.setOperation("deploy");
         expectedVO.setUsername("engineer");
 
@@ -136,14 +136,14 @@ class AuditQueryTest {
         // Assert
         assertNotNull(result);
         assertEquals(auditId, result.getId());
-        assertEquals("model", result.getModule());
+        assertEquals("model", result.getServiceName());
         verify(auditLogRepository).findById(auditId);
     }
 
     @Test
     void getAuditLogDetail_nonExistingId_throwsNotFound() {
         // Arrange
-        String nonExistingId = "nonexistent";
+        Long nonExistingId = 99999L;
         when(auditLogRepository.findById(nonExistingId)).thenReturn(Optional.empty());
 
         // Act & Assert

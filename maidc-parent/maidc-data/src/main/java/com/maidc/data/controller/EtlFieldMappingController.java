@@ -6,6 +6,7 @@ import com.maidc.data.service.etl.EtlFieldMappingService;
 import com.maidc.data.vo.EtlFieldMappingVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 

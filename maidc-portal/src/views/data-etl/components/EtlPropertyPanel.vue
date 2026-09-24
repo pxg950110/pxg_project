@@ -6,14 +6,14 @@
           <span class="etl-props__dot" :style="{ background: CATEGORY_COLORS[selectedNode.data.category] }" />
           {{ selectedNode.data.label }}
         </div>
-        <a-tag :color="statusColor" size="small">{{ statusLabel }}</a-tag>
+        <el-tag :type="statusType" size="small">{{ statusLabel }}</el-tag>
       </div>
 
       <div class="etl-props__section">
         <div class="etl-props__label">节点名称</div>
-        <a-input
-          :value="selectedNode.data.label"
-          @change="(e: any) => updateLabel(e.target.value)"
+        <el-input
+          :model-value="selectedNode.data.label"
+          @update:model-value="(v: string) => updateLabel(v)"
           size="small"
         />
       </div>
@@ -22,41 +22,43 @@
         <!-- TABLE_INPUT / TABLE_OUTPUT -->
         <template v-if="isTableNode">
           <div class="etl-props__label">Schema</div>
-          <a-select
-            :value="config.schema"
-            @change="(v: string) => updateConfig({ ...config, schema: v, table: '' })"
+          <el-select
+            :model-value="config.schema"
+            @update:model-value="(v: any) => updateConfig({ ...config, schema: v, table: '' })"
             placeholder="选择Schema"
             style="width: 100%"
             size="small"
             :loading="schemaLoading"
           >
-            <a-select-option v-for="s in schemaOptions" :key="s" :value="s">{{ s }}</a-select-option>
-          </a-select>
+            <el-option v-for="s in schemaOptions" :key="s" :value="s" :label="s" />
+          </el-select>
 
           <div class="etl-props__label" style="margin-top: 12px">表名</div>
-          <a-select
-            :value="config.table"
-            @change="(v: string) => updateConfig({ ...config, table: v })"
+          <el-select
+            :model-value="config.table"
+            @update:model-value="(v: any) => updateConfig({ ...config, table: v })"
             placeholder="选择表"
             style="width: 100%"
             size="small"
-            show-search
-            :filter-option="filterOption"
+            filterable
             :disabled="!config.schema"
             :loading="tableLoading"
           >
-            <a-select-option v-for="t in tableOptions" :key="t.tableName || t" :value="t.tableName || t">
-              {{ t.tableName || t }}
-            </a-select-option>
-          </a-select>
+            <el-option
+              v-for="t in tableOptions"
+              :key="t.tableName || t"
+              :value="t.tableName || t"
+              :label="t.tableName || t"
+            />
+          </el-select>
         </template>
 
         <!-- TABLE_INPUT where -->
         <template v-if="selectedNode.data.nodeType === 'TABLE_INPUT'">
           <div class="etl-props__label" style="margin-top: 12px">WHERE条件</div>
-          <a-input
-            :value="config.where"
-            @change="(e: any) => updateConfig({ ...config, where: e.target.value })"
+          <el-input
+            :model-value="config.where"
+            @update:model-value="(v: string) => updateConfig({ ...config, where: v })"
             placeholder="如: create_time > '2024-01-01'"
             size="small"
           />
@@ -65,56 +67,57 @@
         <!-- TABLE_OUTPUT write mode -->
         <template v-if="selectedNode.data.nodeType === 'TABLE_OUTPUT'">
           <div class="etl-props__label" style="margin-top: 12px">写入模式</div>
-          <a-select
-            :value="config.writeMode || 'insert'"
-            @change="(v: string) => updateConfig({ ...config, writeMode: v })"
+          <el-select
+            :model-value="config.writeMode || 'insert'"
+            @update:model-value="(v: any) => updateConfig({ ...config, writeMode: v })"
             style="width: 100%"
             size="small"
           >
-            <a-select-option value="insert">Insert</a-select-option>
-            <a-select-option value="upsert">Upsert</a-select-option>
-            <a-select-option value="truncate">Truncate + Insert</a-select-option>
-          </a-select>
+            <el-option value="insert" label="Insert" />
+            <el-option value="upsert" label="Upsert" />
+            <el-option value="truncate" label="Truncate + Insert" />
+          </el-select>
         </template>
 
         <!-- CSV nodes -->
         <template v-if="isCsvNode">
           <div class="etl-props__label">文件路径</div>
-          <a-input
-            :value="config.filePath"
-            @change="(e: any) => updateConfig({ ...config, filePath: e.target.value })"
+          <el-input
+            :model-value="config.filePath"
+            @update:model-value="(v: string) => updateConfig({ ...config, filePath: v })"
             placeholder="如: /data/input.csv"
             size="small"
           />
           <div class="etl-props__label" style="margin-top: 12px">分隔符</div>
-          <a-select
-            :value="config.delimiter || ','"
-            @change="(v: string) => updateConfig({ ...config, delimiter: v })"
+          <el-select
+            :model-value="config.delimiter || ','"
+            @update:model-value="(v: any) => updateConfig({ ...config, delimiter: v })"
             style="width: 100%"
             size="small"
           >
-            <a-select-option value=",">逗号 (,)</a-select-option>
-            <a-select-option value="\t">制表符 (Tab)</a-select-option>
-            <a-select-option value="|">管道符 (|)</a-select-option>
-          </a-select>
+            <el-option value="," label="逗号 (,)" />
+            <el-option value="\t" label="制表符 (Tab)" />
+            <el-option value="|" label="管道符 (|)" />
+          </el-select>
           <div class="etl-props__label" style="margin-top: 12px">编码</div>
-          <a-select
-            :value="config.encoding || 'UTF-8'"
-            @change="(v: string) => updateConfig({ ...config, encoding: v })"
+          <el-select
+            :model-value="config.encoding || 'UTF-8'"
+            @update:model-value="(v: any) => updateConfig({ ...config, encoding: v })"
             style="width: 100%"
             size="small"
           >
-            <a-select-option value="UTF-8">UTF-8</a-select-option>
-            <a-select-option value="GBK">GBK</a-select-option>
-          </a-select>
+            <el-option value="UTF-8" label="UTF-8" />
+            <el-option value="GBK" label="GBK" />
+          </el-select>
         </template>
 
         <!-- FILTER -->
         <template v-if="selectedNode.data.nodeType === 'FILTER'">
           <div class="etl-props__label">过滤条件</div>
-          <a-textarea
-            :value="config.condition"
-            @change="(e: any) => updateConfig({ ...config, condition: e.target.value })"
+          <el-input
+            :model-value="config.condition"
+            @update:model-value="(v: string) => updateConfig({ ...config, condition: v })"
+            type="textarea"
             placeholder="如: age > 18 AND status = 'active'"
             :rows="3"
             size="small"
@@ -124,21 +127,21 @@
         <!-- JOIN -->
         <template v-if="selectedNode.data.nodeType === 'JOIN'">
           <div class="etl-props__label">JOIN类型</div>
-          <a-select
-            :value="config.joinType || 'INNER'"
-            @change="(v: string) => updateConfig({ ...config, joinType: v })"
+          <el-select
+            :model-value="config.joinType || 'INNER'"
+            @update:model-value="(v: any) => updateConfig({ ...config, joinType: v })"
             style="width: 100%"
             size="small"
           >
-            <a-select-option value="INNER">INNER JOIN</a-select-option>
-            <a-select-option value="LEFT">LEFT JOIN</a-select-option>
-            <a-select-option value="RIGHT">RIGHT JOIN</a-select-option>
-            <a-select-option value="FULL">FULL JOIN</a-select-option>
-          </a-select>
+            <el-option value="INNER" label="INNER JOIN" />
+            <el-option value="LEFT" label="LEFT JOIN" />
+            <el-option value="RIGHT" label="RIGHT JOIN" />
+            <el-option value="FULL" label="FULL JOIN" />
+          </el-select>
           <div class="etl-props__label" style="margin-top: 12px">ON条件</div>
-          <a-input
-            :value="config.onCondition"
-            @change="(e: any) => updateConfig({ ...config, onCondition: e.target.value })"
+          <el-input
+            :model-value="config.onCondition"
+            @update:model-value="(v: string) => updateConfig({ ...config, onCondition: v })"
             placeholder="如: left.id = right.id"
             size="small"
           />
@@ -147,9 +150,9 @@
         <!-- AGGREGATE -->
         <template v-if="selectedNode.data.nodeType === 'AGGREGATE'">
           <div class="etl-props__label">分组字段 (逗号分隔)</div>
-          <a-input
-            :value="(config.groupBy || []).join(', ')"
-            @change="(e: any) => updateConfig({ ...config, groupBy: e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean) })"
+          <el-input
+            :model-value="(config.groupBy || []).join(', ')"
+            @update:model-value="(v: string) => updateConfig({ ...config, groupBy: v.split(',').map((s: string) => s.trim()).filter(Boolean) })"
             placeholder="如: department, status"
             size="small"
           />
@@ -163,7 +166,7 @@
     </template>
 
     <div v-else class="etl-props__empty">
-      <a-empty description="点击画布节点查看配置" :image-style="{ height: '40px' }" />
+      <el-empty description="点击画布节点查看配置" :image-size="60" />
     </div>
   </div>
 </template>
@@ -184,11 +187,11 @@ const emit = defineEmits<{
 }>()
 
 const config = computed(() => props.selectedNode?.data?.config || {})
-const statusColor = computed(() => {
+const statusType = computed<'success' | 'danger' | 'info'>(() => {
   const s = props.selectedNode?.data?.status
-  if (s === 'ready') return 'green'
-  if (s === 'error') return 'red'
-  return 'default'
+  if (s === 'ready') return 'success'
+  if (s === 'error') return 'danger'
+  return 'info'
 })
 const statusLabel = computed(() => {
   const s = props.selectedNode?.data?.status
@@ -233,25 +236,21 @@ watch(() => props.selectedNode?.id, async () => {
 
 function updateConfig(newConfig: Record<string, any>) { emit('update:config', newConfig) }
 function updateLabel(label: string) { emit('update:label', label) }
-function filterOption(input: string, option: any) {
-  const text = option.children?.[0]?.children || option.value || ''
-  return String(text).toLowerCase().includes(input.toLowerCase())
-}
 </script>
 
 <style scoped>
 .etl-props { padding: 16px; }
 .etl-props__header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;
 }
 .etl-props__title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .etl-props__dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .etl-props__section { margin-bottom: 16px; }
-.etl-props__label { font-size: 12px; color: rgba(0,0,0,0.65); margin-bottom: 4px; font-weight: 500; }
+.etl-props__label { font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 500; }
 .etl-props__hint {
-  font-size: 12px; color: rgba(0,0,0,0.45); padding: 8px;
-  background: #fafafa; border-radius: 4px; text-align: center;
+  font-size: 12px; color: #94a3b8; padding: 8px;
+  background: #f8fafc; border-radius: 4px; text-align: center;
 }
 .etl-props__empty { display: flex; align-items: center; justify-content: center; height: 200px; }
 </style>

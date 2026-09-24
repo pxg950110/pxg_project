@@ -1,8 +1,8 @@
 <template>
   <PageContainer title="通知设置" subtitle="配置您的通知偏好和接收渠道。修改后立即生效。">
     <!-- Card 1: 通知渠道 -->
-    <a-card class="settings-card">
-      <template #title>
+    <el-card shadow="never" class="settings-card !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+      <template #header>
         <span class="card-title">通知渠道</span>
       </template>
       <div class="channel-list">
@@ -13,17 +13,17 @@
           :class="{ 'channel-row--bordered': index < channelList.length - 1 }"
         >
           <div class="channel-left">
-            <component :is="item.icon" class="channel-icon" />
+            <el-icon :size="18" class="channel-icon"><component :is="item.icon" /></el-icon>
             <span class="channel-label">{{ item.label }}</span>
           </div>
-          <a-switch :checked="channels[item.key]" @change="(v: boolean) => channels[item.key] = v" />
+          <el-switch :model-value="channels[item.key]" @change="(v: string | number | boolean) => (channels[item.key] = Boolean(v))" />
         </div>
       </div>
-    </a-card>
+    </el-card>
 
     <!-- Card 2: 通知类型偏好 -->
-    <a-card class="settings-card" style="margin-top: 16px">
-      <template #title>
+    <el-card shadow="never" class="settings-card !rounded-xl !border-slate-200/80 shadow-clinical-sm" style="margin-top: 16px">
+      <template #header>
         <span class="card-title">通知类型偏好</span>
       </template>
       <div class="preference-matrix">
@@ -42,38 +42,38 @@
             <span class="row-label">{{ row.label }}</span>
           </div>
           <div class="matrix-cell matrix-cell--check">
-            <a-checkbox :checked="row.inApp" @change="(e: any) => row.inApp = e.target.checked" />
+            <el-checkbox :model-value="row.inApp" @change="(v: string | number | boolean) => (row.inApp = Boolean(v))" />
           </div>
           <div class="matrix-cell matrix-cell--check">
-            <a-checkbox :checked="row.email" @change="(e: any) => row.email = e.target.checked" />
+            <el-checkbox :model-value="row.email" @change="(v: string | number | boolean) => (row.email = Boolean(v))" />
           </div>
           <div class="matrix-cell matrix-cell--check">
-            <a-checkbox :checked="row.sms" @change="(e: any) => row.sms = e.target.checked" />
+            <el-checkbox :model-value="row.sms" @change="(v: string | number | boolean) => (row.sms = Boolean(v))" />
           </div>
         </div>
       </div>
-    </a-card>
+    </el-card>
 
     <!-- Save Button -->
     <div class="save-bar">
-      <a-button type="primary" @click="handleSave">
-        <template #icon><SaveOutlined /></template>
+      <el-button type="primary" @click="handleSave">
+        <el-icon class="mr-1"><DocumentChecked /></el-icon>
         保存设置
-      </a-button>
+      </el-button>
     </div>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import {
-  BellOutlined,
-  MailOutlined,
-  MessageOutlined,
-  SendOutlined,
-  SaveOutlined,
-} from '@ant-design/icons-vue'
+  Bell,
+  Message,
+  ChatDotRound,
+  Promotion,
+  DocumentChecked,
+} from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 // 通知渠道开关
@@ -85,10 +85,10 @@ const channels = reactive<Record<string, boolean>>({
 })
 
 const channelList = [
-  { key: 'inApp', label: '站内通知', icon: BellOutlined },
-  { key: 'email', label: '邮件通知', icon: MailOutlined },
-  { key: 'sms', label: '短信通知', icon: MessageOutlined },
-  { key: 'webhook', label: 'Webhook', icon: SendOutlined },
+  { key: 'inApp', label: '站内通知', icon: Bell },
+  { key: 'email', label: '邮件通知', icon: Message },
+  { key: 'sms', label: '短信通知', icon: ChatDotRound },
+  { key: 'webhook', label: 'Webhook', icon: Promotion },
 ]
 
 // 通知类型偏好矩阵
@@ -100,7 +100,7 @@ const typePreferences = reactive([
 ])
 
 function handleSave() {
-  message.success('通知设置已保存')
+  ElMessage.success('通知设置已保存')
 }
 </script>
 
@@ -128,7 +128,7 @@ function handleSave() {
 }
 
 .channel-row--bordered {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .channel-left {
@@ -138,13 +138,12 @@ function handleSave() {
 }
 
 .channel-icon {
-  font-size: 18px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 
 .channel-label {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 /* Preference matrix */
@@ -157,18 +156,18 @@ function handleSave() {
   display: flex;
   align-items: center;
   height: 44px;
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
   font-weight: 600;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .matrix-row {
   display: flex;
   align-items: center;
   height: 44px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .matrix-row:last-child {
@@ -190,7 +189,7 @@ function handleSave() {
 
 .row-label {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 /* Save button */

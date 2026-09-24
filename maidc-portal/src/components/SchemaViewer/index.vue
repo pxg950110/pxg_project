@@ -3,24 +3,22 @@
     <div class="schema-header">
       <span class="schema-label">{{ mode === 'input' ? '输入 Schema' : '输出 Schema' }}</span>
     </div>
-    <a-table
-      :columns="columns"
-      :data-source="fields"
-      :pagination="false"
-      size="small"
-      bordered
-      row-key="name"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'required'">
-          <a-tag v-if="record.required" color="red">必填</a-tag>
-          <a-tag v-else color="default">选填</a-tag>
+    <el-table :data="fields" border size="small" row-key="name">
+      <el-table-column label="字段名" prop="name" min-width="150" />
+      <el-table-column label="类型" min-width="100">
+        <template #default="{ row }">
+          <code class="field-type">{{ row.type }}</code>
         </template>
-        <template v-if="column.dataIndex === 'type'">
-          <code class="field-type">{{ record.type }}</code>
+      </el-table-column>
+      <el-table-column label="必填" width="70" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.required" type="danger" size="small">必填</el-tag>
+          <el-tag v-else type="info" size="small">选填</el-tag>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+      <el-table-column label="默认值" prop="default" min-width="90" />
+      <el-table-column label="说明" prop="description" min-width="150" />
+    </el-table>
   </div>
 </template>
 
@@ -44,14 +42,6 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   mode: 'input',
 })
-
-const columns = [
-  { title: '字段名', dataIndex: 'name', width: '25%' },
-  { title: '类型', dataIndex: 'type', width: '15%' },
-  { title: '必填', dataIndex: 'required', width: '10%', align: 'center' as const },
-  { title: '默认值', dataIndex: 'default', width: '15%' },
-  { title: '说明', dataIndex: 'description', width: '25%' },
-]
 
 const fields = computed(() => {
   if (!props.schema) return []

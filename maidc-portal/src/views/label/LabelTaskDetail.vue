@@ -4,315 +4,332 @@
     <div class="page-header">
       <div class="task-header">
         <div class="task-header-left">
-          <a-button type="text" @click="router.back()" class="back-btn">
-            <ArrowLeftOutlined />
-          </a-button>
+          <el-button text @click="router.back()" class="back-btn">
+            <el-icon><ArrowLeft /></el-icon>
+          </el-button>
           <div class="task-title-block">
-            <h2 class="task-title">肺结节影像标注</h2>
+            <h2 class="task-title">{{ taskData?.name || '标注任务' }}</h2>
             <span class="task-subtitle">
-              <a-tag color="blue">影像标注</a-tag>
-              <a-tag color="orange">矩形框标注</a-tag>
-              <a-tag color="green">进行中</a-tag>
+              <el-tag v-for="tag in (taskData?.tags || [])" :key="tag" type="primary" class="mr-1">{{ tag }}</el-tag>
+              <el-tag v-if="taskData?.status" :type="taskData.status === 'IN_PROGRESS' ? 'success' : taskData.status === 'COMPLETED' ? 'primary' : 'warning'">{{ taskData.status }}</el-tag>
             </span>
           </div>
         </div>
         <div class="task-header-right">
-          <a-button>
-            <EditOutlined /> 编辑任务
-          </a-button>
-          <a-button danger ghost>
-            <DeleteOutlined /> 删除
-          </a-button>
+          <el-button>
+            <el-icon class="mr-1"><Edit /></el-icon> 编辑任务
+          </el-button>
+          <el-button type="danger" plain>
+            <el-icon class="mr-1"><Delete /></el-icon> 删除
+          </el-button>
         </div>
       </div>
     </div>
 
-    <a-spin :spinning="loading">
-      <div class="page-content">
-        <!-- 4 Metric Cards -->
-        <a-row :gutter="16" style="margin-bottom: 16px">
-          <a-col :span="6">
-            <MetricCard
-              title="标注进度"
-              :value="650"
-              suffix="/1000"
-              :icon="DashboardOutlined"
-            />
-          </a-col>
-          <a-col :span="6">
-            <MetricCard
-              title="标注员"
-              :value="3"
-              suffix="人"
-              :icon="TeamOutlined"
-            />
-          </a-col>
-          <a-col :span="6">
-            <MetricCard
-              title="标注数据"
-              :value="650"
-              suffix="条"
-              :icon="DatabaseOutlined"
-            />
-          </a-col>
-          <a-col :span="6">
-            <a-card :bordered="false" class="metric-card">
-              <div class="metric-card-inner">
-                <div class="metric-content">
-                  <div class="metric-title">平均一致性</div>
-                  <div class="metric-value">
-                    <span class="value-number" style="color: #52c41a">0.92</span>
-                  </div>
-                </div>
-                <div class="metric-icon">
-                  <CheckCircleOutlined />
+    <div v-loading="loading" class="page-content">
+      <!-- 4 Metric Cards -->
+      <el-row :gutter="16" class="mb-4">
+        <el-col :span="6">
+          <MetricCard
+            title="标注进度"
+            :value="progressValue"
+            :suffix="`/${totalItems}`"
+            :icon="DataBoard"
+          />
+        </el-col>
+        <el-col :span="6">
+          <MetricCard
+            title="标注员"
+            :value="annotatorCount"
+            suffix="人"
+            :icon="User"
+          />
+        </el-col>
+        <el-col :span="6">
+          <MetricCard
+            title="标注数据"
+            :value="progressValue"
+            suffix="条"
+            :icon="Coin"
+          />
+        </el-col>
+        <el-col :span="6">
+          <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+            <div class="metric-card-inner">
+              <div class="metric-content">
+                <div class="metric-title">平均一致性</div>
+                <div class="metric-value">
+                  <span class="value-number" style="color: #10b981">{{ avgConsistency.toFixed(2) }}</span>
                 </div>
               </div>
-            </a-card>
-          </a-col>
-        </a-row>
+              <div class="metric-icon">
+                <el-icon :size="28"><CircleCheck /></el-icon>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
 
-        <!-- Progress Bar -->
-        <a-card style="margin-bottom: 16px">
-          <div style="display: flex; align-items: center; gap: 16px">
-            <span style="white-space: nowrap; font-weight: 500">总标注进度</span>
-            <a-progress :percent="75" style="flex: 1" />
-            <span style="white-space: nowrap; color: rgba(0,0,0,0.45)">450 / 600</span>
-          </div>
-        </a-card>
+      <!-- Progress Bar -->
+      <el-card shadow="never" class="mb-4 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <div class="flex items-center gap-4">
+          <span class="whitespace-nowrap font-medium">总标注进度</span>
+          <el-progress :percentage="progressPercent" class="flex-1" />
+          <span class="whitespace-nowrap text-slate-400">{{ progressValue }} / {{ totalItems }}</span>
+        </div>
+      </el-card>
 
-        <!-- 5 Tabs -->
-        <a-card>
-          <a-tabs v-model:activeKey="activeTab">
-            <!-- Tab 1: 标注进度 -->
-            <a-tab-pane key="progress" tab="标注进度">
-              <!-- Annotator Progress Table -->
-              <a-table
-                :columns="annotatorProgressColumns"
-                :data-source="annotatorProgressData"
-                :pagination="false"
-                size="middle"
-                row-key="name"
-                style="margin-bottom: 16px"
-              >
-                <template #bodyCell="{ column, record }">
-                  <template v-if="column.key === 'completionRate'">
-                    <span :style="{ color: getCompletionColor(record.completionRate), fontWeight: 500 }">
-                      {{ record.completionRate }}%
-                    </span>
-                  </template>
-                  <template v-if="column.key === 'action'">
-                    <a @click="router.push(`/label/workspace/${route.params.id}`)">查看</a>
-                  </template>
+      <!-- 5 Tabs -->
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <el-tabs v-model="activeTab">
+          <!-- Tab 1: 标注进度 -->
+          <el-tab-pane label="标注进度" name="progress">
+            <!-- Annotator Progress Table -->
+            <el-table
+              :data="annotatorProgressData"
+              :show-header="true"
+              size="default"
+              row-key="name"
+              class="mb-4"
+            >
+              <el-table-column label="标注员" prop="name" width="120" />
+              <el-table-column label="已分配" prop="assigned" width="90" />
+              <el-table-column label="已完成" prop="completed" width="90" />
+              <el-table-column label="进行中" prop="inProgress" width="90" />
+              <el-table-column label="待处理" prop="pending" width="90" />
+              <el-table-column label="完成率" width="100">
+                <template #default="{ row }">
+                  <span :style="{ color: getCompletionColor(row.completionRate), fontWeight: 500 }">
+                    {{ row.completionRate }}%
+                  </span>
                 </template>
-              </a-table>
-              <div>
-                <a-button type="primary" style="margin-right: 12px">分配标注</a-button>
-                <a-button>批量导出</a-button>
-              </div>
-            </a-tab-pane>
+              </el-table-column>
+              <el-table-column label="操作" width="80">
+                <template #default="{ row }">
+                  <el-button link type="primary" @click="router.push(`/label/workspace/${route.params.id}`)">查看</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div>
+              <el-button type="primary" class="mr-3">分配标注</el-button>
+              <el-button @click="handleBatchExport">批量导出</el-button>
+            </div>
+          </el-tab-pane>
 
-            <!-- Tab 2: 质量控制 -->
-            <a-tab-pane key="quality" tab="质量控制">
-              <!-- Quality Metric Cards -->
-              <a-row :gutter="16" style="margin-bottom: 16px">
-                <a-col :span="6">
-                  <a-card size="small">
-                    <a-statistic title="一致性" :value="0.92" :precision="2" :value-style="{ color: '#52c41a' }" />
-                  </a-card>
-                </a-col>
-                <a-col :span="6">
-                  <a-card size="small">
-                    <a-statistic title="准确率" :value="0.88" :precision="2" :value-style="{ color: '#1677ff' }" />
-                  </a-card>
-                </a-col>
-                <a-col :span="6">
-                  <a-card size="small">
-                    <a-statistic title="召回率" :value="0.91" :precision="2" :value-style="{ color: '#1677ff' }" />
-                  </a-card>
-                </a-col>
-                <a-col :span="6">
-                  <a-card size="small">
-                    <a-statistic title="F1" :value="0.89" :precision="2" :value-style="{ color: '#1677ff' }" />
-                  </a-card>
-                </a-col>
-              </a-row>
+          <!-- Tab 2: 质量控制 -->
+          <el-tab-pane label="质量控制" name="quality">
+            <!-- Quality Metric Cards -->
+            <el-row :gutter="16" class="mb-4">
+              <el-col :span="6">
+                <el-card shadow="never" size="small" class="!rounded-lg !border-slate-200/80">
+                  <div class="stat-title">一致性</div>
+                  <div class="stat-value" style="color: #10b981">0.92</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card shadow="never" size="small" class="!rounded-lg !border-slate-200/80">
+                  <div class="stat-title">准确率</div>
+                  <div class="stat-value" style="color: #0ea5e9">0.88</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card shadow="never" size="small" class="!rounded-lg !border-slate-200/80">
+                  <div class="stat-title">召回率</div>
+                  <div class="stat-value" style="color: #0ea5e9">0.91</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card shadow="never" size="small" class="!rounded-lg !border-slate-200/80">
+                  <div class="stat-title">F1</div>
+                  <div class="stat-value" style="color: #0ea5e9">0.89</div>
+                </el-card>
+              </el-col>
+            </el-row>
 
-              <!-- Quality Trend Chart -->
-              <a-card title="质量趋势" size="small" style="margin-bottom: 16px">
-                <MetricChart :option="qualityTrendOption" height="280px" />
-              </a-card>
+            <!-- Quality Trend Chart -->
+            <el-card shadow="never" size="small" class="mb-4 !rounded-lg !border-slate-200/80">
+              <template #header>
+                <span class="font-semibold text-slate-900">质量趋势</span>
+              </template>
+              <MetricChart :option="qualityTrendOption" height="280px" />
+            </el-card>
 
-              <!-- Recent Quality Issues -->
-              <a-card title="近期质量问题" size="small">
-                <a-table
-                  :columns="qualityIssueColumns"
-                  :data-source="qualityIssueData"
-                  :pagination="false"
-                  size="small"
-                  row-key="id"
-                >
-                  <template #bodyCell="{ column, record }">
-                    <template v-if="column.key === 'severity'">
-                      <a-tag :color="record.severity === '高' ? 'red' : record.severity === '中' ? 'orange' : 'blue'">
-                        {{ record.severity }}
-                      </a-tag>
-                    </template>
-                    <template v-if="column.key === 'status'">
-                      <a-tag :color="record.status === '已解决' ? 'green' : 'volcano'">
-                        {{ record.status }}
-                      </a-tag>
-                    </template>
+            <!-- Recent Quality Issues -->
+            <el-card shadow="never" size="small" class="!rounded-lg !border-slate-200/80">
+              <template #header>
+                <span class="font-semibold text-slate-900">近期质量问题</span>
+              </template>
+              <el-table :data="qualityIssueData" size="small" row-key="id">
+                <el-table-column label="ID" prop="id" width="60" />
+                <el-table-column label="标注员" prop="annotator" width="100" />
+                <el-table-column label="问题类型" prop="issueType" width="120" />
+                <el-table-column label="严重程度" width="100">
+                  <template #default="{ row }">
+                    <el-tag :type="row.severity === '高' ? 'danger' : row.severity === '中' ? 'warning' : 'primary'">
+                      {{ row.severity }}
+                    </el-tag>
                   </template>
-                </a-table>
-              </a-card>
-            </a-tab-pane>
+                </el-table-column>
+                <el-table-column label="状态" width="100">
+                  <template #default="{ row }">
+                    <el-tag :type="row.status === '已解决' ? 'success' : 'warning'">
+                      {{ row.status }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="时间" prop="time" width="170" />
+              </el-table>
+            </el-card>
+          </el-tab-pane>
 
-            <!-- Tab 3: 标注人员 -->
-            <a-tab-pane key="personnel" tab="标注人员">
-              <a-row :gutter="16">
-                <a-col :span="6" v-for="person in personnelData" :key="person.name">
-                  <a-card size="small" hoverable style="text-align: center">
-                    <a-avatar :size="56" :style="{ backgroundColor: person.color, marginBottom: '12px' }">
-                      {{ person.name.charAt(0) }}
-                    </a-avatar>
-                    <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px">{{ person.name }}</div>
-                    <a-tag :color="person.role === '审核员' ? 'purple' : 'blue'" style="margin-bottom: 12px">
-                      {{ person.role }}
-                    </a-tag>
-                    <div style="font-size: 13px; color: rgba(0,0,0,0.65); textAlign: 'left'">
-                      <div style="display: flex; justify-content: space-between; padding: 4px 0">
-                        <span>已分配</span>
-                        <span>{{ person.assigned }} 条</span>
-                      </div>
-                      <div style="display: flex; justify-content: space-between; padding: 4px 0">
-                        <span>已完成</span>
-                        <span>{{ person.completed }} 条</span>
-                      </div>
-                      <div style="display: flex; justify-content: space-between; padding: 4px 0">
-                        <span>状态</span>
-                        <span :style="{ color: person.status === '在线' ? '#52c41a' : '#999' }">{{ person.status }}</span>
-                      </div>
+          <!-- Tab 3: 标注人员 -->
+          <el-tab-pane label="标注人员" name="personnel">
+            <el-row :gutter="16">
+              <el-col :span="6" v-for="person in personnelData" :key="person.name">
+                <el-card shadow="hover" size="small" class="!rounded-lg !border-slate-200/80 text-center">
+                  <el-avatar :size="56" :style="{ backgroundColor: person.color, marginBottom: '12px' }">
+                    {{ person.name.charAt(0) }}
+                  </el-avatar>
+                  <div class="mb-1 text-base font-medium">{{ person.name }}</div>
+                  <el-tag :type="person.role === '审核员' ? 'warning' : 'primary'" class="mb-3">
+                    {{ person.role }}
+                  </el-tag>
+                  <div class="text-left text-[13px] text-slate-600">
+                    <div class="flex justify-between py-1">
+                      <span>已分配</span>
+                      <span>{{ person.assigned }} 条</span>
                     </div>
-                  </a-card>
-                </a-col>
-              </a-row>
-            </a-tab-pane>
+                    <div class="flex justify-between py-1">
+                      <span>已完成</span>
+                      <span>{{ person.completed }} 条</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                      <span>状态</span>
+                      <span :style="{ color: person.status === '在线' ? '#10b981' : '#94a3b8' }">{{ person.status }}</span>
+                    </div>
+                  </div>
+                </el-card>
+              </el-col>
+            </el-row>
+          </el-tab-pane>
 
-            <!-- Tab 4: 标注统计 -->
-            <a-tab-pane key="statistics" tab="标注统计">
-              <a-row :gutter="16">
-                <a-col :span="12">
-                  <a-card title="标注分布" size="small">
-                    <MetricChart :option="labelDistOption" height="300px" />
-                  </a-card>
-                </a-col>
-                <a-col :span="12">
-                  <a-card title="每日标注数量" size="small">
-                    <MetricChart :option="dailyCountOption" height="300px" />
-                  </a-card>
-                </a-col>
-              </a-row>
-            </a-tab-pane>
-
-            <!-- Tab 5: 操作日志 -->
-            <a-tab-pane key="logs" tab="操作日志">
-              <a-table
-                :columns="logColumns"
-                :data-source="logData"
-                :pagination="{ pageSize: 10 }"
-                size="middle"
-                row-key="id"
-              >
-                <template #bodyCell="{ column, record }">
-                  <template v-if="column.key === 'type'">
-                    <a-tag :color="logTypeColorMap[record.type] || 'default'">{{ record.type }}</a-tag>
+          <!-- Tab 4: 标注统计 -->
+          <el-tab-pane label="标注统计" name="statistics">
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-card shadow="never" size="small" class="!rounded-lg !border-slate-200/80">
+                  <template #header>
+                    <span class="font-semibold text-slate-900">标注分布</span>
                   </template>
+                  <MetricChart :option="labelDistOption" height="300px" />
+                </el-card>
+              </el-col>
+              <el-col :span="12">
+                <el-card shadow="never" size="small" class="!rounded-lg !border-slate-200/80">
+                  <template #header>
+                    <span class="font-semibold text-slate-900">每日标注数量</span>
+                  </template>
+                  <MetricChart :option="dailyCountOption" height="300px" />
+                </el-card>
+              </el-col>
+            </el-row>
+          </el-tab-pane>
+
+          <!-- Tab 5: 操作日志 -->
+          <el-tab-pane label="操作日志" name="logs">
+            <el-table :data="pagedLogs" size="default" row-key="id">
+              <el-table-column label="时间" prop="time" width="170" />
+              <el-table-column label="操作人" prop="operator" width="100" />
+              <el-table-column label="操作类型" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="logTypeColorMap[row.type] || 'info'">{{ row.type }}</el-tag>
                 </template>
-              </a-table>
-            </a-tab-pane>
-          </a-tabs>
-        </a-card>
-      </div>
-    </a-spin>
+              </el-table-column>
+              <el-table-column label="详情" prop="detail" min-width="200" show-overflow-tooltip />
+            </el-table>
+            <el-pagination
+              v-if="logData.length > 10"
+              class="mt-4 justify-end"
+              background
+              layout="total, prev, pager, next"
+              :total="logData.length"
+              :page-size="10"
+              :current-page="logPage"
+              @current-change="(p: number) => (logPage = p)"
+            />
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
+    </div>
 
     <!-- Review Modal -->
-    <a-modal
-      v-model:open="reviewModal.visible"
+    <el-dialog
+      v-model="reviewModal.visible"
       title="标注审核"
       width="720px"
-      :footer="null"
     >
       <div class="review-modal-body">
-        <a-row :gutter="16">
+        <el-row :gutter="16">
           <!-- Left: Image Preview -->
-          <a-col :span="10">
+          <el-col :span="10">
             <div class="image-preview-box">
-              <CameraOutlined style="font-size: 48px; color: rgba(0,0,0,0.15)" />
-              <div style="margin-top: 8px; color: rgba(0,0,0,0.25)">影像预览区域</div>
+              <el-icon :size="48" color="#cbd5e1"><Camera /></el-icon>
+              <div class="mt-2 text-slate-300">影像预览区域</div>
             </div>
-          </a-col>
+          </el-col>
           <!-- Right: Annotator Comparison -->
-          <a-col :span="14">
+          <el-col :span="14">
             <!-- Annotator A -->
-            <a-card size="small" class="annotator-card annotator-card-a" style="margin-bottom: 12px">
-              <template #title>
-                <span style="color: #1677ff">标注员 A — 李医生</span>
+            <el-card size="small" shadow="never" class="annotator-card annotator-card-a mb-3 !rounded-lg !border-slate-200/80">
+              <template #header>
+                <span style="color: #0ea5e9">标注员 A — 李医生</span>
               </template>
               <pre class="annotation-json">{
   "label": "nodule",
   "bbox": [120, 85, 210, 175],
   "confidence": 0.95
 }</pre>
-            </a-card>
+            </el-card>
             <!-- Annotator B -->
-            <a-card size="small" class="annotator-card annotator-card-b" style="margin-bottom: 12px">
-              <template #title>
-                <span style="color: #52c41a">标注员 B — 王技师</span>
+            <el-card size="small" shadow="never" class="annotator-card annotator-card-b mb-3 !rounded-lg !border-slate-200/80">
+              <template #header>
+                <span style="color: #10b981">标注员 B — 王技师</span>
               </template>
               <pre class="annotation-json">{
   "label": "nodule",
   "bbox": [118, 83, 215, 178],
   "confidence": 0.91
 }</pre>
-            </a-card>
+            </el-card>
             <!-- IoU Score -->
             <div class="iou-score">
-              <span style="color: rgba(0,0,0,0.65)">IoU / 一致性得分:</span>
-              <span style="font-size: 20px; font-weight: 600; color: #52c41a; margin-left: 8px">0.87</span>
+              <span class="text-slate-600">IoU / 一致性得分:</span>
+              <span style="font-size: 20px; font-weight: 600; color: #10b981; margin-left: 8px">0.87</span>
             </div>
-          </a-col>
-        </a-row>
+          </el-col>
+        </el-row>
       </div>
       <!-- Custom Footer -->
       <div class="review-modal-footer">
-        <a-button danger ghost @click="reviewModal.close()">驳回</a-button>
-        <a-button type="primary" style="background-color: #52c41a; border-color: #52c41a" @click="reviewModal.close()">通过</a-button>
+        <el-button type="danger" plain @click="reviewModal.close()">驳回</el-button>
+        <el-button type="success" @click="reviewModal.close()">通过</el-button>
       </div>
-    </a-modal>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import {
-  ArrowLeftOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  DashboardOutlined,
-  TeamOutlined,
-  DatabaseOutlined,
-  CheckCircleOutlined,
-  CameraOutlined,
-} from '@ant-design/icons-vue'
+  ArrowLeft, Edit, Delete, DataBoard, User, Coin, CircleCheck, Camera,
+} from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
 import { useModal } from '@/hooks/useModal'
 import { getLabelTask, getLabelTaskStats } from '@/api/label'
-import request from '@/utils/request'
-import { formatDateTime } from '@/utils/date'
 
 defineOptions({ name: 'LabelTaskDetail' })
 
@@ -322,167 +339,148 @@ const reviewModal = useModal()
 const loading = ref(false)
 const activeTab = ref('progress')
 
+// Task data
+const taskData = ref<any>(null)
+const taskStats = ref<any>(null)
+const taskId = computed(() => Number(route.params.id))
+
+// Derived metrics from API data
+const progressValue = computed(() => taskStats.value?.labeledCount || 0)
+const totalItems = computed(() => taskStats.value?.totalItems || 0)
+const progressPercent = computed(() => totalItems.value > 0 ? Math.round(progressValue.value / totalItems.value * 100) : 0)
+const annotatorCount = computed(() => taskStats.value?.annotatorCount || 0)
+const avgConsistency = computed(() => taskStats.value?.avgConsistency ?? 0)
+
+async function loadTaskData() {
+  loading.value = true
+  try {
+    const [taskRes, statsRes] = await Promise.allSettled([
+      getLabelTask(taskId.value),
+      getLabelTaskStats(taskId.value),
+    ])
+    if (taskRes.status === 'fulfilled') taskData.value = taskRes.value.data.data
+    if (statsRes.status === 'fulfilled') taskStats.value = statsRes.value.data.data
+  } finally {
+    loading.value = false
+  }
+}
+
 // =============================================
 // Tab 1: 标注进度 — Annotator Progress Table
 // =============================================
-const annotatorProgressColumns = [
-  { title: '标注员', dataIndex: 'name', key: 'name', width: 120 },
-  { title: '已分配', dataIndex: 'assigned', key: 'assigned', width: 90 },
-  { title: '已完成', dataIndex: 'completed', key: 'completed', width: 90 },
-  { title: '进行中', dataIndex: 'inProgress', key: 'inProgress', width: 90 },
-  { title: '待处理', dataIndex: 'pending', key: 'pending', width: 90 },
-  { title: '完成率', dataIndex: 'completionRate', key: 'completionRate', width: 100 },
-  { title: '操作', key: 'action', width: 80 },
-]
-
-const annotatorProgressData = ref([
-  { name: '李医生', assigned: 150, completed: 128, inProgress: 12, pending: 10, completionRate: 85 },
-  { name: '王技师', assigned: 180, completed: 162, inProgress: 8, pending: 10, completionRate: 90 },
-  { name: '赵实习生', assigned: 120, completed: 96, inProgress: 14, pending: 10, completionRate: 80 },
-  { name: '张主任', assigned: 100, completed: 50, inProgress: 20, pending: 30, completionRate: 50 },
-  { name: 'AI预标注', assigned: 50, completed: 14, inProgress: 0, pending: 36, completionRate: 28 },
-])
+const annotatorProgressData = computed(() => taskStats.value?.annotatorProgress || [])
 
 function getCompletionColor(rate: number): string {
-  if (rate >= 80) return '#52c41a'
-  if (rate >= 50) return '#faad14'
-  return '#ff4d4f'
+  if (rate >= 80) return '#10b981'
+  if (rate >= 50) return '#f59e0b'
+  return '#ef4444'
 }
 
 // =============================================
 // Tab 2: 质量控制
 // =============================================
-const qualityIssueColumns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-  { title: '标注员', dataIndex: 'annotator', key: 'annotator', width: 100 },
-  { title: '问题类型', dataIndex: 'issueType', key: 'issueType', width: 120 },
-  { title: '严重程度', dataIndex: 'severity', key: 'severity', width: 100 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '时间', dataIndex: 'time', key: 'time', width: 170 },
-]
+const qualityIssueData = computed(() => taskStats.value?.qualityIssues || [])
 
-const qualityIssueData = ref([
-  { id: 1, annotator: '赵实习生', issueType: '标注偏差过大', severity: '高', status: '待处理', time: '2026-04-12 09:30' },
-  { id: 2, annotator: '李医生', issueType: '遗漏标注', severity: '中', status: '已解决', time: '2026-04-11 15:20' },
-  { id: 3, annotator: '王技师', issueType: '边界不精确', severity: '低', status: '已解决', time: '2026-04-10 11:45' },
-])
-
-const qualityTrendOption = ref({
-  tooltip: { trigger: 'axis' },
-  legend: { data: ['一致性', '准确率', 'F1'] },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: {
-    type: 'category',
-    data: ['04-06', '04-07', '04-08', '04-09', '04-10', '04-11', '04-12'],
-  },
-  yAxis: { type: 'value', min: 0.7, max: 1.0 },
-  series: [
-    {
-      name: '一致性',
-      type: 'bar',
-      data: [0.85, 0.88, 0.87, 0.90, 0.89, 0.91, 0.92],
-      itemStyle: { color: '#52c41a' },
-    },
-    {
-      name: '准确率',
-      type: 'bar',
-      data: [0.82, 0.84, 0.85, 0.86, 0.87, 0.87, 0.88],
-      itemStyle: { color: '#1677ff' },
-    },
-    {
-      name: 'F1',
-      type: 'bar',
-      data: [0.83, 0.85, 0.86, 0.88, 0.88, 0.89, 0.89],
-      itemStyle: { color: '#722ed1' },
-    },
-  ],
+const qualityTrendOption = computed(() => {
+  const trendData = taskStats.value?.qualityTrend || {}
+  const dates = trendData.dates || []
+  return {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['一致性', '准确率', 'F1'] },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: dates },
+    yAxis: { type: 'value', min: 0.7, max: 1.0 },
+    series: [
+      { name: '一致性', type: 'bar', data: trendData.consistency || [], itemStyle: { color: '#10b981' } },
+      { name: '准确率', type: 'bar', data: trendData.accuracy || [], itemStyle: { color: '#0ea5e9' } },
+      { name: 'F1', type: 'bar', data: trendData.f1 || [], itemStyle: { color: '#8b5cf6' } },
+    ],
+  }
 })
 
 // =============================================
 // Tab 3: 标注人员
 // =============================================
-const personnelData = ref([
-  { name: '李医生', role: '标注员', assigned: 150, completed: 128, status: '在线', color: '#1677ff' },
-  { name: '王技师', role: '标注员', assigned: 180, completed: 162, status: '在线', color: '#52c41a' },
-  { name: '张主任', role: '审核员', assigned: 100, completed: 50, status: '离线', color: '#722ed1' },
-  { name: '赵实习生', role: '标注员', assigned: 120, completed: 96, status: '在线', color: '#fa8c16' },
-])
+const personnelData = computed(() => taskStats.value?.personnel || [])
 
 // =============================================
 // Tab 4: 标注统计
 // =============================================
-const labelDistOption = ref({
-  tooltip: { trigger: 'item' },
-  legend: { bottom: 0 },
-  series: [{
-    type: 'pie',
-    radius: ['35%', '65%'],
-    data: [
-      { value: 320, name: '肺结节' },
-      { value: 180, name: '磨玻璃影' },
-      { value: 95, name: '实变' },
-      { value: 55, name: '钙化' },
-    ],
-    itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
-  }],
+const labelDistOption = computed(() => {
+  const distData = taskStats.value?.labelDistribution || []
+  return {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0 },
+    series: [{
+      type: 'pie',
+      radius: ['35%', '65%'],
+      data: distData,
+      itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+    }],
+  }
 })
 
-const dailyCountOption = ref({
-  tooltip: { trigger: 'axis' },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: {
-    type: 'category',
-    data: ['04-06', '04-07', '04-08', '04-09', '04-10', '04-11', '04-12'],
-  },
-  yAxis: { type: 'value' },
-  series: [{
-    type: 'bar',
-    data: [45, 62, 58, 71, 68, 75, 80],
-    itemStyle: {
-      color: {
-        type: 'linear',
-        x: 0, y: 0, x2: 0, y2: 1,
-        colorStops: [
-          { offset: 0, color: '#1677ff' },
-          { offset: 1, color: '#69b1ff' },
-        ],
+const dailyCountOption = computed(() => {
+  const dailyData = taskStats.value?.dailyCount || {}
+  return {
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: dailyData.dates || [] },
+    yAxis: { type: 'value' },
+    series: [{
+      type: 'bar',
+      data: dailyData.counts || [],
+      itemStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: '#0ea5e9' },
+            { offset: 1, color: '#7dd3fc' },
+          ],
+        },
+        borderRadius: [4, 4, 0, 0],
       },
-      borderRadius: [4, 4, 0, 0],
-    },
-  }],
+    }],
+  }
 })
 
 // =============================================
 // Tab 5: 操作日志
 // =============================================
-const logColumns = [
-  { title: '时间', dataIndex: 'time', key: 'time', width: 170 },
-  { title: '操作人', dataIndex: 'operator', key: 'operator', width: 100 },
-  { title: '操作类型', dataIndex: 'type', key: 'type', width: 120 },
-  { title: '详情', dataIndex: 'detail', key: 'detail' },
-]
-
-const logTypeColorMap: Record<string, string> = {
-  '创建任务': 'blue',
-  '分配标注': 'cyan',
-  '完成标注': 'green',
-  '审核通过': 'green',
-  '审核驳回': 'red',
-  '修改设置': 'orange',
-  '添加标注员': 'purple',
-  '导出数据': 'geekblue',
+const logTypeColorMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  '创建任务': 'primary',
+  '分配标注': 'primary',
+  '完成标注': 'success',
+  '审核通过': 'success',
+  '审核驳回': 'danger',
+  '修改设置': 'warning',
+  '添加标注员': 'warning',
+  '导出数据': 'primary',
 }
 
-const logData = ref([
-  { id: 1, time: '2026-04-12 10:30:00', operator: '管理员', type: '创建任务', detail: '创建标注任务"肺结节影像标注"，分配数据集1000条' },
-  { id: 2, time: '2026-04-12 10:35:00', operator: '管理员', type: '添加标注员', detail: '添加标注员：李医生、王技师、赵实习生' },
-  { id: 3, time: '2026-04-12 10:40:00', operator: '管理员', type: '分配标注', detail: '分配150条数据给李医生，数据ID范围: 1-150' },
-  { id: 4, time: '2026-04-12 11:00:00', operator: '管理员', type: '分配标注', detail: '分配180条数据给王技师，数据ID范围: 151-330' },
-  { id: 5, time: '2026-04-12 14:20:00', operator: '李医生', type: '完成标注', detail: '完成数据ID 1-50的标注，共50条' },
-  { id: 6, time: '2026-04-12 15:00:00', operator: '张主任', type: '审核通过', detail: '审核通过李医生标注的数据ID 1-30，共30条' },
-  { id: 7, time: '2026-04-12 16:30:00', operator: '张主任', type: '审核驳回', detail: '驳回赵实习生标注的数据ID 500-510，原因：标注边界不精确' },
-  { id: 8, time: '2026-04-12 17:00:00', operator: '管理员', type: '修改设置', detail: '修改任务设置：启用AI预标注辅助' },
-])
+const logData = computed(() => taskStats.value?.logs || [])
+const logPage = ref(1)
+const pagedLogs = computed(() => logData.value.slice((logPage.value - 1) * 10, logPage.value * 10))
+
+function handleBatchExport() {
+  const data = annotatorProgressData.value
+  if (!data.length) { ElMessage.warning('暂无数据可导出'); return }
+  const rows = [
+    ['标注员', '已分配', '已完成', '进行中', '待处理', '完成率(%)'],
+    ...data.map((r: any) => [r.name, r.assigned, r.completed, r.inProgress, r.pending, r.completionRate]),
+  ]
+  const csv = '﻿' + rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${taskData.value?.name || 'label_task'}_progress.csv`
+  a.click()
+  window.URL.revokeObjectURL(url)
+}
+
+onMounted(loadTaskData)
 </script>
 
 <style scoped>
@@ -517,7 +515,7 @@ const logData = ref([
 .task-title {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 .task-subtitle {
@@ -534,9 +532,6 @@ const logData = ref([
 }
 
 /* Fourth Metric Card — consistency with green text */
-.metric-card {
-  border-radius: 8px;
-}
 .metric-card-inner {
   display: flex;
   align-items: center;
@@ -547,7 +542,7 @@ const logData = ref([
 }
 .metric-title {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-bottom: 8px;
 }
 .metric-value {
@@ -565,13 +560,25 @@ const logData = ref([
   width: 56px;
   height: 56px;
   border-radius: 8px;
-  background: rgba(22, 119, 255, 0.08);
+  background: #f0f9ff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  color: #1677ff;
+  color: #0ea5e9;
   flex-shrink: 0;
+}
+
+/* Quality statistic cards */
+.stat-title {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 /* Review Modal */
@@ -581,8 +588,8 @@ const logData = ref([
 .image-preview-box {
   width: 100%;
   height: 260px;
-  background: #fafafa;
-  border: 1px dashed #d9d9d9;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -590,13 +597,13 @@ const logData = ref([
   justify-content: center;
 }
 .annotator-card-a {
-  border-left: 3px solid #1677ff;
+  border-left: 3px solid #0ea5e9;
 }
 .annotator-card-b {
-  border-left: 3px solid #52c41a;
+  border-left: 3px solid #10b981;
 }
 .annotation-json {
-  background: #f5f5f5;
+  background: #f8fafc;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 12px;

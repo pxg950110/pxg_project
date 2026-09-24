@@ -15,4 +15,6 @@ public interface InferenceLogRepository extends JpaRepository<InferenceLogEntity
                                                                     LocalDateTime start,
                                                                     LocalDateTime end,
                                                                     Pageable pageable);
+
+    Page<InferenceLogEntity> findByStatus(String status, Pageable pageable);
 }

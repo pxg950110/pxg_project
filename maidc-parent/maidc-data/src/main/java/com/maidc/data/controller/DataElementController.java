@@ -14,7 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,7 +29,7 @@ public class DataElementController {
     private final DataElementService service;
     private final DataElementImportService importService;
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping
     public R<Page<DataElementEntity>> list(
             @RequestParam(required = false) String category,
@@ -41,25 +41,25 @@ public class DataElementController {
         return R.ok(service.list(category, registrationStatus, keyword, dataType, page, pageSize));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/{id}")
     public R<DataElementEntity> get(@PathVariable Long id) {
         return R.ok(service.getById(id));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping
     public R<DataElementEntity> create(@RequestBody DataElementCreateDTO dto) {
         return R.ok(service.create(dto));
     }
 
-    @PreAuthorize("hasPermission('masterdata:update')")
+    @RequirePermission("masterdata:update")
     @PutMapping("/{id}")
     public R<DataElementEntity> update(@PathVariable Long id, @RequestBody DataElementCreateDTO dto) {
         return R.ok(service.update(id, dto));
     }
 
-    @PreAuthorize("hasPermission('masterdata:delete')")
+    @RequirePermission("masterdata:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         service.delete(id);
@@ -68,13 +68,13 @@ public class DataElementController {
 
     // ── 允许值 ──
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/{id}/values")
     public R<List<DataElementValueEntity>> getValues(@PathVariable Long id) {
         return R.ok(service.getValues(id));
     }
 
-    @PreAuthorize("hasPermission('masterdata:update')")
+    @RequirePermission("masterdata:update")
     @PutMapping("/{id}/values")
     public R<List<DataElementValueEntity>> updateValues(@PathVariable Long id,
                                                          @RequestBody List<DataElementValueEntity> values) {
@@ -83,34 +83,34 @@ public class DataElementController {
 
     // ── 映射 ──
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/{id}/mappings")
     public R<List<DataElementMappingEntity>> getMappings(@PathVariable Long id) {
         return R.ok(service.getMappings(id));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping("/{id}/mappings")
     public R<DataElementMappingEntity> addMapping(@PathVariable Long id,
                                                    @RequestBody DataElementMappingDTO dto) {
         return R.ok(service.addMapping(id, dto));
     }
 
-    @PreAuthorize("hasPermission('masterdata:update')")
+    @RequirePermission("masterdata:update")
     @PutMapping("/mappings/{mappingId}")
     public R<DataElementMappingEntity> updateMapping(@PathVariable Long mappingId,
                                                       @RequestParam String mappingStatus) {
         return R.ok(service.updateMapping(mappingId, mappingStatus));
     }
 
-    @PreAuthorize("hasPermission('masterdata:delete')")
+    @RequirePermission("masterdata:delete")
     @DeleteMapping("/mappings/{mappingId}")
     public R<Void> deleteMapping(@PathVariable Long mappingId) {
         service.deleteMapping(mappingId);
         return R.ok();
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/mappings/unmapped")
     public R<List<DataElementMappingEntity>> getUnmapped() {
         return R.ok(service.getUnmapped());
@@ -118,13 +118,13 @@ public class DataElementController {
 
     // ── 分类与统计 ──
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/categories")
     public R<List<String>> getCategories() {
         return R.ok(service.getCategories());
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/stats")
     public R<Map<String, Object>> getStats() {
         return R.ok(service.getStats());
@@ -132,19 +132,19 @@ public class DataElementController {
 
     // ── 导入 ──
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping(value = "/import", consumes = "multipart/form-data")
     public R<ImportTaskEntity> importExcel(@RequestParam("file") MultipartFile file) {
         return R.ok(importService.uploadAndStart(file));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/import/tasks/{taskId}")
     public R<ImportTaskEntity> getImportTaskStatus(@PathVariable Long taskId) {
         return R.ok(importService.getTaskStatus(taskId));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/import/template")
     public ResponseEntity<byte[]> downloadTemplate() {
         byte[] data = importService.generateTemplate();

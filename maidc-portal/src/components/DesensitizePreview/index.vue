@@ -2,7 +2,7 @@
   <div class="desensitize-preview">
     <div class="preview-pane">
       <div class="pane-header">
-        <FileTextOutlined />
+        <Document />
         <span>原始数据</span>
       </div>
       <div class="pane-content original">
@@ -10,11 +10,11 @@
       </div>
     </div>
     <div class="preview-divider">
-      <SwapOutlined />
+      <Sort />
     </div>
     <div class="preview-pane">
       <div class="pane-header safe">
-        <SafetyOutlined />
+        <CircleCheck />
         <span>脱敏数据</span>
       </div>
       <div class="pane-content desensitized">
@@ -25,8 +25,6 @@
 </template>
 
 <script setup lang="ts">
-import { FileTextOutlined, SafetyOutlined, SwapOutlined } from '@ant-design/icons-vue'
-
 interface Props {
   original: string
   desensitized: string

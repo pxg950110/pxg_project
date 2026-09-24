@@ -4,6 +4,7 @@ import com.maidc.common.core.result.PageResult;
 import com.maidc.common.core.result.R;
 import com.maidc.common.log.annotation.OperLog;
 import com.maidc.model.dto.AlertRuleCreateDTO;
+import com.maidc.model.repository.AlertRecordRepository;
 import com.maidc.model.service.AlertService;
 import com.maidc.model.vo.AlertRecordVO;
 import com.maidc.model.vo.AlertRuleVO;
@@ -12,13 +13,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 public class AlertController {
 
     private final AlertService alertService;
+    private final AlertRecordRepository alertRecordRepository;
 
     @OperLog(module = "alert", operation = "createRule")
     @PreAuthorize("hasPermission('model:deploy')")
@@ -38,6 +42,17 @@ public class AlertController {
     @PutMapping("/api/v1/alert-rules/{id}")
     public R<AlertRuleVO> updateAlertRule(@PathVariable Long id, @RequestBody AlertRuleCreateDTO dto) {
         return R.ok(alertService.updateAlertRule(id, dto));
+    }
+
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping("/api/v1/alerts/summary")
+    public R<Map<String, Object>> getAlertSummary() {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalAlerts", alertRecordRepository.count());
+        summary.put("activeAlerts", alertRecordRepository.findByStatusOrderByTriggeredAtDesc("PENDING", org.springframework.data.domain.Pageable.ofSize(1)).getTotalElements());
+        summary.put("criticalAlerts", alertRecordRepository.countBySeverity("CRITICAL"));
+        summary.put("warningAlerts", alertRecordRepository.countBySeverity("WARNING"));
+        return R.ok(summary);
     }
 
     @PreAuthorize("hasPermission('model:read')")

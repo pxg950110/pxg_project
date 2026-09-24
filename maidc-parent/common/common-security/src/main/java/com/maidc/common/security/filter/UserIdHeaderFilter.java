@@ -29,6 +29,7 @@ public class UserIdHeaderFilter extends OncePerRequestFilter {
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String ORG_ID_HEADER = "X-Org-Id";
     private static final String USERNAME_HEADER = "X-Username";
+    private static final String USER_ROLES_HEADER = "X-User-Roles";
     private static final String AUTHORIZATION = "Authorization";
 
     private final JwtUtils jwtUtils;
@@ -68,6 +69,9 @@ public class UserIdHeaderFilter extends OncePerRequestFilter {
             if (username != null) {
                 extraHeaders.put(USERNAME_HEADER, username);
             }
+
+            List<String> roles = jwtUtils.getRolesFromToken(token);
+            extraHeaders.put(USER_ROLES_HEADER, String.join(",", roles));
 
             filterChain.doFilter(new HeaderInjectRequestWrapper(request, extraHeaders), response);
         } catch (Exception e) {

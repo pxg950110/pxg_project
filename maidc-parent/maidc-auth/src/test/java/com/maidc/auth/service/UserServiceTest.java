@@ -47,6 +47,9 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private PermissionCacheService permissionCacheService;
+
     @InjectMocks
     private UserService userService;
 
@@ -123,6 +126,8 @@ class UserServiceTest {
         verify(passwordEncoder).encode("password123");
         // Two role assignments
         verify(userRoleRepository, times(2)).save(any(UserRoleEntity.class));
+        // 角色分配后失效用户权限缓存（事务提交后）
+        verify(permissionCacheService).evictUserAfterCommit(2L);
     }
 
     @Test
@@ -149,7 +154,7 @@ class UserServiceTest {
 
         // Assert
         assertThat(result).isNotNull();
-        verifyNoInteractions(userRoleRepository);
+        verifyNoInteractions(userRoleRepository, permissionCacheService);
     }
 
     // ==================== getUser tests ====================
@@ -227,6 +232,8 @@ class UserServiceTest {
         assertThat(testUser.getEmail()).isEqualTo("updated@example.com");
         verify(userRoleRepository).deleteByUserId(1L);
         verify(userRoleRepository).save(any(UserRoleEntity.class));
+        // 角色变更后失效用户权限缓存（事务提交后）
+        verify(permissionCacheService).evictUserAfterCommit(1L);
     }
 
     // ==================== resetPassword tests ====================

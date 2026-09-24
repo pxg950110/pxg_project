@@ -1,8 +1,8 @@
 <template>
-  <a-tag :color="tagColor" class="version-tag">
+  <el-tag :type="tagType" size="small" class="version-tag">
     {{ version }}
     <span v-if="isLatest" class="latest-badge">Latest</span>
-  </a-tag>
+  </el-tag>
 </template>
 
 <script setup lang="ts">
@@ -17,13 +17,13 @@ const props = withDefaults(defineProps<Props>(), {
   isLatest: false,
 })
 
-const tagColor = computed(() => {
-  if (props.isLatest) return 'green'
+const tagType = computed<'success' | 'warning' | 'primary'>(() => {
+  if (props.isLatest) return 'success'
   // Determine color by version prefix
   const v = props.version.replace(/^v/i, '')
   const parts = v.split('.')
-  if (parts.length >= 1 && parts[0] === '0') return 'orange'
-  return 'blue'
+  if (parts.length >= 1 && parts[0] === '0') return 'warning'
+  return 'primary'
 })
 </script>
 
@@ -37,6 +37,6 @@ const tagColor = computed(() => {
   font-size: 10px;
   padding: 0 4px;
   border-radius: 3px;
-  background: rgba(82, 196, 26, 0.15);
+  background: rgba(103, 194, 58, 0.15);
 }
 </style>

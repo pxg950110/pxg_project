@@ -1,0 +1,11 @@
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-clinical-secondary {
+    color: #64748B;
+  }
+  .bg-clinical-canvas {
+    background-color: #F8FAFC;
+  }
+}

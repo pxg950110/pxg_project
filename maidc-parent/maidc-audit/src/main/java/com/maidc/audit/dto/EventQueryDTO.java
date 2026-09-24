@@ -9,7 +9,9 @@ public class EventQueryDTO {
 
     private String eventType;
 
-    private String severity;
+    private String eventLevel;
+
+    private String traceId;
 
     private LocalDateTime startTime;
 

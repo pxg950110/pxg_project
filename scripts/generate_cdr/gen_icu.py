@@ -152,53 +152,127 @@ def _gen_output_event(ctx, output_dir):
 
 def _gen_microbiology(ctx, output_dir):
     rows = []
-    organisms = [
-        ('大肠埃希菌', 'ESCHERICHIA COLI'),
-        ('金黄色葡萄球菌', 'STAPHYLOCOCCUS AUREUS'),
-        ('肺炎克雷伯菌', 'KLEBSIELLA PNEUMONIAE'),
-        ('铜绿假单胞菌', 'PSEUDOMONAS AERUGINOSA'),
-        ('鲍曼不动杆菌', 'ACINETOBACTER BAUMANNII'),
-        ('白色念珠菌', 'CANDIDA ALBICANS'),
-    ]
-    antibiotics = [
-        ('头孢曲松', 'Ceftriaxone'), ('万古霉素', 'Vancomycin'),
-        ('美罗培南', 'Meropenem'), ('左氧氟沙星', 'Levofloxacin'),
-        ('哌拉西林他唑巴坦', 'Piperacillin/Tazobactam'),
-    ]
-    interpretations = ['S', 'R', 'I']  # Sensitive, Resistant, Intermediate
-    spec_types = ['血培养', '痰培养', '尿培养', '伤口分泌物培养']
+    from .config import (MICRO_ORGANISMS, MICRO_AB_GRAM_NEG, MICRO_AB_GRAM_POS,
+                         MICRO_AB_FUNGAL, MICRO_SPECIMENS)
 
-    for stay in ctx.icu_stays:
-        if random.random() < 0.6:
-            n_cultures = random.randint(1, 3)
-            for _ in range(n_cultures):
-                oid = ctx.seq.next()
-                org = random.choice(organisms)
-                chart_time = stay['in_time'] + timedelta(hours=random.randint(0, int(stay['los_days'] * 24)))
-                spec = random.choice(spec_types)
+    def _pick_interpretation(s_w, r_w, i_w):
+        return random.choices(['S', 'R', 'I'], weights=[s_w, r_w, i_w])[0]
 
-                # 1-3 antibiotic sensitivity results per culture
-                n_ab = random.randint(1, 3)
-                for _ in range(n_ab):
-                    ab = random.choice(antibiotics)
-                    interp = random.choice(interpretations)
-                    dilution = random.choice(['<=1', '2', '4', '8', '16', '32', '>=64'])
-                    oid2 = ctx.seq.next()
-                    rows.append((
-                        oid2, stay['encounter_id'], stay['patient_id'],
-                        fmt_dt(chart_time), fmt_dt(chart_time),
-                        random.randint(700, 710), spec,
-                        random.randint(800, 810), '细菌培养',
-                        random.randint(900, 910), org[1],
-                        random.randint(1, 3),
-                        random.randint(1000, 1010), ab[1],
-                        dilution, random.choice(['<=', '>=', '=']),
-                        float(dilution.replace('<=', '').replace('>=', '')) if dilution.replace('<=', '').replace('>=', '').replace('=', '').replace('<', '').replace('>', '') else 0,
-                        interp,
-                        random.choice(['+', '++', '+++']),
-                        'MIMIC4', str(oid2 + 80000),
-                        'etl', '2024-01-01 00:00:00', '', '', 'f', stay['org_id']
-                    ))
+    def _parse_dilution(dilution_text):
+        comp = '='
+        val_str = dilution_text
+        if dilution_text.startswith('<='):
+            comp, val_str = '<=', dilution_text[2:]
+        elif dilution_text.startswith('>='):
+            comp, val_str = '>=', dilution_text[2:]
+        try:
+            val = float(val_str)
+        except ValueError:
+            val = 0.0
+        return dilution_text, comp, val
+
+    def _get_ab_panel(gram_type):
+        if gram_type == 'GN':
+            return MICRO_AB_GRAM_NEG
+        elif gram_type == 'GP':
+            return MICRO_AB_GRAM_POS
+        else:
+            return MICRO_AB_FUNGAL
+
+    def _pick_organisms_for_specimen(spec_type, n_orgs):
+        if spec_type in ('痰培养',):
+            weights = {'GN': 50, 'GP': 35, 'FUNGUS': 15}
+        elif spec_type in ('尿培养', '腹水培养', '引流液培养'):
+            weights = {'GN': 70, 'GP': 20, 'FUNGUS': 10}
+        elif spec_type in ('血培养',):
+            weights = {'GN': 50, 'GP': 35, 'FUNGUS': 15}
+        elif spec_type in ('伤口分泌物培养',):
+            weights = {'GN': 40, 'GP': 50, 'FUNGUS': 10}
+        elif spec_type in ('脑脊液培养',):
+            weights = {'GN': 30, 'GP': 60, 'FUNGUS': 10}
+        else:
+            weights = {'GN': 50, 'GP': 35, 'FUNGUS': 15}
+        gram_types = list(weights.keys())
+        gram_weights = list(weights.values())
+
+        picked = []
+        for i in range(n_orgs):
+            gt = random.choices(gram_types, weights=gram_weights)[0]
+            candidates = [o for o in MICRO_ORGANISMS if o[2] == gt]
+            org = random.choice(candidates)
+            picked.append(org)
+        return picked
+
+    # Collect all inpatient + emergency encounters
+    target_encounters = [e for e in ctx.encounters
+                         if e['encounter_type'] in ('INPATIENT', 'EMERGENCY')]
+
+    for enc in target_encounters:
+        icd = enc['disease']['icd']
+        admit = enc['admit']
+        los = enc.get('los_days', 3)
+        if los < 1:
+            los = 1
+        org_id = enc['org_id']
+
+        for spec_cn, related_icds, org_hint, base_prob in MICRO_SPECIMENS:
+            if icd not in related_icds:
+                continue
+
+            prob = base_prob
+            if enc.get('has_icu'):
+                prob = min(prob * 1.8, 0.7)
+            if enc['severity'] == 'SEVERE':
+                prob = min(prob * 1.5, 0.8)
+
+            if random.random() > prob:
+                continue
+
+            # 1-3 cultures of this specimen type per encounter
+            n_cultures = random.choices([1, 2, 3], weights=[60, 30, 10])[0]
+            for ci in range(n_cultures):
+                chart_offset = random.randint(0, int(los * 24))
+                chart_time = admit + timedelta(hours=chart_offset)
+
+                # 1-3 organisms per culture
+                n_orgs = random.choices([1, 2, 3], weights=[82, 15, 3])[0]
+                organisms = _pick_organisms_for_specimen(spec_cn, n_orgs)
+
+                for oi, org in enumerate(organisms):
+                    cn_name, en_name, gram_type, is_mdr = org
+                    isolate_num = oi + 1
+                    quantity = random.choice(['+', '++', '+++'])
+
+                    ab_panel = _get_ab_panel(gram_type)
+                    max_ab = min(len(ab_panel), 12)
+                    min_ab = min(5, max_ab)
+                    n_ab = random.randint(min_ab, max_ab)
+                    selected_abs = random.sample(ab_panel, n_ab)
+
+                    for ab_cn, ab_en, dilution_options, s_w, r_w, i_w in selected_abs:
+                        # MDR organisms shift toward resistant
+                        if is_mdr:
+                            s_w, r_w, i_w = s_w * 0.5, r_w * 1.6, i_w * 1.2
+
+                        interp = _pick_interpretation(s_w, r_w, i_w)
+                        dilution_text = random.choice(dilution_options)
+                        dilution_text, dilution_comp, dilution_val = _parse_dilution(dilution_text)
+
+                        oid = ctx.seq.next()
+                        rows.append((
+                            oid, enc['id'], enc['patient_id'],
+                            fmt_dt(chart_time), fmt_dt(chart_time),
+                            700 + random.randint(0, 20), spec_cn,
+                            800 + random.randint(0, 20), '细菌培养' if gram_type != 'FUNGUS' else '真菌培养',
+                            900 + random.randint(0, 20), en_name,
+                            isolate_num,
+                            1000 + random.randint(0, 20), ab_en,
+                            dilution_text, dilution_comp, dilution_val,
+                            interp, quantity,
+                            'MIMIC4', str(oid + 80000),
+                            'etl', '2024-01-01 00:00:00', '', '', 'f', org_id
+                        ))
+
     write_csv('c_microbiology.csv',
               ['id', 'encounter_id', 'patient_id',
                'chart_date', 'chart_time',

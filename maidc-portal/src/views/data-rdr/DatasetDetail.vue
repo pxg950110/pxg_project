@@ -1,84 +1,88 @@
 <template>
   <PageContainer :title="dataset?.name || '数据集详情'" :loading="loading">
     <template #extra>
-      <a-button @click="router.back()">返回</a-button>
+      <el-button @click="router.back()">返回</el-button>
     </template>
 
     <template v-if="dataset">
       <!-- Basic Info -->
-      <a-card style="margin-bottom: 16px">
-        <a-descriptions :column="3" bordered size="small">
-          <a-descriptions-item label="数据集名称">{{ dataset.name }}</a-descriptions-item>
-          <a-descriptions-item label="所属项目">{{ dataset.project_name || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="样本数">{{ dataset.sample_count ?? '-' }}</a-descriptions-item>
-          <a-descriptions-item label="版本数">{{ dataset.version_count ?? '-' }}</a-descriptions-item>
-          <a-descriptions-item label="创建人">{{ dataset.creator_name || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="更新时间">{{ formatDateTime(dataset.updated_at) }}</a-descriptions-item>
-          <a-descriptions-item label="描述" :span="3">{{ dataset.description || '-' }}</a-descriptions-item>
-        </a-descriptions>
-      </a-card>
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm mb-4">
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="数据集名称">{{ dataset.name }}</el-descriptions-item>
+          <el-descriptions-item label="所属项目">{{ dataset.project_name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="样本数">{{ dataset.sample_count ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="版本数">{{ dataset.version_count ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="创建人">{{ dataset.creator_name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="更新时间">{{ formatDateTime(dataset.updated_at) }}</el-descriptions-item>
+          <el-descriptions-item label="描述" :span="3">{{ dataset.description || '-' }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
 
       <!-- Tabs -->
-      <a-card>
-        <a-tabs v-model:activeKey="activeTab">
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <el-tabs v-model="activeTab">
           <!-- Versions Tab -->
-          <a-tab-pane key="versions" tab="版本">
-            <a-table :columns="versionColumns" :data-source="versions" :loading="versionsLoading" size="small" row-key="id">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'file_size'">
-                  {{ formatFileSize(record.file_size) }}
-                </template>
-                <template v-if="column.key === 'created_at'">
-                  {{ formatDateTime(record.created_at) }}
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+          <el-tab-pane label="版本" name="versions">
+            <el-table :data="versions" v-loading="versionsLoading" size="small" row-key="id">
+              <el-table-column label="版本" prop="version" width="100" />
+              <el-table-column label="记录数" prop="record_count" width="100" />
+              <el-table-column label="文件大小" width="120">
+                <template #default="{ row }">{{ formatFileSize(row.file_size) }}</template>
+              </el-table-column>
+              <el-table-column label="创建人" prop="created_by" width="100" />
+              <el-table-column label="创建时间" width="170">
+                <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
 
           <!-- Fields Tab -->
-          <a-tab-pane key="fields" tab="字段">
-            <a-table :columns="fieldColumns" :data-source="fields" :loading="fieldsLoading" size="small" row-key="id">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'type'">
-                  <a-tag>{{ record.type }}</a-tag>
+          <el-tab-pane label="字段" name="fields">
+            <el-table :data="fields" v-loading="fieldsLoading" size="small" row-key="id">
+              <el-table-column label="字段名" prop="name" width="180" />
+              <el-table-column label="类型" width="120">
+                <template #default="{ row }">
+                  <el-tag type="info">{{ row.type }}</el-tag>
                 </template>
-                <template v-if="column.key === 'nullable'">
-                  <a-tag :color="record.nullable ? 'orange' : 'green'">
-                    {{ record.nullable ? '可空' : '非空' }}
-                  </a-tag>
+              </el-table-column>
+              <el-table-column label="描述" prop="description" show-overflow-tooltip />
+              <el-table-column label="可空" width="80">
+                <template #default="{ row }">
+                  <el-tag :type="row.nullable ? 'warning' : 'success'">
+                    {{ row.nullable ? '可空' : '非空' }}
+                  </el-tag>
                 </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
 
           <!-- Access Log Tab -->
-          <a-tab-pane key="access" tab="访问记录">
-            <a-table :columns="accessColumns" :data-source="accessLog" :loading="accessLoading" size="small" row-key="id">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'accessed_at'">
-                  {{ formatDateTime(record.accessed_at) }}
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+          <el-tab-pane label="访问记录" name="access">
+            <el-table :data="accessLog" v-loading="accessLoading" size="small" row-key="id">
+              <el-table-column label="用户" prop="user_name" width="120" />
+              <el-table-column label="操作类型" prop="action_type" width="120" />
+              <el-table-column label="访问时间" width="170">
+                <template #default="{ row }">{{ formatDateTime(row.accessed_at) }}</template>
+              </el-table-column>
+              <el-table-column label="IP" prop="ip_address" width="140" />
+            </el-table>
+          </el-tab-pane>
 
           <!-- Statistics Tab -->
-          <a-tab-pane key="statistics" tab="统计">
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-card title="记录数趋势" size="small">
-                  <MetricChart :option="recordCountOption" height="300px" />
-                </a-card>
-              </a-col>
-              <a-col :span="12">
-                <a-card title="字段分布" size="small">
-                  <MetricChart :option="fieldDistOption" height="300px" />
-                </a-card>
-              </a-col>
-            </a-row>
-          </a-tab-pane>
-        </a-tabs>
-      </a-card>
+          <el-tab-pane label="统计" name="statistics">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+                <template #header>记录数趋势</template>
+                <MetricChart :option="recordCountOption" height="300px" />
+              </el-card>
+              <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+                <template #header>字段分布</template>
+                <MetricChart :option="fieldDistOption" height="300px" />
+              </el-card>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
     </template>
   </PageContainer>
 </template>
@@ -111,34 +115,12 @@ const fieldsLoading = ref(false)
 const accessLog = ref<any[]>([])
 const accessLoading = ref(false)
 
-const versionColumns = [
-  { title: '版本', dataIndex: 'version', key: 'version', width: 100 },
-  { title: '记录数', dataIndex: 'record_count', key: 'record_count', width: 100 },
-  { title: '文件大小', dataIndex: 'file_size', key: 'file_size', width: 120 },
-  { title: '创建人', dataIndex: 'created_by', key: 'created_by', width: 100 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 170 },
-]
-
-const fieldColumns = [
-  { title: '字段名', dataIndex: 'name', key: 'name', width: 180 },
-  { title: '类型', dataIndex: 'type', key: 'type', width: 120 },
-  { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
-  { title: '可空', dataIndex: 'nullable', key: 'nullable', width: 80 },
-]
-
-const accessColumns = [
-  { title: '用户', dataIndex: 'user_name', key: 'user_name', width: 120 },
-  { title: '操作类型', dataIndex: 'action_type', key: 'action_type', width: 120 },
-  { title: '访问时间', dataIndex: 'accessed_at', key: 'accessed_at', width: 170 },
-  { title: 'IP', dataIndex: 'ip_address', key: 'ip_address', width: 140 },
-]
-
 const recordCountOption = ref({
   tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   xAxis: { type: 'category', data: [] as string[] },
   yAxis: { type: 'value', name: '记录数' },
-  series: [{ type: 'bar', data: [] as number[], itemStyle: { color: '#1677ff' } }],
+  series: [{ type: 'bar', data: [] as number[], itemStyle: { color: '#0ea5e9' } }],
 })
 
 const fieldDistOption = ref({
@@ -207,7 +189,7 @@ function loadStatistics() {
     recordCountOption.value = {
       ...recordCountOption.value,
       xAxis: { type: 'category', data: ['v1.0', 'v1.1', 'v1.2', 'v2.0', 'v2.1'] },
-      series: [{ type: 'bar', data: [1200, 3500, 4800, 6200, 7500], itemStyle: { color: '#1677ff' } }],
+      series: [{ type: 'bar', data: [1200, 3500, 4800, 6200, 7500], itemStyle: { color: '#0ea5e9' } }],
     }
     fieldDistOption.value = {
       ...fieldDistOption.value,

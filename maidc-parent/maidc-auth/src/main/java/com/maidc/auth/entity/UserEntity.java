@@ -56,4 +56,8 @@ public class UserEntity extends BaseEntity {
 
     @Column(name = "org_id")
     private Long orgId;
+
+    /** 所属科室（DEPT 数据范围过滤依据，system.s_user.dept_id） */
+    @Column(name = "dept_id")
+    private Long deptId;
 }

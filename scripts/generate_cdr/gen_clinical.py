@@ -54,7 +54,7 @@ def _gen_diagnosis(ctx, output_dir):
     write_csv('c_diagnosis.csv',
               ['id', 'created_at', 'created_by', 'is_deleted', 'org_id',
                'updated_at', 'updated_by',
-               'diagnosis_code', 'diagnosis_name', 'diagnosis_type',
+               'icd_code', 'icd_name', 'diagnosis_type',
                'encounter_id', 'patient_id', 'icd_version'],
               rows, output_dir)
 

@@ -33,17 +33,17 @@ public class ClinicalSearchSpecs {
             if (req.getKeyword() != null && !req.getKeyword().isBlank()) {
                 String like = "%" + req.getKeyword() + "%";
                 predicates.add(cb.or(
-                    cb.like(root.get("attendingDoctor"), like),
-                    cb.like(root.get("diagnosisSummary"), like)
+                    cb.like(root.get("doctorName"), like),
+                    cb.like(root.get("diagnosisName"), like)
                 ));
             }
             if (req.getDepartment() != null && !req.getDepartment().isBlank()) {
-                predicates.add(cb.like(root.get("department"), "%" + req.getDepartment() + "%"));
+                predicates.add(cb.like(root.get("deptName"), "%" + req.getDepartment() + "%"));
             }
             if (req.getStatus() != null && !req.getStatus().isBlank()) {
                 predicates.add(cb.equal(root.get("encounterType"), req.getStatus()));
             }
-            applyDateRange(predicates, root, cb, req, "admissionTime");
+            applyDateRange(predicates, root, cb, req, "admitTime");
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

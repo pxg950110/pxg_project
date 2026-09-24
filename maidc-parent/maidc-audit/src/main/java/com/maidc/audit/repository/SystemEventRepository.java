@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SystemEventRepository extends JpaRepository<SystemEventEntity, String>, JpaSpecificationExecutor<SystemEventEntity> {
+public interface SystemEventRepository extends JpaRepository<SystemEventEntity, Long>, JpaSpecificationExecutor<SystemEventEntity> {
 }

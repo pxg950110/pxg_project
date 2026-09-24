@@ -2,12 +2,12 @@
   <PageContainer title="部署监控" subtitle="实时监控所有模型部署状态与推理性能">
     <!-- Time Filter + Auto-refresh -->
     <div class="filter-bar">
-      <a-radio-group v-model:value="timeRange" button-style="solid">
-        <a-radio-button value="1h">近1h</a-radio-button>
-        <a-radio-button value="6h">近6h</a-radio-button>
-        <a-radio-button value="24h">近24h</a-radio-button>
-        <a-radio-button value="7d">近7d</a-radio-button>
-      </a-radio-group>
+      <el-radio-group v-model="timeRange">
+        <el-radio-button value="1h">近1h</el-radio-button>
+        <el-radio-button value="6h">近6h</el-radio-button>
+        <el-radio-button value="24h">近24h</el-radio-button>
+        <el-radio-button value="7d">近7d</el-radio-button>
+      </el-radio-group>
       <div class="auto-refresh">
         <span class="refresh-dot"></span>
         <span>自动刷新 30s</span>
@@ -15,29 +15,27 @@
     </div>
 
     <!-- 4 Metric Cards -->
-    <a-row :gutter="16" class="metric-row">
-      <a-col :span="6">
-        <MetricCard title="部署实例" :value="45" :icon="RocketOutlined" />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard title="总推理次数" :value="128456" :icon="ThunderboltOutlined" />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard title="平均延迟" value="245" suffix="ms" :icon="ClockCircleOutlined" />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard title="GPU利用率" value="67" suffix="%" :icon="DashboardOutlined" />
-      </a-col>
-    </a-row>
+    <div class="metric-row grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <MetricCard title="部署实例" :value="summary.total" :icon="Promotion" :loading="loading" />
+      <MetricCard title="运行中" :value="summary.running" :icon="MagicStick" :loading="loading" />
+      <MetricCard title="已停止" :value="summary.stopped" :icon="Clock" :loading="loading" />
+      <MetricCard title="异常" :value="summary.failed" :icon="DataBoard" :loading="loading" />
+    </div>
 
     <!-- QPS Trend Chart -->
-    <a-card title="QPS 趋势" class="section-card">
+    <el-card shadow="never" class="section-card !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+      <template #header>
+        <span class="font-semibold text-slate-900">QPS 趋势</span>
+      </template>
       <MetricChart :option="qpsChartOption" height="320px" />
-    </a-card>
+    </el-card>
 
     <!-- Deployment Status Panel -->
-    <a-card title="部署状态" class="section-card" :loading="loading">
-      <div class="deployment-list">
+    <el-card shadow="never" class="section-card !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+      <template #header>
+        <span class="font-semibold text-slate-900">部署状态</span>
+      </template>
+      <div class="deployment-list" v-loading="loading">
         <div v-for="item in deployments" :key="item.id" class="deployment-item">
           <div class="deployment-left">
             <span class="status-dot" :style="{ backgroundColor: item.color }"></span>
@@ -49,50 +47,63 @@
           <span class="status-badge" :style="{ color: item.color, borderColor: item.color }">{{ item.status }}</span>
         </div>
       </div>
-    </a-card>
+    </el-card>
 
     <!-- Alert Table -->
-    <a-card title="告警规则" class="section-card">
-      <template #extra>
-        <a-button type="primary" size="small">
-          <PlusOutlined /> 新建规则
-        </a-button>
+    <el-card shadow="never" class="section-card !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-slate-900">告警规则</span>
+          <el-button type="primary" size="small">
+            <el-icon class="mr-1"><Plus /></el-icon>新建规则
+          </el-button>
+        </div>
       </template>
-      <a-table :columns="alertColumns" :data-source="alerts" :pagination="false" row-key="rule" size="middle">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'status'">
-            <a-tag :color="alertStatusColorMap[record.status]">{{ record.status }}</a-tag>
+      <el-table :data="alerts" row-key="rule" size="default">
+        <el-table-column label="规则名称" prop="rule" />
+        <el-table-column label="部署" prop="deployment" />
+        <el-table-column label="指标" prop="metric" />
+        <el-table-column label="阈值" prop="threshold" />
+        <el-table-column label="当前值" prop="current" />
+        <el-table-column label="状态" prop="status">
+          <template #default="{ row }">
+            <el-tag :type="alertStatusColorMap[row.status]">{{ row.status }}</el-tag>
           </template>
-          <template v-if="column.key === 'action'">
-            <a-space>
-              <a>编辑</a>
-              <a>禁用</a>
-            </a-space>
+        </el-table-column>
+        <el-table-column label="时间" prop="time" />
+        <el-table-column label="操作" width="120">
+          <template #default>
+            <div class="flex items-center gap-2">
+              <el-button link type="primary">编辑</el-button>
+              <el-button link type="primary">禁用</el-button>
+            </div>
           </template>
-        </template>
-      </a-table>
-    </a-card>
+        </el-table-column>
+      </el-table>
+    </el-card>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-import {
-  RocketOutlined,
-  ThunderboltOutlined,
-  ClockCircleOutlined,
-  DashboardOutlined,
-  PlusOutlined,
-} from '@ant-design/icons-vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { DataBoard, MagicStick, Clock, Plus, Promotion } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
-import { useTable } from '@/hooks/useTable'
 import { getDeployments, scaleDeployment, restartDeployment } from '@/api/model'
 
 // Time range filter
 const timeRange = ref<string>('24h')
+const loading = ref(false)
+const deploymentData = ref<any[]>([])
+
+const summary = reactive({
+  total: 0,
+  running: 0,
+  stopped: 0,
+  failed: 0,
+})
 
 // QPS chart option
 const qpsChartOption = {
@@ -107,7 +118,7 @@ const qpsChartOption = {
     {
       type: 'bar',
       data: [120, 85, 340, 580, 620, 450, 380],
-      itemStyle: { color: '#1677ff', borderRadius: [4, 4, 0, 0] },
+      itemStyle: { color: '#0ea5e9', borderRadius: [4, 4, 0, 0] },
     },
   ],
 }
@@ -122,66 +133,68 @@ interface DeploymentItem {
   detail: string
 }
 
-const { tableData: deploymentData, loading, fetchData } = useTable<any>(
-  (params) => getDeployments({ page: params.page, page_size: params.pageSize })
-)
-
 const statusColorMap: Record<string, string> = {
-  Running: '#52c41a',
-  Stopped: '#ff4d4f',
-  Error: '#faad14',
+  RUNNING: '#10b981',
+  STOPPED: '#ef4444',
+  FAILED: '#f59e0b',
+  CREATING: '#0ea5e9',
+  SCALING: '#0ea5e9',
+  STOPPING: '#f59e0b',
 }
 
 const deployments = computed<DeploymentItem[]>(() =>
   deploymentData.value.map((item: any) => ({
     id: item.id,
-    name: item.name || item.deployment_name,
-    version: item.version || item.version_no || '--',
+    name: item.deploymentName || item.name,
+    version: item.version || '--',
     status: item.status,
-    color: statusColorMap[item.status] || '#d9d9d9',
-    detail: item.detail || item.qps ? `QPS: ${item.qps || item.detail}` : '--',
+    color: statusColorMap[item.status] || '#e2e8f0',
+    detail: `${item.environment || '--'} · 副本: ${item.replicas || 1}`,
   }))
 )
 
-// Alert table columns
-const alertColumns = [
-  { title: '规则名称', dataIndex: 'rule', key: 'rule' },
-  { title: '部署', dataIndex: 'deployment', key: 'deployment' },
-  { title: '指标', dataIndex: 'metric', key: 'metric' },
-  { title: '阈值', dataIndex: 'threshold', key: 'threshold' },
-  { title: '当前值', dataIndex: 'current', key: 'current' },
-  { title: '状态', dataIndex: 'status', key: 'status' },
-  { title: '时间', dataIndex: 'time', key: 'time' },
-  { title: '操作', key: 'action', width: 120 },
-]
+async function fetchData() {
+  loading.value = true
+  try {
+    const res = await getDeployments({ page: 1, page_size: 100 })
+    const data = res.data.data
+    deploymentData.value = Array.isArray(data) ? data : (data?.items || [])
+    summary.total = deploymentData.value.length
+    summary.running = deploymentData.value.filter(d => d.status === 'RUNNING').length
+    summary.stopped = deploymentData.value.filter(d => d.status === 'STOPPED').length
+    summary.failed = deploymentData.value.filter(d => d.status === 'FAILED').length
+  } finally {
+    loading.value = false
+  }
+}
 
 // Alert data (to be connected to alert API later)
 const alerts = ref<any[]>([])
 
-// Alert status color mapping
+// Alert status tag type mapping
 const alertStatusColorMap: Record<string, string> = {
-  Firing: 'red',
-  Warning: 'orange',
-  Resolved: 'green',
+  Firing: 'danger',
+  Warning: 'warning',
+  Resolved: 'success',
 }
 
 async function handleRestart(id: number) {
   try {
     await restartDeployment(id)
-    message.success('重启成功')
+    ElMessage.success('重启成功')
     fetchData()
   } catch {
-    message.error('重启失败')
+    ElMessage.error('重启失败')
   }
 }
 
 async function handleScale(id: number, replicas: number) {
   try {
     await scaleDeployment(id, replicas)
-    message.success('扩缩容成功')
+    ElMessage.success('扩缩容成功')
     fetchData()
   } catch {
-    message.error('扩缩容失败')
+    ElMessage.error('扩缩容失败')
   }
 }
 
@@ -200,7 +213,7 @@ onMounted(() => fetchData())
   display: flex;
   align-items: center;
   gap: 6px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   font-size: 14px;
 }
 
@@ -208,7 +221,7 @@ onMounted(() => fetchData())
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #52c41a;
+  background-color: #10b981;
   display: inline-block;
 }
 
@@ -224,6 +237,7 @@ onMounted(() => fetchData())
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 60px;
 }
 
 .deployment-item {
@@ -231,13 +245,13 @@ onMounted(() => fetchData())
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 6px;
   transition: box-shadow 0.2s;
 }
 
 .deployment-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .deployment-left {
@@ -262,18 +276,18 @@ onMounted(() => fetchData())
 .deployment-name {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .deployment-version {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   font-weight: 400;
 }
 
 .deployment-detail {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .status-badge {

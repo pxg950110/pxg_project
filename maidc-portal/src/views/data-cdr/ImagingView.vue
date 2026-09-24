@@ -1,13 +1,12 @@
 <template>
   <div class="imaging-view">
-    <a-spin :spinning="loading">
+    <div v-loading="loading" class="min-h-[200px]">
       <div v-if="studies.length > 0" class="imaging-grid">
-        <a-card
+        <el-card
           v-for="study in studies"
           :key="study.id"
-          :bordered="true"
-          hoverable
-          class="imaging-card"
+          shadow="hover"
+          class="imaging-card !rounded-lg cursor-pointer"
           @click="openReport(study)"
         >
           <!-- Thumbnail -->
@@ -18,7 +17,7 @@
               :list="study.image_urls"
             />
             <div v-else class="thumbnail-placeholder">
-              <PictureOutlined style="font-size: 32px; color: #bfbfbf" />
+              <el-icon :size="32" color="#cbd5e1"><Picture /></el-icon>
               <span>暂无影像</span>
             </div>
           </div>
@@ -26,9 +25,13 @@
           <!-- Study Info -->
           <div class="imaging-info">
             <div class="imaging-title">
-              <a-tag :color="modalityColorMap[study.modality] || 'blue'" size="small">
+              <el-tag
+                :type="modalityTypeMap[study.modality] || 'info'"
+                size="small"
+                :style="modalityStyleMap[study.modality]"
+              >
                 {{ study.modality }}
-              </a-tag>
+              </el-tag>
               <span class="study-type">{{ study.study_type }}</span>
             </div>
             <div class="imaging-meta">
@@ -42,35 +45,32 @@
               </div>
               <div class="meta-row">
                 <span class="meta-label">报告摘要：</span>
-                <a-typography-paragraph
-                  :content="study.report_summary || '暂无报告'"
-                  :ellipsis="{ rows: 2, tooltip: true }"
-                  class="report-summary"
-                />
+                <div class="report-summary line-clamp-2" :title="study.report_summary || '暂无报告'">
+                  {{ study.report_summary || '暂无报告' }}
+                </div>
               </div>
             </div>
           </div>
-        </a-card>
+        </el-card>
       </div>
 
-      <a-empty v-else description="暂无影像检查记录" />
-    </a-spin>
+      <el-empty v-else description="暂无影像检查记录" :image-size="60" />
+    </div>
 
-    <!-- Full Report Modal -->
-    <a-modal
-      v-model:open="reportVisible"
+    <!-- Full Report Dialog -->
+    <el-dialog
+      v-model="reportVisible"
       :title="currentStudy ? `${currentStudy.study_type} - ${currentStudy.body_part}` : '检查报告'"
       width="720px"
-      :footer="null"
-      destroy-on-close
+      :destroy-on-close="true"
     >
       <template v-if="currentStudy">
-        <a-descriptions :column="2" bordered size="small" style="margin-bottom: 16px">
-          <a-descriptions-item label="检查类型">{{ currentStudy.study_type }}</a-descriptions-item>
-          <a-descriptions-item label="检查部位">{{ currentStudy.body_part }}</a-descriptions-item>
-          <a-descriptions-item label="检查日期">{{ formatDateTime(currentStudy.study_date) }}</a-descriptions-item>
-          <a-descriptions-item label="报告医生">{{ currentStudy.report_doctor }}</a-descriptions-item>
-        </a-descriptions>
+        <el-descriptions :column="2" border size="small" class="mb-4">
+          <el-descriptions-item label="检查类型">{{ currentStudy.study_type }}</el-descriptions-item>
+          <el-descriptions-item label="检查部位">{{ currentStudy.body_part }}</el-descriptions-item>
+          <el-descriptions-item label="检查日期">{{ formatDateTime(currentStudy.study_date) }}</el-descriptions-item>
+          <el-descriptions-item label="报告医生">{{ currentStudy.report_doctor }}</el-descriptions-item>
+        </el-descriptions>
 
         <div class="report-section">
           <h4 class="report-section-title">影像所见</h4>
@@ -87,13 +87,13 @@
           <ImagePreview :src="currentStudy.image_urls[0]" :list="currentStudy.image_urls" />
         </div>
       </template>
-    </a-modal>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { PictureOutlined } from '@ant-design/icons-vue'
+import { Picture } from '@element-plus/icons-vue'
 import ImagePreview from '@/components/ImagePreview/index.vue'
 import { getImagingStudies } from '@/api/data'
 import { formatDate, formatDateTime } from '@/utils/date'
@@ -112,12 +112,14 @@ const studies = ref<any[]>([])
 const reportVisible = ref(false)
 const currentStudy = ref<any>(null)
 
-const modalityColorMap: Record<string, string> = {
-  CT: 'blue',
-  MRI: 'purple',
-  XRay: 'green',
-  Ultrasound: 'cyan',
-  PET: 'orange',
+const modalityTypeMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  CT: 'primary',
+  XRay: 'success',
+  PET: 'warning',
+}
+const modalityStyleMap: Record<string, { color: string; background: string; borderColor: string }> = {
+  MRI: { color: '#8b5cf6', background: '#f5f3ff', borderColor: '#ddd6fe' },
+  Ultrasound: { color: '#06b6d4', background: '#ecfeff', borderColor: '#a5f3fc' },
 }
 
 function openReport(study: any) {
@@ -147,22 +149,13 @@ onMounted(loadData)
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
 }
-.imaging-card {
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-}
-.imaging-card:hover {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-}
-.imaging-card :deep(.ant-card-body) {
+.imaging-card :deep(.el-card__body) {
   padding: 16px;
 }
 .imaging-thumbnail {
   width: 100%;
   height: 180px;
-  background: #f5f5f5;
+  background: #f8fafc;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -185,7 +178,7 @@ onMounted(loadData)
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: #bfbfbf;
+  color: #cbd5e1;
   font-size: 13px;
 }
 .imaging-info {
@@ -201,7 +194,7 @@ onMounted(loadData)
 .study-type {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: #0f172a;
 }
 .imaging-meta {
   display: flex;
@@ -210,15 +203,14 @@ onMounted(loadData)
 }
 .meta-row {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 .meta-label {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 .report-summary {
-  margin-bottom: 0 !important;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 .report-section {
   margin-bottom: 16px;
@@ -226,17 +218,17 @@ onMounted(loadData)
 .report-section-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: #0f172a;
   margin-bottom: 8px;
   padding-left: 8px;
-  border-left: 3px solid #1677ff;
+  border-left: 3px solid #0ea5e9;
 }
 .report-text {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   line-height: 1.8;
   white-space: pre-wrap;
-  background: #fafafa;
+  background: #f8fafc;
   padding: 12px 16px;
   border-radius: 6px;
 }

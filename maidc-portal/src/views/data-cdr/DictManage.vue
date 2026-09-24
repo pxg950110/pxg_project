@@ -5,29 +5,25 @@
       <div class="dict-type-panel">
         <div class="panel-header">
           <h4 style="margin: 0">字典类型</h4>
-          <a-button type="link" size="small" @click="handleCreateType">
-            <template #icon><PlusOutlined /></template>
+          <el-button link type="primary" size="small" @click="handleCreateType">
+            <el-icon class="mr-0.5"><Plus /></el-icon>
             新增
-          </a-button>
+          </el-button>
         </div>
         <div class="type-search">
-          <a-input
-            v-model:value="typeKeyword"
+          <el-input
+            v-model="typeKeyword"
             placeholder="搜索字典类型"
-            allow-clear
-            @change="filterTypes"
-          >
-            <template #prefix><SearchOutlined /></template>
-          </a-input>
+            clearable
+            :prefix-icon="Search"
+          />
         </div>
-        <a-menu
-          v-model:selectedKeys="selectedTypeKeys"
-          mode="inline"
-          style="border-inline-end: none"
-        >
-          <a-menu-item
+        <div class="type-list">
+          <div
             v-for="item in filteredTypes"
             :key="item.id"
+            class="type-list-item"
+            :class="{ 'type-list-item--active': selectedType?.id === item.id }"
             @click="handleSelectType(item)"
           >
             <div class="type-menu-item">
@@ -35,22 +31,22 @@
                 <div class="type-name">{{ item.name }}</div>
                 <div class="type-code">{{ item.code }}</div>
               </div>
-              <a-dropdown :trigger="['click']">
-                <a-button type="text" size="small" @click.stop>
-                  <EllipsisOutlined />
-                </a-button>
-                <template #overlay>
-                  <a-menu>
-                    <a-menu-item @click="handleEditType(item)">编辑</a-menu-item>
-                    <a-menu-item @click="handleDeleteType(item)">
-                      <span style="color: #ff4d4f">删除</span>
-                    </a-menu-item>
-                  </a-menu>
+              <el-dropdown trigger="click" @command="(cmd: string | number | object) => cmd === 'edit' ? handleEditType(item) : handleDeleteType(item)">
+                <span class="type-more" @click.stop>
+                  <el-icon><More /></el-icon>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                    <el-dropdown-item command="delete">
+                      <span style="color: #ef4444">删除</span>
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
                 </template>
-              </a-dropdown>
+              </el-dropdown>
             </div>
-          </a-menu-item>
-        </a-menu>
+          </div>
+        </div>
       </div>
 
       <!-- 右侧: 字典项列表 -->
@@ -58,119 +54,134 @@
         <template v-if="selectedType">
           <div class="panel-header">
             <h4 style="margin: 0">{{ selectedType.name }} - 字典项</h4>
-            <a-button type="primary" size="small" @click="handleCreateItem">
-              <template #icon><PlusOutlined /></template>
+            <el-button type="primary" size="small" @click="handleCreateItem">
+              <el-icon class="mr-0.5"><Plus /></el-icon>
               新增字典项
-            </a-button>
+            </el-button>
           </div>
 
-          <a-table
-            :columns="itemColumns"
-            :data-source="itemData"
-            :loading="itemLoading"
-            :pagination="itemPagination"
-            @change="handleItemTableChange"
-            row-key="id"
-            size="small"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status === 'ENABLED' ? '启用' : '禁用'" />
+          <el-table :data="itemData" v-loading="itemLoading" row-key="id" size="small">
+            <el-table-column label="编码" prop="code" width="120" />
+            <el-table-column label="名称" prop="name" width="140" />
+            <el-table-column label="值" prop="value" width="100" />
+            <el-table-column label="排序号" prop="sort_order" width="80" />
+            <el-table-column label="状态" width="80">
+              <template #default="{ row }">
+                <span class="status-cell">
+                  <span
+                    class="status-dot"
+                    :style="{ background: row.status === 'ENABLED' ? '#10b981' : '#cbd5e1' }"
+                  />
+                  {{ row.status === 'ENABLED' ? '启用' : '禁用' }}
+                </span>
               </template>
-              <template v-if="column.key === 'action'">
-                <a-space>
-                  <a-button type="link" size="small" @click="handleEditItem(record)">编辑</a-button>
-                  <a-popconfirm title="确定删除？" @confirm="handleDeleteItem(record)">
-                    <a-button type="link" danger size="small">删除</a-button>
-                  </a-popconfirm>
-                </a-space>
+            </el-table-column>
+            <el-table-column label="备注" prop="remark" show-overflow-tooltip />
+            <el-table-column label="操作" width="120" fixed="right">
+              <template #default="{ row }">
+                <div class="flex items-center gap-2">
+                  <el-button link type="primary" size="small" @click="handleEditItem(row)">编辑</el-button>
+                  <el-popconfirm title="确定删除？" @confirm="handleDeleteItem(row)">
+                    <template #reference>
+                      <el-button link type="danger" size="small">删除</el-button>
+                    </template>
+                  </el-popconfirm>
+                </div>
               </template>
-            </template>
-          </a-table>
+            </el-table-column>
+          </el-table>
+          <el-pagination
+            class="mt-4 justify-end"
+            background
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="itemPagination.total"
+            :current-page="itemPagination.current"
+            :page-size="itemPagination.pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            @current-change="handleItemPageChange"
+            @size-change="handleItemSizeChange"
+          />
         </template>
-        <a-empty v-else description="请选择左侧字典类型" style="margin-top: 120px" />
+        <el-empty v-else description="请选择左侧字典类型" :image-size="60" style="margin-top: 120px" />
       </div>
     </div>
 
     <!-- 字典类型编辑弹窗 -->
-    <a-modal
-      v-model:open="typeModalVisible"
+    <el-dialog
+      v-model="typeModalVisible"
       :title="isEditType ? '编辑字典类型' : '新建字典类型'"
-      :confirm-loading="typeSubmitLoading"
-      @ok="handleTypeSubmit"
-      @cancel="typeFormRef?.resetFields()"
-      destroy-on-close
+      width="520px"
+      :destroy-on-close="true"
     >
-      <a-form
+      <el-form
         ref="typeFormRef"
         :model="typeFormState"
         :rules="typeFormRules"
-        :label-col="{ span: 5 }"
-        :wrapper-col="{ span: 18 }"
+        label-width="100px"
       >
-        <a-form-item label="类型编码" name="code">
-          <a-input v-model:value="typeFormState.code" placeholder="如: gender, blood_type" :disabled="isEditType" />
-        </a-form-item>
-        <a-form-item label="类型名称" name="name">
-          <a-input v-model:value="typeFormState.name" placeholder="请输入类型名称" />
-        </a-form-item>
-        <a-form-item label="备注" name="remark">
-          <a-textarea v-model:value="typeFormState.remark" :rows="2" placeholder="备注信息（选填）" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        <el-form-item label="类型编码" name="code">
+          <el-input v-model="typeFormState.code" placeholder="如: gender, blood_type" :disabled="isEditType" />
+        </el-form-item>
+        <el-form-item label="类型名称" name="name">
+          <el-input v-model="typeFormState.name" placeholder="请输入类型名称" />
+        </el-form-item>
+        <el-form-item label="备注" name="remark">
+          <el-input v-model="typeFormState.remark" type="textarea" :rows="2" placeholder="备注信息（选填）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="typeModalVisible = false; typeFormRef?.resetFields()">取消</el-button>
+        <el-button type="primary" :loading="typeSubmitLoading" @click="handleTypeSubmit">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 字典项编辑弹窗 -->
-    <a-modal
-      v-model:open="itemModalVisible"
+    <el-dialog
+      v-model="itemModalVisible"
       :title="isEditItem ? '编辑字典项' : '新建字典项'"
-      :confirm-loading="itemSubmitLoading"
-      @ok="handleItemSubmit"
-      @cancel="itemFormRef?.resetFields()"
-      destroy-on-close
+      width="520px"
+      :destroy-on-close="true"
     >
-      <a-form
+      <el-form
         ref="itemFormRef"
         :model="itemFormState"
         :rules="itemFormRules"
-        :label-col="{ span: 5 }"
-        :wrapper-col="{ span: 18 }"
+        label-width="100px"
       >
-        <a-form-item label="字典编码" name="code">
-          <a-input v-model:value="itemFormState.code" placeholder="如: M, F" :disabled="isEditItem" />
-        </a-form-item>
-        <a-form-item label="字典名称" name="name">
-          <a-input v-model:value="itemFormState.name" placeholder="如: 男, 女" />
-        </a-form-item>
-        <a-form-item label="字典值" name="value">
-          <a-input v-model:value="itemFormState.value" placeholder="如: 1, 2" />
-        </a-form-item>
-        <a-form-item label="排序号" name="sort_order">
-          <a-input-number v-model:value="itemFormState.sort_order" :min="0" style="width: 100%" />
-        </a-form-item>
-        <a-form-item label="状态" name="status">
-          <a-radio-group v-model:value="itemFormState.status">
-            <a-radio value="ENABLED">启用</a-radio>
-            <a-radio value="DISABLED">禁用</a-radio>
-          </a-radio-group>
-        </a-form-item>
-        <a-form-item label="备注" name="remark">
-          <a-textarea v-model:value="itemFormState.remark" :rows="2" placeholder="备注信息（选填）" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        <el-form-item label="字典编码" name="code">
+          <el-input v-model="itemFormState.code" placeholder="如: M, F" :disabled="isEditItem" />
+        </el-form-item>
+        <el-form-item label="字典名称" name="name">
+          <el-input v-model="itemFormState.name" placeholder="如: 男, 女" />
+        </el-form-item>
+        <el-form-item label="字典值" name="value">
+          <el-input v-model="itemFormState.value" placeholder="如: 1, 2" />
+        </el-form-item>
+        <el-form-item label="排序号" name="sort_order">
+          <el-input-number v-model="itemFormState.sort_order" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="状态" name="status">
+          <el-radio-group v-model="itemFormState.status">
+            <el-radio value="ENABLED">启用</el-radio>
+            <el-radio value="DISABLED">禁用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="备注" name="remark">
+          <el-input v-model="itemFormState.remark" type="textarea" :rows="2" placeholder="备注信息（选填）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="itemModalVisible = false; itemFormRef?.resetFields()">取消</el-button>
+        <el-button type="primary" :loading="itemSubmitLoading" @click="handleItemSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-import {
-  PlusOutlined,
-  SearchOutlined,
-  EllipsisOutlined,
-} from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+import { ElMessage, type FormInstance, type FormItemRule } from 'element-plus'
+import { Plus, Search, More } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
   getDictTypes,
@@ -188,7 +199,6 @@ defineOptions({ name: 'DictManage' })
 // ===== 字典类型 =====
 const typeData = ref<any[]>([])
 const typeKeyword = ref('')
-const selectedTypeKeys = ref<string[]>([])
 const selectedType = ref<any>(null)
 const typeModalVisible = ref(false)
 const typeSubmitLoading = ref(false)
@@ -204,14 +214,10 @@ const filteredTypes = computed(() => {
   )
 })
 
-function filterTypes() {
-  // Computed property handles filtering reactively
-}
-
 async function loadTypes() {
   try {
     const res = await getDictTypes({ page: 1, page_size: 500 })
-    typeData.value = res.data.data.items
+    typeData.value = res.data.data.items ?? []
   } catch {
     // error handled by request interceptor
   }
@@ -219,6 +225,7 @@ async function loadTypes() {
 
 function handleSelectType(item: any) {
   selectedType.value = item
+  itemPagination.current = 1
   loadItems()
 }
 
@@ -229,7 +236,7 @@ const typeFormState = reactive({
   remark: '',
 })
 
-const typeFormRules: Record<string, Rule[]> = {
+const typeFormRules: Record<string, FormItemRule[]> = {
   code: [{ required: true, message: '请输入类型编码' }],
   name: [{ required: true, message: '请输入类型名称' }],
 }
@@ -251,16 +258,16 @@ function handleEditType(item: any) {
 }
 
 async function handleTypeSubmit() {
-  await typeFormRef.value?.validateFields()
+  await typeFormRef.value?.validate()
   typeSubmitLoading.value = true
   try {
     const data = { ...typeFormState }
     if (isEditType.value) {
       await updateDictType(editingTypeId.value!, data)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createDictType(data)
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     typeModalVisible.value = false
     typeFormRef.value?.resetFields()
@@ -272,7 +279,7 @@ async function handleTypeSubmit() {
 
 async function handleDeleteType(item: any) {
   await deleteDictType(item.id)
-  message.success('删除成功')
+  ElMessage.success('删除成功')
   if (selectedType.value?.id === item.id) {
     selectedType.value = null
   }
@@ -286,18 +293,7 @@ const itemPagination = reactive({
   current: 1,
   pageSize: 20,
   total: 0,
-  showTotal: (total: number) => `共 ${total} 条`,
 })
-
-const itemColumns = [
-  { title: '编码', dataIndex: 'code', width: 120 },
-  { title: '名称', dataIndex: 'name', width: 140 },
-  { title: '值', dataIndex: 'value', width: 100 },
-  { title: '排序号', dataIndex: 'sort_order', width: 80 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '备注', dataIndex: 'remark', ellipsis: true },
-  { title: '操作', key: 'action', width: 120, fixed: 'right' as const },
-]
 
 async function loadItems() {
   if (!selectedType.value) return
@@ -307,16 +303,22 @@ async function loadItems() {
       page: itemPagination.current,
       page_size: itemPagination.pageSize,
     })
-    itemData.value = res.data.data.items
-    itemPagination.total = res.data.data.total
+    const data = (res.data as any)?.data || {}
+    itemData.value = data.items ?? []
+    itemPagination.total = data.total ?? 0
   } finally {
     itemLoading.value = false
   }
 }
 
-function handleItemTableChange(pag: any) {
-  itemPagination.current = pag.current
-  itemPagination.pageSize = pag.pageSize
+function handleItemPageChange(page: number) {
+  itemPagination.current = page
+  loadItems()
+}
+
+function handleItemSizeChange(size: number) {
+  itemPagination.pageSize = size
+  itemPagination.current = 1
   loadItems()
 }
 
@@ -336,7 +338,7 @@ const itemFormState = reactive({
   remark: '',
 })
 
-const itemFormRules: Record<string, Rule[]> = {
+const itemFormRules: Record<string, FormItemRule[]> = {
   code: [{ required: true, message: '请输入字典编码' }],
   name: [{ required: true, message: '请输入字典名称' }],
 }
@@ -363,7 +365,7 @@ function handleEditItem(record: any) {
 }
 
 async function handleItemSubmit() {
-  await itemFormRef.value?.validateFields()
+  await itemFormRef.value?.validate()
   itemSubmitLoading.value = true
   try {
     const data = {
@@ -372,10 +374,10 @@ async function handleItemSubmit() {
     }
     if (isEditItem.value) {
       await updateDictItem(editingItemId.value!, data)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createDictItem(data)
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     itemModalVisible.value = false
     itemFormRef.value?.resetFields()
@@ -387,7 +389,7 @@ async function handleItemSubmit() {
 
 async function handleDeleteItem(record: any) {
   await deleteDictItem(record.id)
-  message.success('删除成功')
+  ElMessage.success('删除成功')
   loadItems()
 }
 
@@ -404,8 +406,8 @@ onMounted(() => loadTypes())
 .dict-type-panel {
   width: 280px;
   flex-shrink: 0;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -422,12 +424,31 @@ onMounted(() => loadTypes())
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .type-search {
   padding: 8px 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.type-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.type-list-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.type-list-item:hover {
+  background: #f8fafc;
+}
+
+.type-list-item--active {
+  background: #f0f9ff;
 }
 
 .type-menu-item {
@@ -439,18 +460,39 @@ onMounted(() => loadTypes())
 
 .type-name {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .type-code {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-top: 2px;
 }
 
-.dict-type-panel :deep(.ant-menu-item) {
-  height: auto;
-  line-height: normal;
-  padding: 10px 16px;
+.type-more {
+  display: inline-flex;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.type-more:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+}
+
+.status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 </style>

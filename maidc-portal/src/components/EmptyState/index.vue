@@ -1,18 +1,18 @@
 <template>
   <div class="empty-state">
     <div class="empty-icon">
-      <InboxOutlined />
+      <el-icon :size="64"><Box /></el-icon>
     </div>
     <h3 class="empty-title">{{ title }}</h3>
     <p v-if="description" class="empty-description">{{ description }}</p>
-    <a-button v-if="actionText" type="primary" @click="emit('action')">
+    <el-button v-if="actionText" type="primary" @click="emit('action')">
       {{ actionText }}
-    </a-button>
+    </el-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { InboxOutlined } from '@ant-design/icons-vue'
+import { Box } from '@element-plus/icons-vue'
 
 interface Props {
   title: string
@@ -39,19 +39,18 @@ const emit = defineEmits<Emits>()
   text-align: center;
 }
 .empty-icon {
-  font-size: 64px;
-  color: #bfbfbf;
+  color: #94a3b8;
   margin-bottom: 16px;
 }
 .empty-title {
   font-size: 16px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.65);
+  color: #334155;
   margin: 0 0 8px;
 }
 .empty-description {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #64748b;
   margin: 0 0 24px;
   max-width: 400px;
 }

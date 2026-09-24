@@ -128,6 +128,48 @@ class AuthFilterTest {
     }
 
     @Test
+    void validToken_passesRolesHeader() {
+        String token = Jwts.builder()
+                .subject("doctor1")
+                .claim("userId", "1002")
+                .claim("orgId", "2001")
+                .claim("roles", java.util.List.of("doctor", "nurse"))
+                .signWith(TEST_KEY)
+                .compact();
+
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/workspace/dashboard")
+                        .header("Authorization", "Bearer " + token)
+                        .build());
+
+        StepVerifier.create(authFilter.filter(exchange, chain)).verifyComplete();
+
+        // exchange.mutate().build() 返回装饰器，须按接口匹配而非 MockServerWebExchange 具体类型
+        verify(chain).filter(org.mockito.ArgumentMatchers.argThat(ex ->
+                "doctor,nurse".equals(ex.getRequest().getHeaders().getFirst("X-User-Roles"))));
+    }
+
+    @Test
+    void validToken_withoutRoles_passesEmptyRolesHeader() {
+        String token = Jwts.builder()
+                .subject("legacy")
+                .claim("userId", "1003")
+                .claim("orgId", "2001")
+                .signWith(TEST_KEY)
+                .compact();
+
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/workspace/dashboard")
+                        .header("Authorization", "Bearer " + token)
+                        .build());
+
+        StepVerifier.create(authFilter.filter(exchange, chain)).verifyComplete();
+
+        verify(chain).filter(org.mockito.ArgumentMatchers.argThat(ex ->
+                "".equals(ex.getRequest().getHeaders().getFirst("X-User-Roles"))));
+    }
+
+    @Test
     void orderIsHighestPrecedencePlus1() {
         assertEquals(org.springframework.core.Ordered.HIGHEST_PRECEDENCE + 1, authFilter.getOrder());
     }

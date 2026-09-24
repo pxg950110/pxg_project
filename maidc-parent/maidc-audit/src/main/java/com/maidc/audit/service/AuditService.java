@@ -25,8 +25,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -45,12 +49,13 @@ public class AuditService {
     public PageResult<AuditLogVO> queryAuditLogs(AuditLogQueryDTO queryDTO) {
         Page<AuditLogEntity> page = auditLogRepository.findAll(
                 AuditLogSpecification.buildSearchSpec(
-                        queryDTO.getModule(),
+                        queryDTO.getServiceName(),
                         queryDTO.getOperation(),
                         queryDTO.getUsername(),
                         queryDTO.getStartTime(),
                         queryDTO.getEndTime(),
-                        queryDTO.getStatus()
+                        queryDTO.getStatus(),
+                        queryDTO.getTraceId()
                 ),
                 PageRequest.of(queryDTO.getPage() - 1, queryDTO.getPageSize())
         );
@@ -62,7 +67,7 @@ public class AuditService {
     /**
      * Get audit log detail by id
      */
-    public AuditLogVO getAuditLogDetail(String id) {
+    public AuditLogVO getAuditLogDetail(Long id) {
         AuditLogEntity entity = auditLogRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
         return auditMapper.toAuditLogVO(entity);
@@ -75,10 +80,12 @@ public class AuditService {
         Page<DataAccessLogEntity> page = dataAccessLogRepository.findAll(
                 DataAccessLogSpecification.buildSearchSpec(
                         queryDTO.getUserId(),
-                        queryDTO.getDataType(),
+                        queryDTO.getDataDomain(),
                         queryDTO.getPatientId(),
                         queryDTO.getStartTime(),
-                        queryDTO.getEndTime()
+                        queryDTO.getEndTime(),
+                        queryDTO.getTraceId(),
+                        queryDTO.getAccessType()
                 ),
                 PageRequest.of(queryDTO.getPage() - 1, queryDTO.getPageSize())
         );
@@ -94,9 +101,10 @@ public class AuditService {
         Page<SystemEventEntity> page = systemEventRepository.findAll(
                 SystemEventSpecification.buildSearchSpec(
                         queryDTO.getEventType(),
-                        queryDTO.getSeverity(),
+                        queryDTO.getEventLevel(),
                         queryDTO.getStartTime(),
-                        queryDTO.getEndTime()
+                        queryDTO.getEndTime(),
+                        queryDTO.getTraceId()
                 ),
                 PageRequest.of(queryDTO.getPage() - 1, queryDTO.getPageSize())
         );
@@ -113,13 +121,13 @@ public class AuditService {
 
         // Total operation count
         long totalOperations = auditLogRepository.count(
-                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, null)
+                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, null, null)
         );
         report.put("totalOperations", totalOperations);
 
-        // Failed operation count (status = 0)
+        // Failed operation count (status = FAILURE)
         long failedOperations = auditLogRepository.count(
-                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, (short) 0)
+                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, "FAILURE", null)
         );
         report.put("failedOperations", failedOperations);
 
@@ -131,19 +139,19 @@ public class AuditService {
 
         // Data access count
         long totalDataAccess = dataAccessLogRepository.count(
-                DataAccessLogSpecification.buildSearchSpec(null, null, null, startTime, endTime)
+                DataAccessLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, null, null)
         );
         report.put("totalDataAccess", totalDataAccess);
 
         // System event count
         long totalEvents = systemEventRepository.count(
-                SystemEventSpecification.buildSearchSpec(null, null, startTime, endTime)
+                SystemEventSpecification.buildSearchSpec(null, null, startTime, endTime, null)
         );
         report.put("totalSystemEvents", totalEvents);
 
-        // Critical event count (severity = CRITICAL)
+        // Critical event count (eventLevel = CRITICAL)
         long criticalEvents = systemEventRepository.count(
-                SystemEventSpecification.buildSearchSpec(null, "CRITICAL", startTime, endTime)
+                SystemEventSpecification.buildSearchSpec(null, "CRITICAL", startTime, endTime, null)
         );
         report.put("criticalEvents", criticalEvents);
 
@@ -155,5 +163,74 @@ public class AuditService {
                 startTime, endTime, totalOperations, totalDataAccess, totalEvents);
 
         return report;
+    }
+
+    public void exportAuditLogsCsv(AuditLogQueryDTO queryDTO, HttpServletResponse response) throws IOException {
+        List<AuditLogEntity> logs = auditLogRepository.findAll(
+                AuditLogSpecification.buildSearchSpec(
+                        queryDTO.getServiceName(), queryDTO.getOperation(),
+                        queryDTO.getUsername(), queryDTO.getStartTime(),
+                        queryDTO.getEndTime(), queryDTO.getStatus(), queryDTO.getTraceId()
+                )
+        );
+
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=operation_logs.csv");
+        PrintWriter writer = response.getWriter();
+        writer.write("\uFEFF");
+        writer.println("时间,操作人,模块,操作,请求方法,请求路径,IP地址,耗时(ms),状态");
+        for (AuditLogEntity e : logs) {
+            writer.printf("%s,%s,%s,%s,%s,%s,%s,%s,%s%n",
+                    e.getCreatedAt(), e.getUsername(), e.getServiceName(),
+                    e.getOperation(), e.getRequestMethod(), e.getRequestUrl(),
+                    e.getIpAddress(), e.getDurationMs(), e.getStatus());
+        }
+        writer.flush();
+    }
+
+    public void exportDataAccessLogsCsv(DataAccessQueryDTO queryDTO, HttpServletResponse response) throws IOException {
+        List<DataAccessLogEntity> logs = dataAccessLogRepository.findAll(
+                DataAccessLogSpecification.buildSearchSpec(
+                        queryDTO.getUserId(), queryDTO.getDataDomain(),
+                        queryDTO.getPatientId(), queryDTO.getStartTime(),
+                        queryDTO.getEndTime(), queryDTO.getTraceId(), queryDTO.getAccessType()
+                )
+        );
+
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=data_access_logs.csv");
+        PrintWriter writer = response.getWriter();
+        writer.write("\uFEFF");
+        writer.println("时间,操作人ID,访问类型,数据域,表名,记录ID,患者ID,目的,IP地址");
+        for (DataAccessLogEntity e : logs) {
+            writer.printf("%s,%s,%s,%s,%s,%s,%s,%s,%s%n",
+                    e.getCreatedAt(), e.getUserId(), e.getAccessType(),
+                    e.getDataDomain(), e.getTableName(), e.getRecordId(),
+                    e.getPatientId(), e.getPurpose(), e.getIpAddress());
+        }
+        writer.flush();
+    }
+
+    public void exportSystemEventsCsv(EventQueryDTO queryDTO, HttpServletResponse response) throws IOException {
+        List<SystemEventEntity> events = systemEventRepository.findAll(
+                SystemEventSpecification.buildSearchSpec(
+                        queryDTO.getEventType(), queryDTO.getEventLevel(),
+                        queryDTO.getStartTime(), queryDTO.getEndTime(), queryDTO.getTraceId()
+                )
+        );
+
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=system_events.csv");
+        PrintWriter writer = response.getWriter();
+        writer.write("\uFEFF");
+        writer.println("时间,事件类型,级别,来源,标题,详情,已解决");
+        for (SystemEventEntity e : events) {
+            writer.printf("%s,%s,%s,%s,%s,%s,%s%n",
+                    e.getCreatedAt(), e.getEventType(), e.getEventLevel(),
+                    e.getSource(), e.getEventTitle(),
+                    e.getEventDetail() != null ? e.getEventDetail().replace(",", "，") : "",
+                    e.getResolved());
+        }
+        writer.flush();
     }
 }

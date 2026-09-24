@@ -2,8 +2,9 @@ import request from '@/utils/request'
 import type { ApiResponse, PageResult } from '@/utils/request'
 
 export function getAuditLogs(params: {
-  page?: number; page_size?: number; module?: string; operation?: string;
-  username?: string; start_time?: string; end_time?: string; status?: number
+  page?: number; pageSize?: number; module?: string; operation?: string;
+  username?: string; startTime?: string; endTime?: string; status?: number | string;
+  traceId?: string
 }) {
   return request.get<ApiResponse<PageResult<any>>>('/audit/operations', { params })
 }
@@ -13,19 +14,39 @@ export function getAuditLogDetail(id: string) {
 }
 
 export function getDataAccessLogs(params: {
-  page?: number; page_size?: number; user_id?: string; data_type?: string;
-  patient_id?: string; start_time?: string; end_time?: string
+  page?: number; pageSize?: number; userId?: string; dataDomain?: string;
+  accessType?: string; patientId?: string; startTime?: string; endTime?: string; traceId?: string
 }) {
   return request.get<ApiResponse<PageResult<any>>>('/audit/data-access', { params })
 }
 
 export function getSystemEvents(params: {
-  page?: number; page_size?: number; event_type?: string; severity?: string;
-  start_time?: string; end_time?: string
+  page?: number; pageSize?: number; eventType?: string; eventLevel?: string;
+  startTime?: string; endTime?: string; traceId?: string
 }) {
   return request.get<ApiResponse<PageResult<any>>>('/audit/events', { params })
 }
 
-export function getComplianceReport(params: { start_time: string; end_time: string }) {
+export function getComplianceReport(params: { startTime: string; endTime: string }) {
   return request.get<ApiResponse<any>>('/audit/reports/compliance', { params })
+}
+
+export function exportAuditLogs(params: {
+  module?: string; operation?: string; username?: string;
+  startTime?: string; endTime?: string; status?: number | string; traceId?: string
+}) {
+  return request.get('/audit/operations/export', { params, responseType: 'blob' })
+}
+
+export function exportDataAccessLogs(params: {
+  userId?: string; dataDomain?: string; accessType?: string; patientId?: string;
+  startTime?: string; endTime?: string; traceId?: string
+}) {
+  return request.get('/audit/data-access/export', { params, responseType: 'blob' })
+}
+
+export function exportSystemEvents(params: {
+  eventType?: string; eventLevel?: string; startTime?: string; endTime?: string; traceId?: string
+}) {
+  return request.get('/audit/events/export', { params, responseType: 'blob' })
 }

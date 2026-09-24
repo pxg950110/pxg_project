@@ -40,7 +40,19 @@ export function updateRole(id: number, data: Record<string, any>) {
 }
 
 export function getPermissionTree() {
-  return request.get<ApiResponse<any[]>>('/roles/permissions/tree')
+  return request.get<ApiResponse<any[]>>('/permissions/tree')
+}
+
+export function createPermission(data: { name: string; code: string; type: string; parent_id?: number }) {
+  return request.post<ApiResponse<any>>('/permissions', data)
+}
+
+export function updatePermission(id: number, data: { name?: string; code?: string; type?: string; parent_id?: number }) {
+  return request.put<ApiResponse<any>>(`/permissions/${id}`, data)
+}
+
+export function deletePermission(id: number) {
+  return request.delete<ApiResponse<void>>(`/permissions/${id}`)
 }
 
 export function assignPermissions(roleId: number, permissionIds: number[]) {

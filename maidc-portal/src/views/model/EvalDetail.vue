@@ -1,45 +1,50 @@
 <template>
   <PageContainer title="评估详情" :loading="loading">
     <template #extra>
-      <a-button @click="router.back()">返回</a-button>
+      <el-button @click="router.back()">返回</el-button>
     </template>
 
     <template v-if="evaluation">
-      <a-card title="基本信息" style="margin-bottom: 16px">
-        <a-descriptions :column="3" bordered size="small">
-          <a-descriptions-item label="模型">{{ evaluation.model_name }}</a-descriptions-item>
-          <a-descriptions-item label="版本">{{ evaluation.version_no }}</a-descriptions-item>
-          <a-descriptions-item label="状态">
+      <el-card shadow="never" class="mb-4 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <template #header>
+          <span class="font-semibold text-slate-900">基本信息</span>
+        </template>
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="模型">{{ evaluation.model_name }}</el-descriptions-item>
+          <el-descriptions-item label="版本">{{ evaluation.version_no }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
             <StatusBadge :status="evaluation.status" type="eval" />
-          </a-descriptions-item>
-          <a-descriptions-item label="数据集">{{ evaluation.dataset_name || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="样本数">{{ evaluation.sample_count || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ formatDateTime(evaluation.created_at) }}</a-descriptions-item>
-        </a-descriptions>
-      </a-card>
+          </el-descriptions-item>
+          <el-descriptions-item label="数据集">{{ evaluation.dataset_name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="样本数">{{ evaluation.sample_count || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(evaluation.created_at) }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
 
       <template v-if="evaluation.status === 'COMPLETED'">
-        <a-row :gutter="16" style="margin-bottom: 16px">
-          <a-col :span="6"><MetricCard title="Accuracy" :value="(evaluation.metrics?.accuracy * 100).toFixed(2)" suffix="%" /></a-col>
-          <a-col :span="6"><MetricCard title="Precision" :value="(evaluation.metrics?.precision * 100).toFixed(2)" suffix="%" /></a-col>
-          <a-col :span="6"><MetricCard title="Recall" :value="(evaluation.metrics?.recall * 100).toFixed(2)" suffix="%" /></a-col>
-          <a-col :span="6"><MetricCard title="F1 Score" :value="(evaluation.metrics?.f1_score * 100).toFixed(2)" suffix="%" /></a-col>
-        </a-row>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <MetricCard title="Accuracy" :value="(evaluation.metrics?.accuracy * 100).toFixed(2)" suffix="%" />
+          <MetricCard title="Precision" :value="(evaluation.metrics?.precision * 100).toFixed(2)" suffix="%" />
+          <MetricCard title="Recall" :value="(evaluation.metrics?.recall * 100).toFixed(2)" suffix="%" />
+          <MetricCard title="F1 Score" :value="(evaluation.metrics?.f1_score * 100).toFixed(2)" suffix="%" />
+        </div>
 
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-card title="混淆矩阵" size="small">
-              <ConfusionMatrix v-if="evaluation.metrics?.confusion_matrix" :matrix="evaluation.metrics.confusion_matrix" />
-              <a-empty v-else />
-            </a-card>
-          </a-col>
-          <a-col :span="12">
-            <a-card title="ROC 曲线" size="small">
-              <RocCurve v-if="evaluation.metrics?.roc_data" :data="evaluation.metrics.roc_data" :auc="evaluation.metrics.auc" />
-              <a-empty v-else />
-            </a-card>
-          </a-col>
-        </a-row>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+            <template #header>
+              <span class="font-semibold text-slate-900 text-sm">混淆矩阵</span>
+            </template>
+            <ConfusionMatrix v-if="evaluation.metrics?.confusion_matrix" :matrix="evaluation.metrics.confusion_matrix" />
+            <el-empty v-else :image-size="60" />
+          </el-card>
+          <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+            <template #header>
+              <span class="font-semibold text-slate-900 text-sm">ROC 曲线</span>
+            </template>
+            <RocCurve v-if="evaluation.metrics?.roc_data" :data="evaluation.metrics.roc_data" :auc="evaluation.metrics.auc" />
+            <el-empty v-else :image-size="60" />
+          </el-card>
+        </div>
       </template>
     </template>
   </PageContainer>

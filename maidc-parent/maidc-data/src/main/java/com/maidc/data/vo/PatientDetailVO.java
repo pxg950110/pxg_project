@@ -31,7 +31,25 @@ public class PatientDetailVO {
 
     private List<DiagnosisVO> diagnoses;
 
+    private List<AllergyVO> allergies;
+
+    private List<LabTestVO> labTests;
+
+    private List<MedicationVO> medications;
+
+    private List<ImagingExamVO> imagingExams;
+
+    private List<VitalSignVO> vitalSigns;
+
+    private List<MicrobiologyVO> microbiology;
+
     private int encounterCount;
+
+    private int diagnosisCount;
+
+    private int medicationCount;
+
+    private int labTestCount;
 
     private LocalDateTime createdAt;
 

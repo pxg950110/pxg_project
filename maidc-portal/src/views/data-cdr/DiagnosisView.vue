@@ -2,44 +2,42 @@
   <div class="diagnosis-view">
     <!-- Filter -->
     <div class="diagnosis-filter">
-      <a-space>
+      <div class="flex items-center gap-2">
         <span class="filter-label">诊断类型：</span>
-        <a-radio-group v-model:value="filterType" button-style="solid" size="small" @change="handleFilter">
-          <a-radio-button value="">全部</a-radio-button>
-          <a-radio-button value="primary">主诊断</a-radio-button>
-          <a-radio-button value="secondary">次诊断</a-radio-button>
-          <a-radio-button value="admission">入院诊断</a-radio-button>
-          <a-radio-button value="discharge">出院诊断</a-radio-button>
-        </a-radio-group>
-      </a-space>
+        <el-radio-group v-model="filterType" size="small" @change="handleFilter">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="primary">主诊断</el-radio-button>
+          <el-radio-button value="secondary">次诊断</el-radio-button>
+          <el-radio-button value="admission">入院诊断</el-radio-button>
+          <el-radio-button value="discharge">出院诊断</el-radio-button>
+        </el-radio-group>
+      </div>
     </div>
 
     <!-- Table -->
-    <a-table
-      :columns="columns"
-      :data-source="filteredData"
-      :loading="loading"
-      :pagination="false"
-      row-key="id"
-      size="small"
-      class="diagnosis-table"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'diagnosis_code'">
-          <a-typography-text code>{{ record.diagnosis_code }}</a-typography-text>
+    <el-table :data="filteredData" v-loading="loading" row-key="id" size="small" class="diagnosis-table">
+      <el-table-column label="诊断编码" width="140">
+        <template #default="{ row }">
+          <code class="code-text">{{ row.diagnosis_code }}</code>
         </template>
-        <template v-if="column.key === 'type'">
-          <a-tag :color="typeColorMap[record.type] || 'default'">
-            {{ typeLabelMap[record.type] || record.type }}
-          </a-tag>
+      </el-table-column>
+      <el-table-column label="诊断名称" prop="diagnosis_name" show-overflow-tooltip />
+      <el-table-column label="诊断类型" width="110">
+        <template #default="{ row }">
+          <el-tag :type="typeColorMap[row.type] || 'info'" size="small">
+            {{ typeLabelMap[row.type] || row.type }}
+          </el-tag>
         </template>
-        <template v-if="column.key === 'diagnosis_time'">
-          {{ formatDateTime(record.diagnosis_time) }}
+      </el-table-column>
+      <el-table-column label="诊断时间" width="170">
+        <template #default="{ row }">
+          {{ formatDateTime(row.diagnosis_time) }}
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+      <el-table-column label="诊断医生" prop="doctor" width="100" />
+    </el-table>
 
-    <a-empty v-if="!loading && filteredData.length === 0" description="暂无诊断记录" />
+    <el-empty v-if="!loading && filteredData.length === 0" description="暂无诊断记录" :image-size="60" />
   </div>
 </template>
 
@@ -61,11 +59,11 @@ const loading = ref(false)
 const diagnoses = ref<any[]>([])
 const filterType = ref('')
 
-const typeColorMap: Record<string, string> = {
-  primary: 'red',
-  secondary: 'blue',
-  admission: 'orange',
-  discharge: 'green',
+const typeColorMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  primary: 'danger',
+  secondary: 'primary',
+  admission: 'warning',
+  discharge: 'success',
 }
 
 const typeLabelMap: Record<string, string> = {
@@ -74,14 +72,6 @@ const typeLabelMap: Record<string, string> = {
   admission: '入院诊断',
   discharge: '出院诊断',
 }
-
-const columns = [
-  { title: '诊断编码', dataIndex: 'diagnosis_code', key: 'diagnosis_code', width: 140 },
-  { title: '诊断名称', dataIndex: 'diagnosis_name', key: 'diagnosis_name', ellipsis: true },
-  { title: '诊断类型', dataIndex: 'type', key: 'type', width: 110 },
-  { title: '诊断时间', dataIndex: 'diagnosis_time', key: 'diagnosis_time', width: 170 },
-  { title: '诊断医生', dataIndex: 'doctor', key: 'doctor', width: 100 },
-]
 
 const filteredData = computed(() => {
   if (!filterType.value) return diagnoses.value
@@ -112,15 +102,23 @@ onMounted(loadData)
 .diagnosis-filter {
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: #fafafa;
+  background: #f8fafc;
   border-radius: 6px;
 }
 .filter-label {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   font-weight: 500;
 }
 .diagnosis-table {
   margin-top: 8px;
+}
+.code-text {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: #0f172a;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 </style>

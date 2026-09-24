@@ -89,10 +89,11 @@ public class ClinicalSearchService {
             map.put("patientId", e.getPatientId());
             map.put("patientName", nameMap.getOrDefault(e.getPatientId(), "-"));
             map.put("encounterType", e.getEncounterType());
-            map.put("department", e.getDepartment());
-            map.put("attendingDoctor", e.getAttendingDoctor());
-            map.put("diagnosisSummary", e.getDiagnosisSummary());
-            map.put("admissionTime", e.getAdmissionTime());
+            // 键名为前端契约字段，取值已对齐 DDL 真实列（dept_name/doctor_name/admit_time/diagnosis_name）
+            map.put("department", e.getDeptName());
+            map.put("attendingDoctor", e.getDoctorName());
+            map.put("diagnosisSummary", e.getDiagnosisName());
+            map.put("admissionTime", e.getAdmitTime());
             return map;
         }).collect(Collectors.toList()));
     }

@@ -12,4 +12,6 @@ public @interface OperLog {
     String module() default "";
 
     String operation() default "";
+
+    String resourceType() default "";
 }

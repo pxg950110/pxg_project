@@ -70,8 +70,7 @@ public class CsvCopyImporter {
 
         log.info("COPY import: {} columns -> {}, file={}", csvColumns.size(), qualifiedTable, csvFilePath);
 
-        try (Connection conn = DriverManager.getConnection(
-                props.getDbUrl(), props.getDbUser(), props.getDbPassword())) {
+        try (Connection conn = openConnection()) {
 
             conn.setAutoCommit(true);
 
@@ -117,8 +116,7 @@ public class CsvCopyImporter {
                 + "WHERE table_schema = ? AND table_name = ? "
                 + "ORDER BY ordinal_position";
 
-        try (Connection conn = DriverManager.getConnection(
-                props.getDbUrl(), props.getDbUser(), props.getDbPassword());
+        try (Connection conn = openConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, props.getDbSchema());
@@ -147,8 +145,7 @@ public class CsvCopyImporter {
     public void truncateTable(String tableName) {
         String schema = props.getDbSchema();
         String qualified = schema + "." + tableName;
-        try (Connection conn = DriverManager.getConnection(
-                props.getDbUrl(), props.getDbUser(), props.getDbPassword());
+        try (Connection conn = openConnection();
              Statement stmt = conn.createStatement()) {
 
             // Check if table has any rows first
@@ -180,8 +177,7 @@ public class CsvCopyImporter {
     private void deleteAllRows(String tableName) {
         String schema = props.getDbSchema();
         String qualified = schema + "." + tableName;
-        try (Connection conn = DriverManager.getConnection(
-                props.getDbUrl(), props.getDbUser(), props.getDbPassword());
+        try (Connection conn = openConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute("SET statement_timeout = '300s'");
             int deleted = stmt.executeUpdate("DELETE FROM " + qualified);
@@ -209,8 +205,7 @@ public class CsvCopyImporter {
             sql = String.format("SELECT COUNT(*) FROM %s.%s", schema, tableName);
         }
 
-        try (Connection conn = DriverManager.getConnection(
-                props.getDbUrl(), props.getDbUser(), props.getDbPassword());
+        try (Connection conn = openConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             if (batchId != null) {
@@ -251,6 +246,14 @@ public class CsvCopyImporter {
     }
 
     // ---------------------------------------------------------- internal
+
+    /**
+     * Open a raw JDBC connection from EtlProperties. The COPY protocol requires
+     * direct PGConnection access, so we bypass Spring's pooled DataSource.
+     */
+    private Connection openConnection() throws SQLException {
+        return DriverManager.getConnection(props.getDbUrl(), props.getDbUser(), props.getDbPassword());
+    }
 
     /**
      * Create a Reader appropriate for the file type.

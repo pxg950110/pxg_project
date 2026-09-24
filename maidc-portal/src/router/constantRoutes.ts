@@ -1,4 +1,4 @@
-import BasicLayout from '@/layouts/BasicLayout.vue'
+import AppLayout from '@/layout/AppLayout.vue'
 
 export const constantRoutes = [
   {
@@ -13,8 +13,8 @@ export const constantRoutes = [
   {
     path: '/',
     name: 'Root',
-    component: BasicLayout,
-    redirect: '/dashboard',
+    component: AppLayout,
+    redirect: '/dashboard/workspace',
     children: [
       {
         path: 'redirect/:path(.*)',

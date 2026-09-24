@@ -8,48 +8,67 @@
           <span class="role-page-subtitle">管理系统角色与权限分配</span>
         </div>
         <div class="role-page-header-right">
-          <a-button type="primary" @click="roleModal.open()">
-            <PlusOutlined /> 新建角色
-          </a-button>
+          <el-button type="primary" @click="roleModal.open()">
+            <el-icon class="mr-1"><Plus /></el-icon> 新建角色
+          </el-button>
         </div>
       </div>
 
       <!-- Role Table -->
-      <a-table
-        :columns="columns"
-        :data-source="tableData"
-        :loading="loading"
-        :pagination="pagination"
+      <el-table
+        :data="tableData"
+        v-loading="loading"
         :row-class-name="getRowClassName"
         row-key="id"
-        @change="handleTableChange"
       >
-        <template #bodyCell="{ column, record, index }">
-          <template v-if="column.key === 'code'">
-            <span :class="{ 'code-admin': record.code === 'ADMIN', 'code-bold': true }">
-              {{ record.code }}
+        <el-table-column label="角色编码" prop="code" width="120">
+          <template #default="{ row }">
+            <span :class="{ 'code-admin': row.code === 'ADMIN', 'code-bold': true }">
+              {{ row.code }}
             </span>
           </template>
-          <template v-if="column.key === 'description'">
-            <span class="text-muted">{{ record.description }}</span>
+        </el-table-column>
+        <el-table-column label="角色名称" prop="name" width="120" />
+        <el-table-column label="描述" prop="description" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span class="text-muted">{{ row.description }}</span>
           </template>
-          <template v-if="column.key === 'user_count'">
-            <span>{{ record.user_count }}</span>
+        </el-table-column>
+        <el-table-column label="用户数" prop="user_count" width="80" align="center">
+          <template #default="{ row }">
+            <span>{{ row.user_count }}</span>
           </template>
-          <template v-if="column.key === 'built_in'">
-            <a-tag color="blue">系统内置</a-tag>
+        </el-table-column>
+        <el-table-column label="系统内置" width="110" align="center">
+          <template #default>
+            <el-tag type="primary">系统内置</el-tag>
           </template>
-          <template v-if="column.key === 'created_at'">
-            <span class="text-muted">{{ record.created_at }}</span>
+        </el-table-column>
+        <el-table-column label="创建时间" prop="created_at" width="120">
+          <template #default="{ row }">
+            <span class="text-muted">{{ row.created_at }}</span>
           </template>
-          <template v-if="column.key === 'action'">
-            <a-space>
-              <a @click="editModal.open(record)">编辑</a>
-              <a @click="router.push(`/system/roles/${record.id}`)">查看</a>
-            </a-space>
+        </el-table-column>
+        <el-table-column label="操作" width="80" align="right">
+          <template #default="{ row }">
+            <div class="flex items-center gap-2">
+              <a @click="editModal.open(row)">编辑</a>
+              <a @click="router.push(`/system/roles/${row.id}`)">查看</a>
+            </div>
           </template>
-        </template>
-      </a-table>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        class="mt-4 justify-end"
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="pagination.total"
+        :current-page="pagination.current"
+        :page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+      />
 
       <!-- Permission Assignment Card -->
       <div class="permission-card">
@@ -65,28 +84,28 @@
             <div class="permission-group">
               <div class="permission-group-title">仪表盘</div>
               <div class="permission-group-items">
-                <a-checkbox
+                <el-checkbox
                   v-for="item in permissionGroups.dashboard"
                   :key="item.value"
-                  :checked="selectedPermissions.includes(item.value)"
-                  @change="(e: any) => togglePermission(item.value, e.target.checked)"
+                  :model-value="selectedPermissions.includes(item.value)"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
-                </a-checkbox>
+                </el-checkbox>
               </div>
             </div>
             <!-- Model management permissions -->
             <div class="permission-group">
               <div class="permission-group-title">模型管理</div>
               <div class="permission-group-items">
-                <a-checkbox
+                <el-checkbox
                   v-for="item in permissionGroups.model"
                   :key="item.value"
-                  :checked="selectedPermissions.includes(item.value)"
-                  @change="(e: any) => togglePermission(item.value, e.target.checked)"
+                  :model-value="selectedPermissions.includes(item.value)"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
-                </a-checkbox>
+                </el-checkbox>
               </div>
             </div>
           </div>
@@ -95,28 +114,28 @@
             <div class="permission-group">
               <div class="permission-group-title">数据管理</div>
               <div class="permission-group-items">
-                <a-checkbox
+                <el-checkbox
                   v-for="item in permissionGroups.data"
                   :key="item.value"
-                  :checked="selectedPermissions.includes(item.value)"
-                  @change="(e: any) => togglePermission(item.value, e.target.checked)"
+                  :model-value="selectedPermissions.includes(item.value)"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
-                </a-checkbox>
+                </el-checkbox>
               </div>
             </div>
             <!-- Annotation management permissions -->
             <div class="permission-group">
               <div class="permission-group-title">标注管理</div>
               <div class="permission-group-items">
-                <a-checkbox
+                <el-checkbox
                   v-for="item in permissionGroups.annotation"
                   :key="item.value"
-                  :checked="selectedPermissions.includes(item.value)"
-                  @change="(e: any) => togglePermission(item.value, e.target.checked)"
+                  :model-value="selectedPermissions.includes(item.value)"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
-                </a-checkbox>
+                </el-checkbox>
               </div>
             </div>
           </div>
@@ -124,41 +143,45 @@
       </div>
 
       <!-- New Role Modal -->
-      <a-modal
-        v-model:open="roleModal.visible"
+      <el-dialog
+        v-model="roleModal.visible"
         title="新建角色"
-        @ok="handleCreate"
-        :confirm-loading="submitting"
       >
-        <a-form layout="vertical">
-          <a-form-item label="角色名称" required>
-            <a-input v-model:value="roleForm.name" />
-          </a-form-item>
-          <a-form-item label="角色编码" required>
-            <a-input v-model:value="roleForm.code" />
-          </a-form-item>
-          <a-form-item label="描述">
-            <a-textarea v-model:value="roleForm.description" :rows="2" />
-          </a-form-item>
-        </a-form>
-      </a-modal>
+        <el-form label-position="top">
+          <el-form-item label="角色名称" required>
+            <el-input v-model="roleForm.name" />
+          </el-form-item>
+          <el-form-item label="角色编码" required>
+            <el-input v-model="roleForm.code" />
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="roleForm.description" type="textarea" :rows="2" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="roleModal.close()">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="handleCreate">确定</el-button>
+        </template>
+      </el-dialog>
 
       <!-- Edit Role Modal -->
-      <a-modal
-        v-model:open="editModal.visible"
+      <el-dialog
+        v-model="editModal.visible"
         title="编辑角色"
-        @ok="handleUpdate"
-        :confirm-loading="submitting"
       >
-        <a-form layout="vertical">
-          <a-form-item label="角色名称">
-            <a-input v-model:value="editForm.name" />
-          </a-form-item>
-          <a-form-item label="描述">
-            <a-textarea v-model:value="editForm.description" :rows="2" />
-          </a-form-item>
-        </a-form>
-      </a-modal>
+        <el-form label-position="top">
+          <el-form-item label="角色名称">
+            <el-input v-model="editForm.name" />
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="editForm.description" type="textarea" :rows="2" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="editModal.close()">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="handleUpdate">确定</el-button>
+        </template>
+      </el-dialog>
     </template>
   </PageContainer>
 </template>
@@ -166,8 +189,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { PlusOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { useModal } from '@/hooks/useModal'
@@ -178,19 +201,20 @@ const roleModal = useModal()
 const editModal = useModal<any>()
 const submitting = ref(false)
 
-const columns = [
-  { title: '角色编码', dataIndex: 'code', key: 'code', width: 120 },
-  { title: '角色名称', dataIndex: 'name', key: 'name', width: 120 },
-  { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
-  { title: '用户数', dataIndex: 'user_count', key: 'user_count', width: 80, align: 'center' as const },
-  { title: '系统内置', key: 'built_in', width: 110, align: 'center' as const },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 120 },
-  { title: '操作', key: 'action', width: 80, align: 'right' as const },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getRoles({ page: params.page, page_size: params.pageSize })
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // Permission definitions
 const permissionGroups = reactive({
@@ -238,8 +262,8 @@ function togglePermission(value: string, checked: boolean) {
   }
 }
 
-function getRowClassName(record: any) {
-  return record.code === 'ADMIN' ? 'admin-row' : ''
+function getRowClassName({ row }: { row: any }) {
+  return row.code === 'ADMIN' ? 'admin-row' : ''
 }
 
 // Form state for modals
@@ -259,7 +283,7 @@ async function handleCreate() {
   submitting.value = true
   try {
     await createRole(roleForm)
-    message.success('角色创建成功')
+    ElMessage.success('角色创建成功')
     roleModal.close()
     fetchData()
   } finally {
@@ -271,7 +295,7 @@ async function handleUpdate() {
   submitting.value = true
   try {
     await updateRole(editingId, editForm)
-    message.success('角色更新成功')
+    ElMessage.success('角色更新成功')
     editModal.close()
     fetchData()
   } finally {
@@ -301,13 +325,13 @@ onMounted(() => {
 .role-page-title {
   font-size: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 
 .role-page-subtitle {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .role-page-header-right {
@@ -320,25 +344,25 @@ onMounted(() => {
 }
 
 .code-admin {
-  color: #1677ff;
+  color: #0ea5e9;
 }
 
 .text-muted {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 :deep(.admin-row) {
-  background: rgba(22, 119, 255, 0.04) !important;
+  background: rgba(14, 165, 233, 0.04) !important;
 }
 
 :deep(.admin-row:hover > td) {
-  background: rgba(22, 119, 255, 0.08) !important;
+  background: rgba(14, 165, 233, 0.08) !important;
 }
 
 /* Permission Assignment Card */
 .permission-card {
   margin-top: 24px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 20px 24px;
   background: #fff;
@@ -350,18 +374,18 @@ onMounted(() => {
   justify-content: space-between;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .permission-title-text {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .permission-selected-count {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .permission-columns {
@@ -379,7 +403,7 @@ onMounted(() => {
 .permission-group-title {
   font-weight: 600;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin-bottom: 12px;
 }
 
@@ -387,9 +411,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.permission-group-items :deep(.ant-checkbox-wrapper) {
-  margin-left: 0;
+  align-items: flex-start;
 }
 </style>

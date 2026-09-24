@@ -1,6 +1,6 @@
 <template>
-  <a-timeline class="approval-timeline">
-    <a-timeline-item
+  <el-timeline class="approval-timeline">
+    <el-timeline-item
       v-for="(record, idx) in records"
       :key="idx"
       :color="getTimelineColor(record.status)"
@@ -20,8 +20,8 @@
           {{ formatTime(record.timestamp) }}
         </div>
       </div>
-    </a-timeline-item>
-  </a-timeline>
+    </el-timeline-item>
+  </el-timeline>
 </template>
 
 <script setup lang="ts">

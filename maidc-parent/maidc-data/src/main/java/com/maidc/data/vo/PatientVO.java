@@ -16,6 +16,9 @@ public class PatientVO {
 
     private Long id;
 
+    /** 患者号（cdr.c_patient.patient_no，业务唯一标识） */
+    private String patientNo;
+
     private String name;
 
     private String gender;
@@ -25,6 +28,14 @@ public class PatientVO {
     private String address;
 
     private Long orgId;
+
+    private String idCardNo;
+
+    private String phone;
+
+    private String bloodType;
+
+    private String sourceSystem;
 
     private LocalDateTime createdAt;
 

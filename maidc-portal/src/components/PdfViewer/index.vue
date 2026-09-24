@@ -7,7 +7,7 @@
       allowfullscreen
     />
     <div v-if="!url" class="pdf-empty">
-      <FilePdfOutlined style="font-size: 48px; color: #d9d9d9" />
+      <Document style="font-size: 48px; color: #d9d9d9" />
       <p>未指定PDF文件</p>
     </div>
   </div>
@@ -15,7 +15,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { FilePdfOutlined } from '@ant-design/icons-vue'
 
 interface Props {
   url: string

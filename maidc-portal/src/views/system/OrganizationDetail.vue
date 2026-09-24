@@ -12,7 +12,7 @@
     <div class="info-card">
       <div class="info-card-title-row">
         <span class="info-card-name">北京协和医院</span>
-        <a-tag color="success">已连接</a-tag>
+        <el-tag type="success">已连接</el-tag>
       </div>
       <div class="info-row">编码: BJXH-001 &nbsp;|&nbsp; 类型: 三级甲等 &nbsp;|&nbsp; 地区: 北京市东城区</div>
       <div class="info-row">HIS: 卫宁健康 &nbsp;|&nbsp; PACS: 锐珂医疗 &nbsp;|&nbsp; 床位: 2000</div>
@@ -20,66 +20,56 @@
     </div>
 
     <!-- Tab Bar -->
-    <a-tabs v-model:activeKey="activeTab" class="org-tabs">
-      <a-tab-pane key="departments" tab="关联科室" />
-      <a-tab-pane key="datasource" tab="数据源配置" />
-      <a-tab-pane key="users" tab="系统用户" />
-    </a-tabs>
+    <el-tabs v-model="activeTab" class="org-tabs">
+      <el-tab-pane label="关联科室" name="departments" />
+      <el-tab-pane label="数据源配置" name="datasource" />
+      <el-tab-pane label="系统用户" name="users" />
+    </el-tabs>
 
     <!-- Tab 1: 关联科室 -->
     <div v-if="activeTab === 'departments'" class="tab-content">
       <div class="tab-content-header">
         <span class="tab-content-title">科室列表 (共 28 个)</span>
-        <a-button type="primary">
-          <PlusOutlined /> 添加科室
-        </a-button>
+        <el-button type="primary">
+          <el-icon class="mr-1"><Plus /></el-icon> 添加科室
+        </el-button>
       </div>
-      <a-table
-        :columns="deptColumns"
-        :data-source="deptData"
-        :pagination="false"
-        row-key="code"
-        size="middle"
-        class="dept-table"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'datasource'">
-            <span class="blue-text">{{ record.datasource }}</span>
+      <el-table :data="deptData" row-key="code" size="default" class="dept-table">
+        <el-table-column label="科室名称" prop="name" />
+        <el-table-column label="科室编码" prop="code" />
+        <el-table-column label="负责人" prop="leader" />
+        <el-table-column label="医生数" prop="doctorCount" />
+        <el-table-column label="数据源" prop="datasource">
+          <template #default="{ row }">
+            <span class="blue-text">{{ row.datasource }}</span>
           </template>
-          <template v-if="column.dataIndex === 'action'">
+        </el-table-column>
+        <el-table-column label="操作" prop="action" width="60">
+          <template #default>
             <a class="blue-text">编辑</a>
           </template>
-        </template>
-      </a-table>
+        </el-table-column>
+      </el-table>
     </div>
 
     <!-- Tab 2: 数据源配置 -->
     <div v-if="activeTab === 'datasource'" class="tab-content">
-      <a-empty description="暂无数据源配置" />
+      <el-empty description="暂无数据源配置" :image-size="60" />
     </div>
 
     <!-- Tab 3: 系统用户 -->
     <div v-if="activeTab === 'users'" class="tab-content">
-      <a-empty description="暂无系统用户" />
+      <el-empty description="暂无系统用户" :image-size="60" />
     </div>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 const activeTab = ref('departments')
-
-const deptColumns = [
-  { title: '科室名称', dataIndex: 'name' },
-  { title: '科室编码', dataIndex: 'code' },
-  { title: '负责人', dataIndex: 'leader' },
-  { title: '医生数', dataIndex: 'doctorCount' },
-  { title: '数据源', dataIndex: 'datasource' },
-  { title: '操作', dataIndex: 'action', width: 60 },
-]
 
 const deptData = ref([
   { name: '放射科', code: 'DEPT-FS-001', leader: '张主任', doctorCount: 45, datasource: 'HIS/PACS' },
@@ -106,24 +96,24 @@ const deptData = ref([
 .detail-title {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .back-link {
   font-size: 14px;
-  color: #1677ff;
+  color: #0ea5e9;
   text-decoration: none;
   cursor: pointer;
 }
 
 .back-link:hover {
-  color: #4096ff;
+  color: #38bdf8;
 }
 
 /* Info Card */
 .info-card {
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
@@ -139,12 +129,12 @@ const deptData = ref([
 .info-card-name {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .info-row {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   line-height: 1;
 }
 
@@ -171,7 +161,7 @@ const deptData = ref([
 .tab-content-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 /* Table */
@@ -180,11 +170,11 @@ const deptData = ref([
 }
 
 .blue-text {
-  color: #1677ff;
+  color: #0ea5e9;
   cursor: pointer;
 }
 
 .blue-text:hover {
-  color: #4096ff;
+  color: #38bdf8;
 }
 </style>

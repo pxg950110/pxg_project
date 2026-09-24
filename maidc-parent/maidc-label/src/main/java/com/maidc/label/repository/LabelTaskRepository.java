@@ -5,7 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface LabelTaskRepository extends JpaRepository<LabelTaskEntity, Long>,
         JpaSpecificationExecutor<LabelTaskEntity> {
+
+    long countByStatusAndIsDeletedFalse(String status);
+
+    List<LabelTaskEntity> findByIsDeletedFalse();
 }

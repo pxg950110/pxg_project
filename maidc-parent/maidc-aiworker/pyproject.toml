@@ -12,9 +12,10 @@ celery = {extras = ["rabbitmq"], version = "^5.3.6"}
 pydantic = "^2.6.0"
 pydantic-settings = "^2.2.0"
 httpx = "^0.27.0"
-minio = "^8.5.9"
+minio = "^7.2"
 numpy = "^1.26.0"
 pillow = "^10.2.0"
+psycopg = {extras = ["binary"], version = "^3.1"}
 
 [tool.poetry.group.gpu]
 optional = true

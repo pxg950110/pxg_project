@@ -4,6 +4,7 @@ import com.maidc.auth.dto.LoginDTO;
 import com.maidc.auth.dto.RefreshTokenDTO;
 import com.maidc.auth.service.AuthService;
 import com.maidc.auth.vo.LoginVO;
+import com.maidc.auth.vo.RefreshVO;
 import com.maidc.common.core.result.R;
 import com.maidc.common.log.annotation.OperLog;
 import jakarta.validation.Valid;
@@ -25,7 +26,7 @@ public class AuthController {
 
     @OperLog(module = "auth", operation = "refresh")
     @PostMapping("/refresh")
-    public R<LoginVO> refresh(@RequestBody @Valid RefreshTokenDTO dto) {
+    public R<RefreshVO> refresh(@RequestBody @Valid RefreshTokenDTO dto) {
         return R.ok(authService.refreshToken(dto));
     }
 

@@ -1,52 +1,78 @@
 <template>
   <PageContainer title="审批管理">
-    <a-tabs v-model:activeKey="activeTab" @change="onTabChange">
-      <a-tab-pane key="PENDING">
-        <template #tab>
-          <a-badge :count="pendingCount" :offset="[6, 0]" size="small">
+    <el-tabs v-model="activeTab" @tab-change="onTabChange">
+      <el-tab-pane name="PENDING">
+        <template #label>
+          <span class="inline-flex items-center gap-1.5">
             待审批
-          </a-badge>
+            <span
+              v-if="pendingCount > 0"
+              class="inline-flex items-center justify-center h-[18px] min-w-[18px] px-1 rounded-full bg-red-500 text-white text-xs leading-none"
+            >{{ pendingCount }}</span>
+          </span>
         </template>
-      </a-tab-pane>
-      <a-tab-pane key="APPROVED" tab="已审批" />
-      <a-tab-pane key="ALL" tab="全部" />
-    </a-tabs>
+      </el-tab-pane>
+      <el-tab-pane label="已审批" name="APPROVED" />
+      <el-tab-pane label="全部" name="ALL" />
+    </el-tabs>
 
-    <a-table :columns="columns" :data-source="filteredData" :loading="loading" :pagination="pagination" @change="handleTableChange" row-key="id">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <StatusBadge :status="record.status" type="approval" />
+    <el-table :data="filteredData" v-loading="loading" row-key="id">
+      <el-table-column label="模型名称" prop="model_name" />
+      <el-table-column label="版本" prop="version_no" width="100" />
+      <el-table-column label="审批类型" prop="approval_type" width="120" />
+      <el-table-column label="申请人" prop="submitter_name" width="100" />
+      <el-table-column label="提交时间" width="170">
+        <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
+      </el-table-column>
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <StatusBadge :status="row.status" type="approval" />
         </template>
-        <template v-if="column.key === 'created_at'">
-          {{ formatDateTime(record.created_at) }}
+      </el-table-column>
+      <el-table-column label="操作" width="100">
+        <template #default="{ row }">
+          <el-button v-if="row.status === 'PENDING'" link type="primary" @click="openApproveModal(row)">审批</el-button>
+          <span v-else class="text-slate-400">--</span>
         </template>
-        <template v-if="column.key === 'action'">
-          <a v-if="record.status === 'PENDING'" type="primary" @click="openApproveModal(record)">审批</a>
-          <span v-else class="text-gray-400">--</span>
-        </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- Approve Modal -->
-    <a-modal v-model:open="approveModal.visible" title="审批操作" @ok="handleApprove" :confirm-loading="submitting">
-      <a-form layout="vertical">
-        <a-form-item label="审批结果">
-          <a-radio-group v-model:value="approveForm.action">
-            <a-radio value="APPROVED">通过</a-radio>
-            <a-radio value="REJECTED">驳回</a-radio>
-          </a-radio-group>
-        </a-form-item>
-        <a-form-item label="审批意见" required>
-          <a-textarea v-model:value="approveForm.comment" :rows="3" placeholder="请输入审批意见" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="approveModal.visible" title="审批操作" width="520px">
+      <el-form label-width="100px">
+        <el-form-item label="审批结果">
+          <el-radio-group v-model="approveForm.action">
+            <el-radio value="APPROVED">通过</el-radio>
+            <el-radio value="REJECTED">驳回</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="审批意见" required>
+          <el-input v-model="approveForm.comment" type="textarea" :rows="3" placeholder="请输入审批意见" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="approveModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleApprove">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -69,7 +95,7 @@ interface ApprovalRecord {
 }
 
 // API data via useTable
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<ApprovalRecord>(
+const { tableData, loading, pagination, fetchData } = useTable<ApprovalRecord>(
   (params) => getApprovals({ page: params.page, page_size: params.pageSize, status: activeTab.value === 'ALL' ? undefined : activeTab.value })
 )
 
@@ -85,15 +111,16 @@ function onTabChange() {
   fetchData({ page: 1 })
 }
 
-const columns = [
-  { title: '模型名称', dataIndex: 'model_name', key: 'model_name' },
-  { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 100 },
-  { title: '审批类型', dataIndex: 'approval_type', key: 'approval_type', width: 120 },
-  { title: '申请人', dataIndex: 'submitter_name', key: 'submitter_name', width: 100 },
-  { title: '提交时间', dataIndex: 'created_at', key: 'created_at', width: 170 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '操作', key: 'action', width: 100 },
-]
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 const approveForm = reactive({ action: 'APPROVED', comment: '' })
 let approvingId = 0
@@ -112,7 +139,7 @@ async function handleApprove() {
       status: approveForm.action,
       comment: approveForm.comment,
     })
-    message.success('审批完成')
+    ElMessage.success('审批完成')
     approveModal.close()
     fetchData()
   } finally {

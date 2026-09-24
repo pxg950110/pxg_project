@@ -28,6 +28,7 @@ public class RoleService {
     private final RolePermissionRepository rolePermissionRepository;
     private final PermissionRepository permissionRepository;
     private final UserRoleRepository userRoleRepository;
+    private final PermissionCacheService permissionCacheService;
 
     public List<RoleVO> listRoles() {
         List<RoleEntity> roles = roleRepository.findByIsDeletedFalse();
@@ -111,6 +112,8 @@ public class RoleService {
                 rolePermissionRepository.save(rp);
             }
         }
+        // 角色权限增删后失效持有者缓存（提交后执行；createRole 调用此方法时新角色无用户，失效为空操作）
+        permissionCacheService.evictByRoleAfterCommit(roleId);
     }
 
     public List<PermissionTreeVO> getPermissionTree() {
@@ -130,5 +133,85 @@ public class RoleService {
                         .children(buildTree(allPerms, p.getId()))
                         .build())
                 .toList();
+    }
+
+    // ==================== 权限 CRUD（前端 system.ts 契约：{name, code, type, parent_id}） ====================
+
+    /**
+     * 创建权限。resource_key/action 为 DDL NOT NULL 列且前端不传，
+     * 按 code 约定（resource:action）派生，缺省 action 记为 access。
+     */
+    @Transactional
+    public PermissionTreeVO createPermission(String name, String code, String type, Long parentId) {
+        if (name == null || code == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
+        }
+        PermissionEntity p = new PermissionEntity();
+        p.setPermissionName(name);
+        p.setPermissionCode(code);
+        p.setResourceType(type != null ? type : "API");
+        applyDerivedParts(p, code);
+        p.setParentId(parentId);
+        // s_permission.org_id NOT NULL：权限为系统级资源，落 0（与 DDL 种子、createRole 同约定）
+        p.setOrgId(0L);
+        p = permissionRepository.save(p);
+        return toTreeVO(p);
+    }
+
+    /** 更新权限（部分字段更新，null 不动）；@Where 使已删除记录查不到即 NOT_FOUND */
+    @Transactional
+    public PermissionTreeVO updatePermission(Long id, String name, String code, String type, Long parentId) {
+        PermissionEntity p = permissionRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        if (name != null) {
+            p.setPermissionName(name);
+        }
+        if (code != null) {
+            p.setPermissionCode(code);
+            applyDerivedParts(p, code);
+        }
+        if (type != null) {
+            p.setResourceType(type);
+        }
+        if (parentId != null) {
+            p.setParentId(parentId);
+        }
+        p = permissionRepository.save(p);
+        return toTreeVO(p);
+    }
+
+    /**
+     * 删除权限（@SQLDelete 软删）。
+     * 无外键约定下同步清理 role-permission 关联，避免悬挂引用。
+     * 注：权限码变更不影响在线缓存，需等待 TTL 或用户重登刷新。
+     */
+    @Transactional
+    public void deletePermission(Long id) {
+        PermissionEntity p = permissionRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        rolePermissionRepository.deleteByPermissionId(id);
+        permissionRepository.delete(p);
+    }
+
+    private void applyDerivedParts(PermissionEntity p, String code) {
+        int idx = code.indexOf(':');
+        if (idx > 0) {
+            p.setResourceKey(code.substring(0, idx));
+            p.setAction(code.substring(idx + 1));
+        } else {
+            p.setResourceKey(code);
+            p.setAction("access");
+        }
+    }
+
+    private PermissionTreeVO toTreeVO(PermissionEntity p) {
+        return PermissionTreeVO.builder()
+                .id(p.getId())
+                .code(p.getPermissionCode())
+                .name(p.getPermissionName())
+                .resourceType(p.getResourceType())
+                .description(p.getResourceKey())
+                .children(List.of())
+                .build();
     }
 }

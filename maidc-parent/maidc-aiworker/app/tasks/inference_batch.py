@@ -1,6 +1,9 @@
 """Celery task: Batch inference"""
+import logging
 import time
 from app.core.celery_app import celery_app
+
+logger = logging.getLogger(__name__)
 
 
 @celery_app.task(name="app.tasks.inference_batch.run_batch")
@@ -13,7 +16,7 @@ def run_batch_inference(model_code: str, version: str, dataset_path: str,
     3. Process in batches
     4. Save results to output_path
     """
-    print(f"Starting batch inference: model={model_code}, dataset={dataset_path}")
+    logger.info("Starting batch inference: model=%s, dataset=%s", model_code, dataset_path)
 
     # TODO: Implement actual batch inference
     time.sleep(3)

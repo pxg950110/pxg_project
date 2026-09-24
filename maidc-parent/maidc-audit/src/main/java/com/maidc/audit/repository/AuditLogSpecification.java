@@ -14,14 +14,15 @@ public class AuditLogSpecification {
         // utility class
     }
 
-    public static Specification<AuditLogEntity> buildSearchSpec(String module, String operation,
+    public static Specification<AuditLogEntity> buildSearchSpec(String serviceName, String operation,
                                                                  String username, LocalDateTime startTime,
-                                                                 LocalDateTime endTime, Short status) {
+                                                                 LocalDateTime endTime, String status,
+                                                                 String traceId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (module != null && !module.isBlank()) {
-                predicates.add(cb.equal(root.get("module"), module));
+            if (serviceName != null && !serviceName.isBlank()) {
+                predicates.add(cb.equal(root.get("serviceName"), serviceName));
             }
             if (operation != null && !operation.isBlank()) {
                 predicates.add(cb.like(root.get("operation"), "%" + operation + "%"));
@@ -29,13 +30,16 @@ public class AuditLogSpecification {
             if (username != null && !username.isBlank()) {
                 predicates.add(cb.like(root.get("username"), "%" + username + "%"));
             }
+            if (traceId != null && !traceId.isBlank()) {
+                predicates.add(cb.equal(root.get("traceId"), traceId));
+            }
             if (startTime != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startTime));
             }
             if (endTime != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), endTime));
             }
-            if (status != null) {
+            if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), status));
             }
 

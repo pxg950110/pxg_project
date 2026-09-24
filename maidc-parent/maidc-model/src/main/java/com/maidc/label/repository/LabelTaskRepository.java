@@ -1,0 +1,15 @@
+package com.maidc.label.repository;
+
+import com.maidc.label.entity.LabelTaskEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface LabelTaskRepository extends JpaRepository<LabelTaskEntity, Long>,
+        JpaSpecificationExecutor<LabelTaskEntity> {
+
+    List<LabelTaskEntity> findByIsDeletedFalse();
+}

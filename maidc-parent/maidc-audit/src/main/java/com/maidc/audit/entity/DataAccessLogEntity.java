@@ -18,36 +18,42 @@ import java.time.LocalDateTime;
 public class DataAccessLogEntity {
 
     @Id
-    @Column(name = "id", length = 36)
-    private String id;
+    @Column(name = "id")
+    private Long id;
 
-    @Column(name = "user_id", length = 36)
-    private String userId;
+    @Column(name = "user_id")
+    private Long userId;
 
-    @Column(name = "username", length = 100)
-    private String username;
+    @Column(name = "access_type", length = 32)
+    private String accessType;
 
-    @Column(name = "org_id", length = 36)
-    private String orgId;
+    @Column(name = "data_domain", length = 32)
+    private String dataDomain;
 
-    @Column(name = "data_type", length = 50)
-    private String dataType;
+    @Column(name = "table_name", length = 64)
+    private String tableName;
 
-    @Column(name = "data_id", length = 36)
-    private String dataId;
+    @Column(name = "record_id")
+    private Long recordId;
 
-    @Column(name = "action", length = 50)
-    private String action;
+    @Column(name = "patient_id")
+    private Long patientId;
 
-    @Column(name = "patient_id", length = 36)
-    private String patientId;
+    @Column(name = "purpose", columnDefinition = "TEXT")
+    private String purpose;
 
-    @Column(name = "access_purpose", length = 200)
-    private String accessPurpose;
+    @Column(name = "data_volume")
+    private Long dataVolume;
 
-    @Column(name = "ip", length = 50)
-    private String ip;
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
+    @Column(name = "trace_id", length = 64)
+    private String traceId;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "org_id")
+    private Long orgId;
 }

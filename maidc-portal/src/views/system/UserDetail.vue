@@ -3,12 +3,12 @@
     <!-- Header Row -->
     <div class="detail-header">
       <div class="detail-header-left">
-        <ArrowLeftOutlined class="back-icon" @click="handleGoBack" />
+        <el-icon class="back-icon" @click="handleGoBack"><ArrowLeft /></el-icon>
         <span class="detail-title">用户详情 - 张医生</span>
       </div>
       <div class="detail-header-right">
-        <a-button>编辑</a-button>
-        <a-button class="btn-warning-outline">重置密码</a-button>
+        <el-button>编辑</el-button>
+        <el-button class="btn-warning-outline">重置密码</el-button>
       </div>
     </div>
 
@@ -64,11 +64,11 @@
           </div>
           <div class="card-body">
             <div class="role-row">
-              <a-tag color="blue">AI工程师</a-tag>
+              <el-tag type="primary">AI工程师</el-tag>
               <span class="role-desc">模型开发与部署</span>
             </div>
             <div class="role-row last-row">
-              <a-tag color="green">临床医生</a-tag>
+              <el-tag type="success">临床医生</el-tag>
               <span class="role-desc">AI辅助诊断使用者</span>
             </div>
           </div>
@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ArrowLeftOutlined } from '@ant-design/icons-vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 const router = useRouter()
@@ -128,19 +128,19 @@ function handleGoBack() {
 
 .back-icon {
   font-size: 18px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .back-icon:hover {
-  color: #1677ff;
+  color: #0ea5e9;
 }
 
 .detail-title {
   font-size: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .detail-header-right {
@@ -150,13 +150,13 @@ function handleGoBack() {
 }
 
 .btn-warning-outline {
-  color: #fa8c16;
-  border-color: #fa8c16;
+  color: #f97316;
+  border-color: #f97316;
 }
 
 .btn-warning-outline:hover {
-  color: #d46b08;
-  border-color: #d46b08;
+  color: #c2410c;
+  border-color: #c2410c;
 }
 
 /* Two-Panel Layout */
@@ -178,7 +178,7 @@ function handleGoBack() {
 
 /* Card */
 .card {
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px;
   background: #fff;
   overflow: hidden;
@@ -186,13 +186,13 @@ function handleGoBack() {
 
 .card-header {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .card-header-title {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .card-body {
@@ -206,14 +206,14 @@ function handleGoBack() {
   gap: 14px;
   padding-bottom: 16px;
   margin-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .avatar-circle {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #1677ff;
+  background: #0ea5e9;
   color: #fff;
   font-size: 20px;
   font-weight: 500;
@@ -232,12 +232,12 @@ function handleGoBack() {
 .avatar-name {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .avatar-email {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 /* Info Rows */
@@ -246,7 +246,7 @@ function handleGoBack() {
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .info-row.last-row {
@@ -255,7 +255,7 @@ function handleGoBack() {
 
 .info-label {
   font-size: 14px;
-  color: #666;
+  color: #64748b;
 }
 
 .info-value {
@@ -269,7 +269,7 @@ function handleGoBack() {
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .role-row.last-row {
@@ -278,7 +278,7 @@ function handleGoBack() {
 
 .role-desc {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 
 /* Activity Rows */
@@ -287,7 +287,7 @@ function handleGoBack() {
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .activity-row.last-row {
@@ -296,12 +296,12 @@ function handleGoBack() {
 
 .activity-desc {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 
 .activity-time {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   flex-shrink: 0;
 }
 </style>

@@ -5,7 +5,7 @@ import com.maidc.data.entity.LocalConceptEntity;
 import com.maidc.data.service.LocalConceptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,18 +18,20 @@ public class LocalConceptController {
 
     private final LocalConceptService service;
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping
     public R<Page<LocalConceptEntity>> list(
             @RequestParam Long institutionId,
-            @RequestParam Long codeSystemId,
+            @RequestParam(required = false) Long codeSystemId,
             @RequestParam(required = false) String mappingStatus,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int page_size) {
-        return R.ok(service.list(institutionId, codeSystemId, mappingStatus, page, page_size));
+            @RequestParam(defaultValue = "20") int page_size,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+        int effectiveSize = size != 20 ? size : page_size;
+        return R.ok(service.list(institutionId, codeSystemId, mappingStatus, page, effectiveSize));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/unmapped")
     public R<Page<LocalConceptEntity>> unmapped(
             @RequestParam(required = false) Long institutionId,
@@ -39,7 +41,7 @@ public class LocalConceptController {
         return R.ok(service.getUnmapped(institutionId, codeSystemId, page, page_size));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/translate")
     public R<Map<String, Object>> translate(
             @RequestParam Long institutionId,
@@ -48,7 +50,7 @@ public class LocalConceptController {
         return R.ok(service.translateById(institutionId, codeSystemId, localCode));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/stats")
     public R<Map<String, Object>> stats(
             @RequestParam Long institutionId,
@@ -56,7 +58,7 @@ public class LocalConceptController {
         return R.ok(service.getStats(institutionId, codeSystemId));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping
     public R<LocalConceptEntity> create(@RequestBody LocalConceptEntity entity) {
         if (entity.getInstitutionId() == null) {
@@ -74,13 +76,13 @@ public class LocalConceptController {
         return R.ok(service.create(entity));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping("/batch")
     public R<List<LocalConceptEntity>> batch(@RequestBody List<LocalConceptEntity> entities) {
         return R.ok(service.batchCreate(entities));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:update")
     @PutMapping("/{id}")
     public R<LocalConceptEntity> update(@PathVariable Long id, @RequestBody LocalConceptEntity entity) {
         return R.ok(service.update(id, entity));

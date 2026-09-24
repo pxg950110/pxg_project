@@ -62,7 +62,9 @@ services:
     container_name: maidc-nacos
     environment:
       MODE: standalone
-      SPRING_DATASOURCE_PLATFORM: embedded
+      # 注意：不可设置 SPRING_DATASOURCE_PLATFORM=embedded —— v2.3.2 镜像中该值
+      # 会被当作外部数据源开关（仅识别 mysql），导致 nacos 尝试连接
+      # ${MYSQL_SERVICE_HOST} 而启动失败；不设置时默认即为内嵌 derby 存储
     ports: ["8848:8848", "9848:9848"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
@@ -71,123 +73,55 @@ services:
 
   # ==================== Backend Services ====================
   gateway:
-    build: ../maidc-parent/maidc-gateway
+    build:
+      context: ../maidc-parent
+      dockerfile: maidc-gateway/Dockerfile
     container_name: maidc-gateway
     ports: ["8080:8080"]
     environment:
-      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_ADDR: nacos:8848
       SPRING_PROFILES_ACTIVE: dev
     depends_on:
       nacos: { condition: service_healthy }
       redis: { condition: service_healthy }
 
-  auth:
-    build: ../maidc-parent/maidc-auth
-    container_name: maidc-auth
+  app:
+    build:
+      context: ../maidc-parent
+      dockerfile: maidc-app/Dockerfile
+    container_name: maidc-app
     ports: ["8081:8081"]
     environment:
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=system
+      NACOS_ADDR: nacos:8848
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=system,cdr,model,rdr,masterdata,audit,ods,public&stringtype=unspecified
       SPRING_DATASOURCE_USERNAME: maidc
       SPRING_DATASOURCE_PASSWORD: maidc123
-      SPRING_REDIS_HOST: redis
-    depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
-      nacos: { condition: service_healthy }
-
-  data:
-    build: ../maidc-parent/maidc-data
-    container_name: maidc-data
-    ports: ["8082:8082"]
-    environment:
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc
-      SPRING_REDIS_HOST: redis
-    depends_on:
-      postgres: { condition: service_healthy }
-      nacos: { condition: service_healthy }
-
-  model:
-    build: ../maidc-parent/maidc-model
-    container_name: maidc-model
-    ports: ["8083:8083"]
-    environment:
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=model
-      SPRING_REDIS_HOST: redis
-      MINIO_ENDPOINT: http://minio:9000
+      REDIS_HOST: redis
       RABBITMQ_HOST: rabbitmq
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
-      minio: { condition: service_healthy }
-      rabbitmq: { condition: service_healthy }
       nacos: { condition: service_healthy }
 
-  task:
-    build: ../maidc-parent/maidc-task
-    container_name: maidc-task
-    ports: ["8084:8084"]
-    environment:
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=system
-      SPRING_REDIS_HOST: redis
-    depends_on:
-      postgres: { condition: service_healthy }
-      nacos: { condition: service_healthy }
-
-  label:
-    build: ../maidc-parent/maidc-label
-    container_name: maidc-label
-    ports: ["8085:8085"]
-    environment:
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=rdr
-      SPRING_REDIS_HOST: redis
-      RABBITMQ_HOST: rabbitmq
-    depends_on:
-      postgres: { condition: service_healthy }
-      rabbitmq: { condition: service_healthy }
-      nacos: { condition: service_healthy }
-
-  audit:
-    build: ../maidc-parent/maidc-audit
-    container_name: maidc-audit
-    ports: ["8086:8086"]
-    environment:
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=audit
-      SPRING_REDIS_HOST: redis
-    depends_on:
-      postgres: { condition: service_healthy }
-      nacos: { condition: service_healthy }
-
-  msg:
-    build: ../maidc-parent/maidc-msg
-    container_name: maidc-msg
-    ports: ["8087:8087"]
-    environment:
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/maidc?currentSchema=model
-      SPRING_REDIS_HOST: redis
-      RABBITMQ_HOST: rabbitmq
-    depends_on:
-      postgres: { condition: service_healthy }
-      rabbitmq: { condition: service_healthy }
-      nacos: { condition: service_healthy }
-
-  # ==================== AI Worker ====================
   aiworker:
     build: ../maidc-parent/maidc-aiworker
     container_name: maidc-aiworker
     ports: ["8090:8090"]
     environment:
-      RABBITMQ_HOST: rabbitmq
+      # pydantic env_prefix=MAIDC_，compose 的 RABBITMQ_HOST 对 aiworker 无效
+      MAIDC_RABBITMQ_HOST: rabbitmq
       MINIO_ENDPOINT: http://minio:9000
+      # 专病知识库 LLM/RAG（OpenAI 兼容协议；留空则相关端点 503/降级）
+      MAIDC_LLM_BASE_URL: ${MAIDC_LLM_BASE_URL:-}
+      MAIDC_LLM_API_KEY: ${MAIDC_LLM_API_KEY:-}
+      MAIDC_LLM_MODEL: ${MAIDC_LLM_MODEL:-gpt-4o-mini}
+      MAIDC_EMBEDDING_MODEL: ${MAIDC_EMBEDDING_MODEL:-text-embedding-3-large}
+      MAIDC_KB_PG_DSN: postgresql://maidc:maidc123@postgres:5432/maidc
     depends_on:
       rabbitmq: { condition: service_healthy }
       minio: { condition: service_healthy }
+      postgres: { condition: service_healthy }
 
   # ==================== Frontend ====================
   portal:

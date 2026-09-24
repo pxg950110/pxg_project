@@ -37,7 +37,7 @@ public class LocalConceptEntity extends BaseEntity {
     @Column(name = "standard_concept_id")
     private Long standardConceptId;
 
-    @Column(name = "mapping_confidence", precision = 3, scale = 2)
+    @Column(name = "mapping_confidence")
     private BigDecimal mappingConfidence;
 
     @Column(name = "mapping_status", nullable = false, length = 16)

@@ -1,180 +1,193 @@
 <template>
   <PageContainer title="脱敏规则管理">
     <template #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
+      <el-button type="primary" @click="handleCreate">
+        <el-icon class="mr-1"><Plus /></el-icon>
         新建规则
-      </a-button>
+      </el-button>
     </template>
 
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'strategy'">
-          <a-tag :color="strategyColorMap[record.strategy] || 'default'">
-            {{ strategyMap[record.strategy] || record.strategy }}
-          </a-tag>
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="规则名称" prop="name" width="180" show-overflow-tooltip />
+      <el-table-column label="目标字段" prop="target_field" width="120" />
+      <el-table-column label="策略" width="100">
+        <template #default="{ row }">
+          <el-tag
+            :type="strategyTypeMap[row.strategy] || 'info'"
+            size="small"
+            :style="strategyStyleMap[row.strategy]"
+          >
+            {{ strategyMap[row.strategy] || row.strategy }}
+          </el-tag>
         </template>
-        <template v-if="column.key === 'preview'">
+      </el-table-column>
+      <el-table-column label="效果预览" width="260">
+        <template #default="{ row }">
           <div class="preview-cell">
-            <div class="preview-before">{{ record.sample_original || '-' }}</div>
-            <ArrowRightOutlined style="color: rgba(0,0,0,0.25); margin: 0 8px" />
-            <div class="preview-after">{{ record.sample_desensitized || '-' }}</div>
+            <div class="preview-before">{{ row.sample_original || '-' }}</div>
+            <el-icon style="color: #cbd5e1; margin: 0 8px"><Right /></el-icon>
+            <div class="preview-after">{{ row.sample_desensitized || '-' }}</div>
           </div>
         </template>
-        <template v-if="column.key === 'status'">
-          <a-switch
-            :checked="record.status === 'ENABLED'"
-            checked-children="启用"
-            un-checked-children="禁用"
-            @change="(checked: boolean) => handleToggle(record, checked)"
+      </el-table-column>
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <el-switch
+            :model-value="row.status === 'ENABLED'"
+            inline-prompt
+            active-text="启用"
+            inactive-text="禁用"
+            @change="(v: string | number | boolean) => handleToggle(row, Boolean(v))"
           />
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" size="small" @click="handlePreview(record)">预览效果</a-button>
-            <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
-            <a-popconfirm title="确定删除此规则？" @confirm="handleDelete(record)">
-              <a-button type="link" danger size="small">删除</a-button>
-            </a-popconfirm>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="200" fixed="right">
+        <template #default="{ row }">
+          <div class="flex items-center gap-2">
+            <el-button link type="primary" size="small" @click="handlePreview(row)">预览效果</el-button>
+            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-popconfirm title="确定删除此规则？" @confirm="handleDelete(row)">
+              <template #reference>
+                <el-button link type="danger" size="small">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </div>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- 新建/编辑规则弹窗 -->
-    <a-modal
-      v-model:open="modalVisible"
+    <el-dialog
+      v-model="modalVisible"
       :title="isEdit ? '编辑脱敏规则' : '新建脱敏规则'"
-      :confirm-loading="submitLoading"
-      :width="640"
-      @ok="handleSubmit"
-      @cancel="handleModalCancel"
-      destroy-on-close
+      width="640px"
+      :destroy-on-close="true"
     >
-      <a-form
+      <el-form
         ref="formRef"
         :model="formState"
         :rules="formRules"
-        :label-col="{ span: 5 }"
-        :wrapper-col="{ span: 18 }"
+        label-width="100px"
       >
-        <a-form-item label="规则名称" name="name">
-          <a-input v-model:value="formState.name" placeholder="请输入规则名称" />
-        </a-form-item>
+        <el-form-item label="规则名称" prop="name">
+          <el-input v-model="formState.name" placeholder="请输入规则名称" />
+        </el-form-item>
 
-        <a-form-item label="目标字段" name="target_field">
-          <a-select
-            v-model:value="formState.target_field"
-            placeholder="请选择要脱敏的字段"
-            show-search
-            :options="fieldOptions"
-            :filter-option="filterOption"
-          />
-        </a-form-item>
+        <el-form-item label="目标字段" prop="target_field">
+          <el-select v-model="formState.target_field" placeholder="请选择要脱敏的字段" filterable style="width: 100%">
+            <el-option v-for="opt in fieldOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
+          </el-select>
+        </el-form-item>
 
-        <a-form-item label="脱敏策略" name="strategy">
-          <a-select v-model:value="formState.strategy" placeholder="请选择脱敏策略" @change="handleStrategyChange">
-            <a-select-option v-for="item in strategyOptions" :key="item.value" :value="item.value">
+        <el-form-item label="脱敏策略" prop="strategy">
+          <el-select v-model="formState.strategy" placeholder="请选择脱敏策略" style="width: 100%" @change="handleStrategyChange">
+            <el-option v-for="item in strategyOptions" :key="item.value" :value="item.value" :label="item.label">
               <div>
                 <div style="font-weight: 500">{{ item.label }}</div>
-                <div style="font-size: 12px; color: rgba(0,0,0,0.45)">{{ item.description }}</div>
+                <div style="font-size: 12px; color: #94a3b8">{{ item.description }}</div>
               </div>
-            </a-select-option>
-          </a-select>
-        </a-form-item>
+            </el-option>
+          </el-select>
+        </el-form-item>
 
         <!-- 掩码策略参数 -->
         <template v-if="formState.strategy === 'mask'">
-          <a-form-item label="掩码字符">
-            <a-input v-model:value="formState.mask_char" placeholder="掩码替换字符，默认为 *" style="width: 80px" />
-          </a-form-item>
-          <a-form-item label="保留前N位">
-            <a-input-number v-model:value="formState.keep_prefix" :min="0" :max="20" placeholder="0" style="width: 120px" />
-          </a-form-item>
-          <a-form-item label="保留后N位">
-            <a-input-number v-model:value="formState.keep_suffix" :min="0" :max="20" placeholder="0" style="width: 120px" />
-          </a-form-item>
+          <el-form-item label="掩码字符">
+            <el-input v-model="formState.mask_char" placeholder="掩码替换字符，默认为 *" style="width: 80px" />
+          </el-form-item>
+          <el-form-item label="保留前N位">
+            <el-input-number v-model="formState.keep_prefix" :min="0" :max="20" placeholder="0" style="width: 120px" />
+          </el-form-item>
+          <el-form-item label="保留后N位">
+            <el-input-number v-model="formState.keep_suffix" :min="0" :max="20" placeholder="0" style="width: 120px" />
+          </el-form-item>
         </template>
 
         <!-- 哈希策略参数 -->
         <template v-if="formState.strategy === 'hash'">
-          <a-form-item label="哈希算法">
-            <a-select v-model:value="formState.hash_algorithm" style="width: 160px">
-              <a-select-option value="MD5">MD5</a-select-option>
-              <a-select-option value="SHA256">SHA-256</a-select-option>
-              <a-select-option value="SHA512">SHA-512</a-select-option>
-            </a-select>
-          </a-form-item>
+          <el-form-item label="哈希算法">
+            <el-select v-model="formState.hash_algorithm" style="width: 160px">
+              <el-option value="MD5" label="MD5" />
+              <el-option value="SHA256" label="SHA-256" />
+              <el-option value="SHA512" label="SHA-512" />
+            </el-select>
+          </el-form-item>
         </template>
 
         <!-- 加密策略参数 -->
         <template v-if="formState.strategy === 'encrypt'">
-          <a-form-item label="加密算法">
-            <a-select v-model:value="formState.encrypt_algorithm" style="width: 160px">
-              <a-select-option value="AES">AES</a-select-option>
-              <a-select-option value="SM4">SM4 (国密)</a-select-option>
-            </a-select>
-          </a-form-item>
+          <el-form-item label="加密算法">
+            <el-select v-model="formState.encrypt_algorithm" style="width: 160px">
+              <el-option value="AES" label="AES" />
+              <el-option value="SM4" label="SM4 (国密)" />
+            </el-select>
+          </el-form-item>
         </template>
 
         <!-- 替换策略参数 -->
         <template v-if="formState.strategy === 'substitute'">
-          <a-form-item label="替换值">
-            <a-input v-model:value="formState.substitute_value" placeholder="替换后的固定值" />
-          </a-form-item>
+          <el-form-item label="替换值">
+            <el-input v-model="formState.substitute_value" placeholder="替换后的固定值" />
+          </el-form-item>
         </template>
 
         <!-- 伪匿名策略参数 -->
         <template v-if="formState.strategy === 'pseudonymize'">
-          <a-form-item label="伪匿名映射">
-            <a-select v-model:value="formState.pseudonym_pool" style="width: 200px">
-              <a-select-option value="auto_increment">自增ID</a-select-option>
-              <a-select-option value="uuid">UUID</a-select-option>
-              <a-select-option value="random_string">随机字符串</a-select-option>
-            </a-select>
-          </a-form-item>
+          <el-form-item label="伪匿名映射">
+            <el-select v-model="formState.pseudonym_pool" style="width: 200px">
+              <el-option value="auto_increment" label="自增ID" />
+              <el-option value="uuid" label="UUID" />
+              <el-option value="random_string" label="随机字符串" />
+            </el-select>
+          </el-form-item>
         </template>
 
-        <a-form-item label="描述" name="description">
-          <a-textarea v-model:value="formState.description" :rows="2" placeholder="规则描述（选填）" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="formState.description" type="textarea" :rows="2" placeholder="规则描述（选填）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleModalCancel">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 脱敏预览弹窗 -->
-    <a-modal
-      v-model:open="previewModalVisible"
+    <el-dialog
+      v-model="previewModalVisible"
       title="脱敏效果预览"
-      :footer="null"
-      :width="800"
-      destroy-on-close
+      width="800px"
+      :destroy-on-close="true"
     >
-      <a-spin :spinning="previewLoading">
+      <div v-loading="previewLoading" class="min-h-[200px]">
         <DesensitizePreview
           v-if="previewData"
           :original="previewData.original"
           :desensitized="previewData.desensitized"
         />
-        <a-empty v-else description="暂无预览数据" />
-      </a-spin>
-    </a-modal>
+        <el-empty v-else description="暂无预览数据" :image-size="60" />
+      </div>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined, ArrowRightOutlined } from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+import { ElMessage, type FormInstance, type FormItemRule } from 'element-plus'
+import { Plus, Right } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import DesensitizePreview from '@/components/DesensitizePreview/index.vue'
@@ -187,6 +200,7 @@ import {
   toggleDesensitizeRule,
   previewDesensitize,
 } from '@/api/data'
+import { getEtlColumns } from '@/api/etl'
 
 defineOptions({ name: 'DesensitizeRule' })
 
@@ -199,12 +213,15 @@ const strategyMap: Record<string, string> = {
   pseudonymize: '伪匿名',
 }
 
-const strategyColorMap: Record<string, string> = {
-  mask: 'blue',
-  hash: 'purple',
-  encrypt: 'green',
-  substitute: 'orange',
-  pseudonymize: 'cyan',
+const strategyTypeMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  mask: 'primary',
+  encrypt: 'success',
+  substitute: 'warning',
+}
+
+const strategyStyleMap: Record<string, { color: string; background: string; borderColor: string }> = {
+  hash: { color: '#8b5cf6', background: '#f5f3ff', borderColor: '#ddd6fe' },
+  pseudonymize: { color: '#06b6d4', background: '#ecfeff', borderColor: '#a5f3fc' },
 }
 
 const strategyOptions = [
@@ -215,7 +232,8 @@ const strategyOptions = [
   { value: 'pseudonymize', label: '伪匿名', description: '替换为伪标识符，保留映射关系' },
 ]
 
-const fieldOptions = [
+// 脱敏字段选项 - 从后端获取
+const fieldOptions = ref<{ value: string; label: string }[]>([
   { value: 'name', label: '姓名' },
   { value: 'id_card', label: '身份证号' },
   { value: 'phone', label: '联系电话' },
@@ -224,10 +242,31 @@ const fieldOptions = [
   { value: 'birth_date', label: '出生日期' },
   { value: 'medical_record_no', label: '病历号' },
   { value: 'insurance_no', label: '医保卡号' },
-]
+])
 
-function filterOption(input: string, option: any) {
-  return option.label?.toLowerCase().includes(input.toLowerCase())
+async function loadFieldOptions() {
+  try {
+    // Load sensitive fields from CDR patient table
+    const res = await getEtlColumns('cdr', 'cdr_patient')
+    const sensitiveFields = ['name', 'id_card', 'phone', 'address', 'email', 'birth_date', 'medical_record_no', 'insurance_no']
+    const columns = res.data.data || []
+    fieldOptions.value = columns
+      .filter((c: any) => sensitiveFields.includes(c.columnName || c.name))
+      .map((c: any) => ({ value: c.columnName || c.name, label: c.columnComment || c.columnName || c.name }))
+    if (fieldOptions.value.length === 0) {
+      // Fallback to defaults
+      fieldOptions.value = [
+        { value: 'name', label: '姓名' },
+        { value: 'id_card', label: '身份证号' },
+        { value: 'phone', label: '联系电话' },
+        { value: 'address', label: '家庭住址' },
+        { value: 'email', label: '电子邮箱' },
+        { value: 'birth_date', label: '出生日期' },
+        { value: 'medical_record_no', label: '病历号' },
+        { value: 'insurance_no', label: '医保卡号' },
+      ]
+    }
+  } catch { /* keep defaults */ }
 }
 
 // ===== 搜索 =====
@@ -248,22 +287,24 @@ function handleReset() {
 }
 
 // ===== 表格 =====
-const columns = [
-  { title: '规则名称', dataIndex: 'name', key: 'name', width: 180, ellipsis: true },
-  { title: '目标字段', dataIndex: 'target_field', width: 120 },
-  { title: '策略', key: 'strategy', width: 100 },
-  { title: '效果预览', key: 'preview', width: 260 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getDesensitizeRules({
     page: params.page,
     page_size: params.pageSize,
     ...currentSearchParams,
   }),
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // ===== 弹窗 =====
 const modalVisible = ref(false)
@@ -291,7 +332,7 @@ const formState = reactive({
   pseudonym_pool: 'uuid',
 })
 
-const formRules: Record<string, Rule[]> = {
+const formRules: Record<string, FormItemRule[]> = {
   name: [{ required: true, message: '请输入规则名称' }],
   target_field: [{ required: true, message: '请选择目标字段' }],
   strategy: [{ required: true, message: '请选择脱敏策略' }],
@@ -338,7 +379,7 @@ function handleEdit(record: any) {
 }
 
 async function handleSubmit() {
-  await formRef.value?.validateFields()
+  await formRef.value?.validate()
   submitLoading.value = true
   try {
     const data: Record<string, any> = {
@@ -367,10 +408,10 @@ async function handleSubmit() {
 
     if (isEdit.value) {
       await updateDesensitizeRule(editingId.value!, data)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createDesensitizeRule(data)
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     handleModalCancel()
     fetchData()
@@ -389,7 +430,7 @@ function handleModalCancel() {
 async function handleToggle(record: any, checked: boolean) {
   try {
     await toggleDesensitizeRule(record.id, checked)
-    message.success(checked ? '已启用' : '已禁用')
+    ElMessage.success(checked ? '已启用' : '已禁用')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -398,7 +439,7 @@ async function handleToggle(record: any, checked: boolean) {
 
 async function handleDelete(record: any) {
   await deleteDesensitizeRule(record.id)
-  message.success('删除成功')
+  ElMessage.success('删除成功')
   fetchData()
 }
 
@@ -425,7 +466,7 @@ async function handlePreview(record: any) {
   }
 }
 
-onMounted(() => fetchData())
+onMounted(() => { loadFieldOptions(); fetchData() })
 </script>
 
 <style scoped>
@@ -436,11 +477,11 @@ onMounted(() => fetchData())
 .preview-before {
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 .preview-after {
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 13px;
-  color: #52c41a;
+  color: #10b981;
 }
 </style>

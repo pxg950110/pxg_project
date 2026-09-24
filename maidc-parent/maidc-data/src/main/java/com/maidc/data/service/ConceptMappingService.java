@@ -9,6 +9,9 @@ import com.maidc.data.repository.ConceptRelationshipRepository;
 import com.maidc.data.repository.ConceptSynonymRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +53,13 @@ public class ConceptMappingService {
      */
     public List<ConceptRelationshipEntity> getMappings(Long conceptId) {
         return relationshipRepository.findByConceptId1AndRelationshipTypeAndIsDeletedFalse(conceptId, "MAPS_TO");
+    }
+
+    /**
+     * List mappings with dynamic filtering and pagination.
+     */
+    public Page<ConceptRelationshipEntity> listMappings(Specification<ConceptRelationshipEntity> spec, Pageable pageable) {
+        return relationshipRepository.findAll(spec, pageable);
     }
 
     /**

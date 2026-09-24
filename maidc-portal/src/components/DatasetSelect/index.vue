@@ -1,20 +1,20 @@
 <template>
-  <a-select
-    :value="modelValue"
+  <el-select
+    :model-value="modelValue"
     :placeholder="placeholder || '请选择数据集'"
-    show-search
-    :filter-option="false"
+    filterable
+    remote
+    :remote-method="handleSearch"
     :loading="fetching"
-    allow-clear
+    clearable
     style="width: 100%"
-    @search="handleSearch"
     @change="handleChange"
     @focus="handleFocus"
   >
-    <a-select-option v-for="item in options" :key="item.id" :value="String(item.id)">
+    <el-option v-for="item in options" :key="item.id" :value="String(item.id)" :label="item.name">
       {{ item.name }}
-    </a-select-option>
-  </a-select>
+    </el-option>
+  </el-select>
 </template>
 
 <script setup lang="ts">
@@ -70,7 +70,7 @@ function handleFocus() {
 }
 
 function handleChange(value: string | undefined) {
-  emit('update:modelValue', value)
+  emit('update:modelValue', value || undefined)
   const selected = options.value.find((d) => String(d.id) === value)
   emit('change', selected)
 }

@@ -22,6 +22,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     await completeTodo(id)
     if (dashboard.value) {
       dashboard.value.todos = dashboard.value.todos.filter(t => t.id !== id)
+      if (dashboard.value.todoStats) {
+        dashboard.value.todoStats.total = Math.max(0, dashboard.value.todoStats.total - 1)
+      }
     }
   }
 

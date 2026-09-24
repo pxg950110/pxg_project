@@ -1,223 +1,258 @@
 <template>
   <PageContainer :loading="loading" :breadcrumb="breadcrumb">
     <template #extra>
-      <a-button @click="router.back()">返回</a-button>
+      <el-button @click="router.back()">返回</el-button>
     </template>
 
-    <a-tabs v-model:activeKey="activeTab">
+    <el-tabs v-model="activeTab">
       <!-- Tab 1: 基本信息 -->
-      <a-tab-pane key="info" tab="基本信息">
+      <el-tab-pane label="基本信息" name="info">
         <!-- Top Card: Model Overview -->
-        <a-card class="overview-card">
-          <a-row :gutter="32">
-            <a-col :span="14">
+        <el-card shadow="never" class="overview-card !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-7">
               <div class="model-header">
                 <h2 class="model-name">{{ modelInfo.name }}</h2>
                 <StatusBadge :status="modelInfo.status" type="model" />
               </div>
               <p class="model-desc">{{ modelInfo.description }}</p>
-              <a-space style="margin-top: 16px">
-                <a-button type="primary" @click="showEditModal">编辑</a-button>
-                <a-button type="primary" @click="showVersionModal">注册新版本</a-button>
-              </a-space>
-            </a-col>
-            <a-col :span="10">
-              <a-descriptions :column="1" size="small" bordered>
-                <a-descriptions-item label="Model ID">{{ modelInfo.code }}</a-descriptions-item>
-                <a-descriptions-item label="类型">{{ modelInfo.type }}</a-descriptions-item>
-                <a-descriptions-item label="框架">{{ modelInfo.framework }}</a-descriptions-item>
-                <a-descriptions-item label="任务">{{ modelInfo.task }}</a-descriptions-item>
-                <a-descriptions-item label="所属项目">{{ modelInfo.project }}</a-descriptions-item>
-                <a-descriptions-item label="负责人">{{ modelInfo.owner }}</a-descriptions-item>
-                <a-descriptions-item label="创建时间">{{ modelInfo.createdAt }}</a-descriptions-item>
-                <a-descriptions-item label="更新时间">{{ modelInfo.updatedAt }}</a-descriptions-item>
-                <a-descriptions-item label="最新版本">{{ modelInfo.latestVersion }}</a-descriptions-item>
-                <a-descriptions-item label="标签">
-                  <a-tag v-for="tag in modelInfo.tags" :key="tag" color="blue">{{ tag }}</a-tag>
-                </a-descriptions-item>
-              </a-descriptions>
-            </a-col>
-          </a-row>
-        </a-card>
+              <div class="flex items-center gap-2" style="margin-top: 16px">
+                <el-button type="primary" @click="showEditModal">编辑</el-button>
+                <el-button type="primary" @click="showVersionModal">注册新版本</el-button>
+              </div>
+            </div>
+            <div class="lg:col-span-5">
+              <el-descriptions :column="1" size="small" border>
+                <el-descriptions-item label="Model ID">{{ modelInfo.code }}</el-descriptions-item>
+                <el-descriptions-item label="类型">{{ modelInfo.type }}</el-descriptions-item>
+                <el-descriptions-item label="框架">{{ modelInfo.framework }}</el-descriptions-item>
+                <el-descriptions-item label="任务">{{ modelInfo.task }}</el-descriptions-item>
+                <el-descriptions-item label="所属项目">{{ modelInfo.project }}</el-descriptions-item>
+                <el-descriptions-item label="负责人">{{ modelInfo.owner }}</el-descriptions-item>
+                <el-descriptions-item label="创建时间">{{ modelInfo.createdAt }}</el-descriptions-item>
+                <el-descriptions-item label="更新时间">{{ modelInfo.updatedAt }}</el-descriptions-item>
+                <el-descriptions-item label="最新版本">{{ modelInfo.latestVersion }}</el-descriptions-item>
+                <el-descriptions-item label="标签">
+                  <el-tag v-for="tag in modelInfo.tags" :key="tag" type="primary" size="small" class="mr-1">{{ tag }}</el-tag>
+                </el-descriptions-item>
+              </el-descriptions>
+            </div>
+          </div>
+        </el-card>
 
         <!-- Performance Metrics Box -->
-        <a-card title="最新评估指标 v2.3.1" style="margin-top: 16px">
-          <a-row :gutter="16">
-            <a-col v-for="metric in metrics" :key="metric.label" :span="6">
-              <a-card size="small" class="metric-card">
-                <a-statistic :title="metric.label" :value="metric.value" :suffix="metric.suffix" />
-              </a-card>
-            </a-col>
-          </a-row>
-        </a-card>
-      </a-tab-pane>
+        <el-card shadow="never" class="mt-4 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+          <template #header>
+            <span class="font-semibold text-slate-900">最新评估指标 v2.3.1</span>
+          </template>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <el-card v-for="metric in metrics" :key="metric.label" shadow="never" class="metric-card !rounded-lg !border-slate-200/80">
+              <div class="stat-label">{{ metric.label }}</div>
+              <div class="stat-value">{{ metric.value }}<span v-if="metric.suffix" class="stat-suffix">{{ metric.suffix }}</span></div>
+            </el-card>
+          </div>
+        </el-card>
+      </el-tab-pane>
 
       <!-- Tab 2: 版本列表 -->
-      <a-tab-pane key="versions" tab="版本列表">
-        <a-card>
-          <a-table
-            :columns="versionColumns"
-            :data-source="versions"
-            bordered
+      <el-tab-pane label="版本列表" name="versions">
+        <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+          <el-table
+            :data="versions"
+            border
             row-key="version"
-            size="middle"
-            :pagination="false"
+            size="default"
           >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <StatusBadge :status="record.status" type="version" />
+            <el-table-column label="版本号" prop="version" />
+            <el-table-column label="描述" prop="desc" />
+            <el-table-column label="框架版本" prop="framework" />
+            <el-table-column label="文件大小" prop="size" />
+            <el-table-column label="训练指标(AUC)" prop="auc" />
+            <el-table-column label="状态" prop="status">
+              <template #default="{ row }">
+                <StatusBadge :status="row.status" type="version" />
               </template>
-              <template v-if="column.key === 'action'">
-                <a-button type="link" size="small">详情</a-button>
-                <a-divider type="vertical" />
-                <a-button type="link" size="small" @click="handleDownload(record)">下载</a-button>
+            </el-table-column>
+            <el-table-column label="创建时间" prop="date" />
+            <el-table-column label="操作" width="140">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small">详情</el-button>
+                <el-divider direction="vertical" />
+                <el-button link type="primary" size="small" @click="handleDownload(row)">下载</el-button>
               </template>
-            </template>
-          </a-table>
-        </a-card>
+            </el-table-column>
+          </el-table>
+        </el-card>
 
         <!-- Version Comparison -->
-        <a-card title="版本对比" style="margin-top: 16px">
-          <a-space style="margin-bottom: 16px">
-            <a-select
-              v-model:value="compareVerA"
+        <el-card shadow="never" class="mt-4 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+          <template #header>
+            <span class="font-semibold text-slate-900">版本对比</span>
+          </template>
+          <div class="flex items-center gap-2" style="margin-bottom: 16px">
+            <el-select
+              v-model="compareVerA"
               style="width: 160px"
               placeholder="选择版本 A"
             >
-              <a-select-option v-for="v in versions" :key="v.version" :value="v.version">
-                {{ v.version }}
-              </a-select-option>
-            </a-select>
+              <el-option v-for="v in versions" :key="v.version" :value="v.version" :label="v.version" />
+            </el-select>
             <span>vs</span>
-            <a-select
-              v-model:value="compareVerB"
+            <el-select
+              v-model="compareVerB"
               style="width: 160px"
               placeholder="选择版本 B"
             >
-              <a-select-option v-for="v in versions" :key="v.version" :value="v.version">
-                {{ v.version }}
-              </a-select-option>
-            </a-select>
-            <a-button type="primary" @click="handleCompare">对比</a-button>
-          </a-space>
-          <a-table
+              <el-option v-for="v in versions" :key="v.version" :value="v.version" :label="v.version" />
+            </el-select>
+            <el-button type="primary" @click="handleCompare">对比</el-button>
+          </div>
+          <el-table
             v-if="comparisonData.length"
-            :columns="comparisonColumns"
-            :data-source="comparisonData"
-            bordered
+            :data="comparisonData"
+            border
             size="small"
-            :pagination="false"
             row-key="metric"
           >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'diff'">
-                <span :class="record.diffClass">{{ record.diff }}</span>
+            <el-table-column label="指标" prop="metric" />
+            <el-table-column :label="compareVerA" prop="valA" />
+            <el-table-column :label="compareVerB" prop="valB" />
+            <el-table-column label="差异" prop="diff">
+              <template #default="{ row }">
+                <span :class="row.diffClass">{{ row.diff }}</span>
               </template>
-            </template>
-          </a-table>
-        </a-card>
-      </a-tab-pane>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
 
       <!-- Tab 3: 评估记录 -->
-      <a-tab-pane key="evaluations" tab="评估记录">
-        <a-space direction="vertical" :size="16" style="width: 100%">
-          <a-card v-for="evalItem in evaluations" :key="evalItem.title">
+      <el-tab-pane label="评估记录" name="evaluations">
+        <div v-if="evaluations.length" class="flex flex-col gap-4" style="width: 100%">
+          <el-card v-for="evalItem in evaluations" :key="evalItem.title" shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
             <div class="eval-header">
               <span class="eval-title">{{ evalItem.title }}</span>
               <StatusBadge :status="evalItem.status" type="eval" />
-              <a-tag :color="evalItem.type === '外部验证' ? 'purple' : 'blue'">{{ evalItem.type }}</a-tag>
+              <el-tag
+                v-if="evalItem.type === '外部验证'"
+                size="small"
+                :style="{ color: '#8b5cf6', backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' }"
+              >{{ evalItem.type }}</el-tag>
+              <el-tag v-else type="primary" size="small">{{ evalItem.type }}</el-tag>
             </div>
             <div class="eval-dataset">
-              <a-tag color="cyan">{{ evalItem.dataset }}</a-tag>
+              <el-tag size="small" :style="{ color: '#0e7490', backgroundColor: '#ecfeff', borderColor: '#a5f3fc' }">{{ evalItem.dataset }}</el-tag>
             </div>
 
             <template v-if="evalItem.status === 'RUNNING'">
-              <a-progress :percent="evalItem.progress" status="active" style="margin: 12px 0" />
+              <el-progress :percentage="evalItem.progress" :stroke-width="6" style="margin: 12px 0" />
             </template>
 
-            <a-row v-else :gutter="24" class="eval-metrics">
-              <a-col :span="6">
-                <a-statistic title="AUC" :value="evalItem.auc" :precision="3" />
-              </a-col>
-              <a-col :span="6">
-                <a-statistic title="F1" :value="evalItem.f1" :precision="3" />
-              </a-col>
-              <a-col :span="6">
-                <a-statistic title="Precision" :value="evalItem.precision" :precision="3" />
-              </a-col>
-              <a-col :span="6">
-                <a-statistic title="Recall" :value="evalItem.recall" :precision="3" />
-              </a-col>
-            </a-row>
+            <div v-else class="eval-metrics grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <div class="stat-item">
+                <div class="stat-label">AUC</div>
+                <div class="stat-value">{{ evalItem.auc?.toFixed(3) }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">F1</div>
+                <div class="stat-value">{{ evalItem.f1?.toFixed(3) }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Precision</div>
+                <div class="stat-value">{{ evalItem.precision?.toFixed(3) }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Recall</div>
+                <div class="stat-value">{{ evalItem.recall?.toFixed(3) }}</div>
+              </div>
+            </div>
 
             <div class="eval-footer">
               <span v-if="evalItem.duration" class="eval-duration">耗时: {{ evalItem.duration }}</span>
-              <a-button type="primary" size="small">查看报告</a-button>
+              <el-button type="primary" size="small">查看报告</el-button>
             </div>
-          </a-card>
-        </a-space>
-      </a-tab-pane>
+          </el-card>
+        </div>
+        <el-empty v-else description="暂无评估记录" :image-size="60" style="padding: 60px 0" />
+      </el-tab-pane>
 
       <!-- Tab 4: 部署管理 -->
-      <a-tab-pane key="deployments" tab="部署管理">
-        <a-card>
-          <template #extra>
-            <a-button type="primary">新增部署</a-button>
+      <el-tab-pane label="部署管理" name="deployments">
+        <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+          <template #header>
+            <div class="flex justify-end">
+              <el-button type="primary">新增部署</el-button>
+            </div>
           </template>
-          <a-table
-            :columns="deployColumns"
-            :data-source="deployments"
-            bordered
+          <el-table
+            :data="deployments"
+            border
             row-key="name"
-            size="middle"
-            :pagination="false"
+            size="default"
           >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <StatusBadge :status="record.status" type="deploy" />
+            <el-table-column label="部署名称" prop="name" />
+            <el-table-column label="版本" prop="version" />
+            <el-table-column label="类型" prop="type" />
+            <el-table-column label="集群" prop="cluster" />
+            <el-table-column label="状态" prop="status">
+              <template #default="{ row }">
+                <StatusBadge :status="row.status" type="deploy" />
               </template>
-              <template v-if="column.key === 'action'">
-                <a-button type="link" size="small">详情</a-button>
-                <a-divider type="vertical" />
-                <a-button v-if="record.status === 'RUNNING'" type="link" size="small" danger>停止</a-button>
-                <a-button v-else type="link" size="small">启动</a-button>
+            </el-table-column>
+            <el-table-column label="QPS" prop="qps" />
+            <el-table-column label="延迟" prop="latency" />
+            <el-table-column label="操作" width="140">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small">详情</el-button>
+                <el-divider direction="vertical" />
+                <el-button v-if="row.status === 'RUNNING'" link type="danger" size="small">停止</el-button>
+                <el-button v-else link type="primary" size="small">启动</el-button>
               </template>
-            </template>
-          </a-table>
-        </a-card>
-      </a-tab-pane>
-    </a-tabs>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
+    </el-tabs>
 
     <!-- 编辑弹窗 -->
-    <a-modal v-model:open="editModal.visible" title="编辑模型" @ok="handleEditSubmit" width="600px">
-      <a-form layout="vertical">
-        <a-form-item label="模型名称">
-          <a-input v-model:value="editForm.name" />
-        </a-form-item>
-        <a-form-item label="描述">
-          <a-textarea v-model:value="editForm.description" :rows="3" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="editModal.visible" title="编辑模型" width="600px">
+      <el-form label-width="100px">
+        <el-form-item label="模型名称">
+          <el-input v-model="editForm.name" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="editForm.description" type="textarea" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editModal.close()">取消</el-button>
+        <el-button type="primary" @click="handleEditSubmit">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 注册版本弹窗 -->
-    <a-modal v-model:open="versionModal.visible" title="注册新版本" @ok="handleVersionSubmit" width="600px">
-      <a-form layout="vertical">
-        <a-form-item label="版本号" required>
-          <a-input v-model:value="versionForm.version_no" placeholder="例如 v1.0.0" />
-        </a-form-item>
-        <a-form-item label="变更说明">
-          <a-textarea v-model:value="versionForm.changelog" :rows="3" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="versionModal.visible" title="注册新版本" width="600px">
+      <el-form label-width="100px">
+        <el-form-item label="版本号" required>
+          <el-input v-model="versionForm.version_no" placeholder="例如 v1.0.0" />
+        </el-form-item>
+        <el-form-item label="变更说明">
+          <el-input v-model="versionForm.changelog" type="textarea" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="versionModal.close()">取消</el-button>
+        <el-button type="primary" @click="handleVersionSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -250,18 +285,18 @@ function showVersionModal() {
 function handleEditSubmit() {
   modelInfo.name = editForm.name
   modelInfo.description = editForm.description
-  message.success('模型信息已更新')
+  ElMessage.success('模型信息已更新')
   editModal.close()
 }
 
 function handleVersionSubmit() {
-  if (!versionForm.version_no) { message.warning('请输入版本号'); return }
-  message.success('版本注册成功')
+  if (!versionForm.version_no) { ElMessage.warning('请输入版本号'); return }
+  ElMessage.success('版本注册成功')
   versionModal.close()
 }
 
 function handleDownload(record: any) {
-  message.info(`开始下载版本 ${record.version}`)
+  ElMessage.info(`开始下载版本 ${record.version}`)
 }
 const activeTab = ref('info')
 
@@ -289,18 +324,18 @@ async function loadModelDetail() {
   try {
     const res = await getModel(modelId)
     const data = res.data.data
-    modelInfo.name = data.modelName || data.model_name || ''
+    modelInfo.name = data.model_name || ''
     modelInfo.status = data.status || ''
     modelInfo.description = data.description || ''
-    modelInfo.code = data.modelCode || data.model_code || ''
-    modelInfo.type = data.modelType || data.model_type || ''
+    modelInfo.code = data.model_code || ''
+    modelInfo.type = data.model_type || ''
     modelInfo.framework = data.framework || ''
-    modelInfo.task = data.taskType || data.task_type || ''
-    modelInfo.project = data.project || ''
-    modelInfo.owner = data.ownerName || data.owner_name || ''
-    modelInfo.createdAt = data.createdAt || data.created_at || ''
-    modelInfo.updatedAt = data.updatedAt || data.updated_at || ''
-    modelInfo.latestVersion = data.latestVersion || data.latest_version || ''
+    modelInfo.task = data.task_type || ''
+    modelInfo.project = ''
+    modelInfo.owner = data.owner_name || ''
+    modelInfo.createdAt = data.created_at ? dayjs(data.created_at).format('YYYY-MM-DD HH:mm:ss') : ''
+    modelInfo.updatedAt = data.updated_at ? dayjs(data.updated_at).format('YYYY-MM-DD HH:mm:ss') : ''
+    modelInfo.latestVersion = data.latest_version || ''
     modelInfo.tags = data.tags || []
   } finally {
     loading.value = false
@@ -314,17 +349,6 @@ const breadcrumb = computed(() => [
 ])
 
 // Tab 2: Version List
-const versionColumns = [
-  { title: '版本号', dataIndex: 'version', key: 'version' },
-  { title: '描述', dataIndex: 'desc', key: 'desc' },
-  { title: '框架版本', dataIndex: 'framework', key: 'framework' },
-  { title: '文件大小', dataIndex: 'size', key: 'size' },
-  { title: '训练指标(AUC)', dataIndex: 'auc', key: 'auc' },
-  { title: '状态', dataIndex: 'status', key: 'status' },
-  { title: '创建时间', dataIndex: 'date', key: 'date' },
-  { title: '操作', key: 'action', width: 140 },
-]
-
 const versions = ref<any[]>([])
 
 async function loadVersions() {
@@ -348,13 +372,6 @@ async function loadVersions() {
 const compareVerA = ref<string>('')
 const compareVerB = ref<string>('')
 const comparisonData = ref<any[]>([])
-
-const comparisonColumns = computed(() => [
-  { title: '指标', dataIndex: 'metric', key: 'metric' },
-  { title: compareVerA.value, dataIndex: 'valA', key: 'valA' },
-  { title: compareVerB.value, dataIndex: 'valB', key: 'valB' },
-  { title: '差异', dataIndex: 'diff', key: 'diff' },
-])
 
 const versionMetricsMap = computed<Record<string, Record<string, any>>>(() => {
   const map: Record<string, Record<string, any>> = {}
@@ -433,17 +450,6 @@ async function loadEvaluations() {
 }
 
 // Tab 4: Deployments
-const deployColumns = [
-  { title: '部署名称', dataIndex: 'name', key: 'name' },
-  { title: '版本', dataIndex: 'version', key: 'version' },
-  { title: '类型', dataIndex: 'type', key: 'type' },
-  { title: '集群', dataIndex: 'cluster', key: 'cluster' },
-  { title: '状态', dataIndex: 'status', key: 'status' },
-  { title: 'QPS', dataIndex: 'qps', key: 'qps' },
-  { title: '延迟', dataIndex: 'latency', key: 'latency' },
-  { title: '操作', key: 'action', width: 140 },
-]
-
 const deployments = ref<any[]>([])
 
 async function loadDeployments() {
@@ -485,18 +491,34 @@ onMounted(async () => {
 .model-name {
   font-size: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 .model-desc {
-  color: rgba(0, 0, 0, 0.55);
+  color: #64748b;
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
 }
 .metric-card {
   text-align: center;
-  background: #fafafa;
+  background: #f8fafc;
+}
+.stat-label {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+.stat-suffix {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-left: 4px;
 }
 .eval-header {
   display: flex;
@@ -507,7 +529,7 @@ onMounted(async () => {
 .eval-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
 }
 .eval-dataset {
   margin-bottom: 16px;
@@ -521,18 +543,18 @@ onMounted(async () => {
   justify-content: space-between;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
 }
 .eval-duration {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   font-size: 13px;
 }
 .diff-positive {
-  color: #52c41a;
+  color: #10b981;
   font-weight: 500;
 }
 .diff-negative {
-  color: #ff4d4f;
+  color: #ef4444;
   font-weight: 500;
 }
 </style>

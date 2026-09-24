@@ -34,6 +34,9 @@ public class CodeSystemEntity extends BaseEntity {
     @Column(name = "hierarchy_support", nullable = false)
     private Boolean hierarchySupport = false;
 
+    @Column(name = "category", length = 32)
+    private String category = "STANDARD";
+
     @Column(name = "status", nullable = false, length = 16)
     private String status = "ACTIVE";
 }

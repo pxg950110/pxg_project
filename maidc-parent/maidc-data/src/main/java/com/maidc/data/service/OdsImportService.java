@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,6 +33,11 @@ public class OdsImportService {
     private volatile String currentBatchId;
     private volatile boolean importing = false;
     private final ExecutorService executor = Executors.newFixedThreadPool(3);
+
+    @PreDestroy
+    void shutdownExecutor() {
+        executor.shutdown();
+    }
 
     /**
      * 启动全量导入。

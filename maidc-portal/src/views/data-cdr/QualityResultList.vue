@@ -3,105 +3,112 @@
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
     <!-- 汇总统计 -->
-    <a-row :gutter="16" style="margin-bottom: 16px">
-      <a-col :span="6">
-        <MetricCard title="检测总数" :value="summary.total" suffix="次" />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard title="通过" :value="summary.pass" suffix="次" />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard title="警告" :value="summary.warning" suffix="次" />
-      </a-col>
-      <a-col :span="6">
-        <MetricCard title="不通过" :value="summary.fail" suffix="次" />
-      </a-col>
-    </a-row>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <MetricCard title="检测总数" :value="summary.total" suffix="次" />
+      <MetricCard title="通过" :value="summary.pass" suffix="次" />
+      <MetricCard title="警告" :value="summary.warning" suffix="次" />
+      <MetricCard title="不通过" :value="summary.fail" suffix="次" />
+    </div>
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'ruleName'">
-          {{ record.rule_name || record.rule?.name || '-' }}
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="规则名称" min-width="200" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ row.rule_name || row.rule?.name || '-' }}
         </template>
-        <template v-if="column.key === 'checkTime'">
-          {{ formatDateTime(record.check_time) }}
+      </el-table-column>
+      <el-table-column label="检测时间" width="170">
+        <template #default="{ row }">
+          {{ formatDateTime(row.check_time) }}
         </template>
-        <template v-if="column.key === 'score'">
-          <a-progress
+      </el-table-column>
+      <el-table-column label="得分" width="100" align="center">
+        <template #default="{ row }">
+          <el-progress
             type="circle"
-            :percent="record.score || 0"
-            :size="40"
-            :stroke-color="getScoreColor(record.score)"
+            :percentage="row.score || 0"
+            :width="40"
+            :stroke-width="5"
+            :color="getScoreColor(row.score)"
           />
         </template>
-        <template v-if="column.key === 'counts'">
-          <span style="color: #52c41a">{{ record.passed_count || 0 }} 通过</span>
-          <a-divider type="vertical" />
-          <span style="color: #ff4d4f">{{ record.failed_count || 0 }} 失败</span>
+      </el-table-column>
+      <el-table-column label="通过/失败" width="150">
+        <template #default="{ row }">
+          <span class="count-pass">{{ row.passed_count || 0 }} 通过</span>
+          <el-divider direction="vertical" />
+          <span class="count-fail">{{ row.failed_count || 0 }} 失败</span>
         </template>
-        <template v-if="column.key === 'status'">
-          <StatusBadge :status="record.status" type="quality" />
+      </el-table-column>
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <StatusBadge :status="row.status" type="quality" />
         </template>
-        <template v-if="column.key === 'action'">
-          <a-button type="link" size="small" @click="handleViewDetail(record)">详情</a-button>
+      </el-table-column>
+      <el-table-column label="操作" width="80">
+        <template #default="{ row }">
+          <el-button link type="primary" size="small" @click="handleViewDetail(row)">详情</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- 详情抽屉 -->
-    <a-drawer
-      v-model:open="detailVisible"
+    <el-drawer
+      v-model="detailVisible"
       title="检测结果详情"
-      :width="600"
-      destroy-on-close
+      size="600px"
+      :destroy-on-close="true"
     >
       <template v-if="currentDetail">
-        <a-descriptions bordered :column="2" size="small" style="margin-bottom: 16px">
-          <a-descriptions-item label="规则名称">{{ currentDetail.rule_name || currentDetail.rule?.name }}</a-descriptions-item>
-          <a-descriptions-item label="检测状态">
+        <el-descriptions border :column="2" size="small" class="mb-4">
+          <el-descriptions-item label="规则名称">{{ currentDetail.rule_name || currentDetail.rule?.name }}</el-descriptions-item>
+          <el-descriptions-item label="检测状态">
             <StatusBadge :status="currentDetail.status" type="quality" />
-          </a-descriptions-item>
-          <a-descriptions-item label="检测时间">{{ formatDateTime(currentDetail.check_time) }}</a-descriptions-item>
-          <a-descriptions-item label="得分">
+          </el-descriptions-item>
+          <el-descriptions-item label="检测时间">{{ formatDateTime(currentDetail.check_time) }}</el-descriptions-item>
+          <el-descriptions-item label="得分">
             <span :style="{ color: getScoreColor(currentDetail.score), fontWeight: 600 }">
               {{ currentDetail.score }}%
             </span>
-          </a-descriptions-item>
-          <a-descriptions-item label="通过数">{{ currentDetail.passed_count }}</a-descriptions-item>
-          <a-descriptions-item label="失败数">{{ currentDetail.failed_count }}</a-descriptions-item>
-        </a-descriptions>
+          </el-descriptions-item>
+          <el-descriptions-item label="通过数">{{ currentDetail.passed_count }}</el-descriptions-item>
+          <el-descriptions-item label="失败数">{{ currentDetail.failed_count }}</el-descriptions-item>
+        </el-descriptions>
 
-        <a-card title="得分分布" size="small" style="margin-bottom: 16px">
+        <el-card shadow="never" size="small" class="mb-4 !rounded-lg">
+          <template #header>得分分布</template>
           <MetricChart :option="scoreDistributionOption" height="200px" />
-        </a-card>
+        </el-card>
 
-        <a-card title="失败明细" size="small">
-          <a-table
-            :columns="failDetailColumns"
-            :data-source="currentDetail.fail_details || []"
-            size="small"
-            row-key="id"
-            :pagination="false"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'expected'">
-                <a-tag color="blue">{{ record.expected }}</a-tag>
+        <el-card shadow="never" size="small" class="!rounded-lg">
+          <template #header>失败明细</template>
+          <el-table :data="currentDetail.fail_details || []" size="small" row-key="id">
+            <el-table-column label="字段" prop="field" width="120" />
+            <el-table-column label="期望值" width="120">
+              <template #default="{ row }">
+                <el-tag type="primary" size="small">{{ row.expected }}</el-tag>
               </template>
-              <template v-if="column.key === 'actual'">
-                <a-tag color="red">{{ record.actual }}</a-tag>
+            </el-table-column>
+            <el-table-column label="实际值" width="120">
+              <template #default="{ row }">
+                <el-tag type="danger" size="small">{{ row.actual }}</el-tag>
               </template>
-            </template>
-          </a-table>
-        </a-card>
+            </el-table-column>
+            <el-table-column label="记录ID" prop="record_id" width="120" />
+          </el-table>
+        </el-card>
       </template>
-    </a-drawer>
+    </el-drawer>
   </PageContainer>
 </template>
 
@@ -120,9 +127,9 @@ defineOptions({ name: 'QualityResultList' })
 
 // ===== 常量 =====
 function getScoreColor(score: number): string {
-  if (score >= 90) return '#52c41a'
-  if (score >= 70) return '#faad14'
-  return '#ff4d4f'
+  if (score >= 90) return '#10b981'
+  if (score >= 70) return '#f59e0b'
+  return '#ef4444'
 }
 
 // ===== 搜索 =====
@@ -156,22 +163,24 @@ const summary = reactive({
 })
 
 // ===== 表格 =====
-const columns = [
-  { title: '规则名称', key: 'ruleName', width: 200, ellipsis: true },
-  { title: '检测时间', key: 'checkTime', width: 170 },
-  { title: '得分', key: 'score', width: 100 },
-  { title: '通过/失败', key: 'counts', width: 150 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '操作', key: 'action', width: 80 },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getQualityResults({
     page: params.page,
     page_size: params.pageSize,
     ...currentSearchParams,
   }),
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // Update summary when table data changes
 function updateSummary(data: any[]) {
@@ -185,13 +194,6 @@ function updateSummary(data: any[]) {
 const detailVisible = ref(false)
 const currentDetail = ref<any>(null)
 
-const failDetailColumns = [
-  { title: '字段', dataIndex: 'field', width: 120 },
-  { title: '期望值', key: 'expected', width: 120 },
-  { title: '实际值', key: 'actual', width: 120 },
-  { title: '记录ID', dataIndex: 'record_id', width: 120 },
-]
-
 const scoreDistributionOption = computed(() => {
   if (!currentDetail.value) return {}
   return {
@@ -200,8 +202,8 @@ const scoreDistributionOption = computed(() => {
       type: 'pie',
       radius: ['40%', '70%'],
       data: [
-        { value: currentDetail.value.passed_count || 0, name: '通过', itemStyle: { color: '#52c41a' } },
-        { value: currentDetail.value.failed_count || 0, name: '失败', itemStyle: { color: '#ff4d4f' } },
+        { value: currentDetail.value.passed_count || 0, name: '通过', itemStyle: { color: '#10b981' } },
+        { value: currentDetail.value.failed_count || 0, name: '失败', itemStyle: { color: '#ef4444' } },
       ],
       label: { show: true, formatter: '{b}: {c}' },
     }],
@@ -223,3 +225,12 @@ onMounted(() => {
   fetchData()
 })
 </script>
+
+<style scoped>
+.count-pass {
+  color: #10b981;
+}
+.count-fail {
+  color: #ef4444;
+}
+</style>

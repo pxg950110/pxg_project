@@ -1,33 +1,36 @@
 <template>
-  <a-card class="patient-info-card" :bordered="false" size="small">
+  <el-card class="patient-info-card !rounded-xl !border-slate-200/80 shadow-clinical-sm" shadow="hover">
     <div class="patient-header">
-      <UserOutlined class="patient-avatar" />
+      <div class="patient-avatar">
+        <el-icon :size="24"><UserFilled /></el-icon>
+      </div>
       <div class="patient-main">
         <div class="patient-name">{{ desensitize ? maskName(patient.name) : patient.name }}</div>
         <div class="patient-id">
           ID: {{ desensitize ? maskId(patient.id) : patient.id }}
         </div>
       </div>
-      <a-switch
-        v-model:checked="desensitize"
-        checked-children="脱敏"
-        un-checked-children="原文"
+      <el-switch
+        v-model="desensitize"
+        active-text="脱敏"
+        inactive-text="原文"
+        inline-prompt
         size="small"
       />
     </div>
-    <a-descriptions :column="2" size="small" class="patient-details">
-      <a-descriptions-item label="性别">{{ patient.gender }}</a-descriptions-item>
-      <a-descriptions-item label="年龄">{{ patient.age }}岁</a-descriptions-item>
-      <a-descriptions-item label="诊断" :span="2">
+    <el-descriptions :column="2" size="small" border class="patient-details mt-3">
+      <el-descriptions-item label="性别">{{ patient.gender }}</el-descriptions-item>
+      <el-descriptions-item label="年龄">{{ patient.age }}岁</el-descriptions-item>
+      <el-descriptions-item label="诊断" :span="2">
         {{ patient.diagnosis }}
-      </a-descriptions-item>
-    </a-descriptions>
-  </a-card>
+      </el-descriptions-item>
+    </el-descriptions>
+  </el-card>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { UserOutlined } from '@ant-design/icons-vue'
+import { UserFilled } from '@element-plus/icons-vue'
 
 interface PatientInfo {
   id: string
@@ -60,36 +63,36 @@ function maskId(id: string): string {
 
 <style scoped>
 .patient-info-card {
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 .patient-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
 }
 .patient-avatar {
-  font-size: 36px;
-  color: #1677ff;
-  background: rgba(22, 119, 255, 0.08);
-  width: 48px;
-  height: 48px;
-  line-height: 48px;
-  text-align: center;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
+  background: #f0f9ff;
+  color: #0ea5e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .patient-main {
   flex: 1;
 }
 .patient-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: #0f172a;
 }
 .patient-id {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #64748b;
   margin-top: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 </style>

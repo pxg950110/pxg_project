@@ -2,127 +2,139 @@
   <PageContainer title="执行监控">
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'pipelineName'">
-          {{ record.pipelineName || `管道#${record.pipelineId}` }}
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="管道" min-width="150" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ row.pipelineName || `管道#${row.pipelineId}` }}
         </template>
-        <template v-if="column.key === 'stepName'">
-          {{ record.stepName || '管道级' }}
+      </el-table-column>
+      <el-table-column label="步骤" min-width="120" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ row.stepName || '管道级' }}
         </template>
-        <template v-if="column.key === 'status'">
-          <a-tag :color="statusColorMap[record.status] || 'default'">
-            {{ statusLabelMap[record.status] || record.status }}
-          </a-tag>
+      </el-table-column>
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <el-tag :type="statusColorMap[row.status] || 'info'">
+            {{ statusLabelMap[row.status] || row.status }}
+          </el-tag>
         </template>
-        <template v-if="column.key === 'triggerType'">
-          <a-tag>{{ record.triggerType }}</a-tag>
+      </el-table-column>
+      <el-table-column label="触发" width="90">
+        <template #default="{ row }">
+          <el-tag type="info">{{ row.triggerType }}</el-tag>
         </template>
-        <template v-if="column.key === 'progress'">
-          <template v-if="record.status === 'RUNNING'">
-            <a-progress :percent="calcProgress(record)" size="small" />
+      </el-table-column>
+      <el-table-column label="进度" width="160">
+        <template #default="{ row }">
+          <template v-if="row.status === 'RUNNING'">
+            <el-progress :percentage="calcProgress(row)" :stroke-width="6" />
           </template>
-          <template v-else-if="isCompleted(record) && record.rowsRead > 0">
-            {{ formatRows(record.rowsWritten) }}/{{ formatRows(record.rowsRead) }}
+          <template v-else-if="isCompleted(row) && row.rowsRead > 0">
+            {{ formatRows(row.rowsWritten) }}/{{ formatRows(row.rowsRead) }}
           </template>
           <template v-else>-</template>
         </template>
-        <template v-if="column.key === 'duration'">
-          {{ calcDuration(record) }}
+      </el-table-column>
+      <el-table-column label="耗时" width="100">
+        <template #default="{ row }">
+          {{ calcDuration(row) }}
         </template>
-        <template v-if="column.key === 'startTime'">
-          {{ record.startTime ? formatDateTime(record.startTime) : '-' }}
+      </el-table-column>
+      <el-table-column label="开始时间" width="170">
+        <template #default="{ row }">
+          {{ row.startTime ? formatDateTime(row.startTime) : '-' }}
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" size="small" @click="handleViewDetail(record)">详情</a-button>
-            <a-button type="link" size="small" @click="handleViewLogs(record)">日志</a-button>
-            <a-button v-if="record.status === 'RUNNING'" type="link" danger size="small" @click="handleCancel(record)">取消</a-button>
-            <a-button v-if="record.status === 'FAILED'" type="link" size="small" @click="handleRetry(record)">重试</a-button>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="200" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" size="small" @click="handleViewDetail(row)">详情</el-button>
+          <el-button link type="primary" size="small" @click="handleViewLogs(row)">日志</el-button>
+          <el-button v-if="row.status === 'RUNNING'" link type="danger" size="small" @click="handleCancel(row)">取消</el-button>
+          <el-button v-if="row.status === 'FAILED'" link type="primary" size="small" @click="handleRetry(row)">重试</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- 执行详情 Drawer -->
-    <a-drawer
-      v-model:open="detailVisible"
+    <el-drawer
+      v-model="detailVisible"
       title="执行详情"
-      :width="640"
-      destroy-on-close
+      size="640px"
+      :destroy-on-close="true"
     >
-      <template v-if="detailLoading">
-        <div style="text-align: center; padding: 40px 0;">
-          <a-spin />
-        </div>
-      </template>
-      <template v-else-if="detailData">
-        <a-descriptions bordered :column="2" size="small">
-          <a-descriptions-item label="管道">{{ detailData.pipelineName || `管道#${detailData.pipelineId}` }}</a-descriptions-item>
-          <a-descriptions-item label="步骤">{{ detailData.stepName || '管道级' }}</a-descriptions-item>
-          <a-descriptions-item label="状态">
-            <a-tag :color="statusColorMap[detailData.status] || 'default'">
-              {{ statusLabelMap[detailData.status] || detailData.status }}
-            </a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="触发方式">
-            <a-tag>{{ detailData.triggerType }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="开始时间">{{ detailData.startTime ? formatDateTime(detailData.startTime) : '-' }}</a-descriptions-item>
-          <a-descriptions-item label="结束时间">{{ detailData.endTime ? formatDateTime(detailData.endTime) : '-' }}</a-descriptions-item>
-          <a-descriptions-item label="读取行数">{{ formatRows(detailData.rowsRead) }}</a-descriptions-item>
-          <a-descriptions-item label="写入行数">{{ formatRows(detailData.rowsWritten) }}</a-descriptions-item>
-          <a-descriptions-item label="跳过行数">{{ formatRows(detailData.rowsSkipped) }}</a-descriptions-item>
-          <a-descriptions-item label="错误行数">{{ formatRows(detailData.errorRows) }}</a-descriptions-item>
-        </a-descriptions>
+      <div v-loading="detailLoading" style="min-height: 120px">
+        <template v-if="detailData">
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="管道">{{ detailData.pipelineName || `管道#${detailData.pipelineId}` }}</el-descriptions-item>
+            <el-descriptions-item label="步骤">{{ detailData.stepName || '管道级' }}</el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <el-tag :type="statusColorMap[detailData.status] || 'info'">
+                {{ statusLabelMap[detailData.status] || detailData.status }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="触发方式">
+              <el-tag type="info">{{ detailData.triggerType }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="开始时间">{{ detailData.startTime ? formatDateTime(detailData.startTime) : '-' }}</el-descriptions-item>
+            <el-descriptions-item label="结束时间">{{ detailData.endTime ? formatDateTime(detailData.endTime) : '-' }}</el-descriptions-item>
+            <el-descriptions-item label="读取行数">{{ formatRows(detailData.rowsRead) }}</el-descriptions-item>
+            <el-descriptions-item label="写入行数">{{ formatRows(detailData.rowsWritten) }}</el-descriptions-item>
+            <el-descriptions-item label="跳过行数">{{ formatRows(detailData.rowsSkipped) }}</el-descriptions-item>
+            <el-descriptions-item label="错误行数">{{ formatRows(detailData.errorRows) }}</el-descriptions-item>
+          </el-descriptions>
 
-        <template v-if="detailData.errorMessage">
-          <a-divider orientation="left">错误信息</a-divider>
-          <a-typography-paragraph
-            :content="detailData.errorMessage"
-            :ellipsis="{ rows: 6, expandable: true }"
-            copyable
-            code
-          />
-        </template>
+          <template v-if="detailData.errorMessage">
+            <el-divider content-position="left">错误信息</el-divider>
+            <div class="code-block">
+              <div class="code-block__bar">
+                <el-button link type="primary" size="small" @click="copyText(detailData.errorMessage)">复制</el-button>
+              </div>
+              <pre class="code-block__body">{{ detailData.errorMessage }}</pre>
+            </div>
+          </template>
 
-        <template v-if="detailData.engineConfig">
-          <a-divider orientation="left">引擎配置</a-divider>
-          <a-typography-paragraph
-            :content="detailData.engineConfig"
-            :ellipsis="{ rows: 8, expandable: true }"
-            copyable
-            code
-          />
+          <template v-if="detailData.engineConfig">
+            <el-divider content-position="left">引擎配置</el-divider>
+            <div class="code-block">
+              <div class="code-block__bar">
+                <el-button link type="primary" size="small" @click="copyText(detailData.engineConfig)">复制</el-button>
+              </div>
+              <pre class="code-block__body">{{ detailData.engineConfig }}</pre>
+            </div>
+          </template>
         </template>
-      </template>
-    </a-drawer>
+      </div>
+    </el-drawer>
 
     <!-- 日志 Drawer -->
-    <a-drawer
-      v-model:open="logVisible"
+    <el-drawer
+      v-model="logVisible"
       title="执行日志"
-      :width="640"
-      destroy-on-close
+      size="640px"
+      :destroy-on-close="true"
     >
-      <div v-if="logLoading" style="text-align: center; padding: 40px 0;">
-        <a-spin />
+      <div v-loading="logLoading" style="min-height: 120px">
+        <pre v-if="!logLoading" class="log-viewer">{{ logContent || '暂无日志' }}</pre>
       </div>
-      <pre v-else class="log-viewer">{{ logContent || '暂无日志' }}</pre>
-    </a-drawer>
+    </el-drawer>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import { useTable } from '@/hooks/useTable'
@@ -138,13 +150,13 @@ import { formatDateTime } from '@/utils/date'
 defineOptions({ name: 'EtlExecutionList' })
 
 // ===== 常量 =====
-const statusColorMap: Record<string, string> = {
-  PENDING: 'default',
-  RUNNING: 'processing',
+const statusColorMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  PENDING: 'info',
+  RUNNING: 'primary',
   SUCCESS: 'success',
-  FAILED: 'error',
+  FAILED: 'danger',
   CANCELLED: 'warning',
-  SKIPPED: 'default',
+  SKIPPED: 'info',
 }
 
 const statusLabelMap: Record<string, string> = {
@@ -196,24 +208,24 @@ function handleReset() {
 }
 
 // ===== 表格 =====
-const columns = [
-  { title: '管道', key: 'pipelineName', width: 150, ellipsis: true },
-  { title: '步骤', key: 'stepName', width: 120, ellipsis: true },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '触发', key: 'triggerType', width: 90 },
-  { title: '进度', key: 'progress', width: 160 },
-  { title: '耗时', key: 'duration', width: 100 },
-  { title: '开始时间', key: 'startTime', width: 170 },
-  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getEtlExecutions({
     page: params.page,
     page_size: params.pageSize,
     ...currentSearchParams,
   }),
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // ===== 辅助函数 =====
 function isCompleted(record: any): boolean {
@@ -245,6 +257,15 @@ function formatRows(n: number | undefined | null): string {
   if (n < 1000) return String(n)
   if (n < 1000000) return `${(n / 1000).toFixed(1)}K`
   return `${(n / 1000000).toFixed(2)}M`
+}
+
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败')
+  }
 }
 
 // ===== 详情 Drawer =====
@@ -285,7 +306,7 @@ async function handleViewLogs(record: any) {
 async function handleCancel(record: any) {
   try {
     await cancelEtlExecution(record.id)
-    message.success('已发送取消请求')
+    ElMessage.success('已发送取消请求')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -295,7 +316,7 @@ async function handleCancel(record: any) {
 async function handleRetry(record: any) {
   try {
     await retryEtlExecution(record.id)
-    message.success('重试任务已启动')
+    ElMessage.success('重试任务已启动')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -317,5 +338,33 @@ async function handleRetry(record: any) {
   max-height: calc(100vh - 120px);
   overflow-y: auto;
   margin: 0;
+}
+
+.code-block {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.code-block__bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.code-block__body {
+  margin: 0;
+  padding: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 260px;
+  overflow-y: auto;
 }
 </style>

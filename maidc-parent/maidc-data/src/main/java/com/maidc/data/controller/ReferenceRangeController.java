@@ -4,7 +4,7 @@ import com.maidc.common.core.result.R;
 import com.maidc.data.entity.ReferenceRangeEntity;
 import com.maidc.data.service.ReferenceRangeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -17,7 +17,7 @@ public class ReferenceRangeController {
 
     private final ReferenceRangeService service;
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping
     public R<List<ReferenceRangeEntity>> list(
             @RequestParam(required = false) Long conceptId,
@@ -25,13 +25,13 @@ public class ReferenceRangeController {
         return R.ok(service.list(conceptId, gender));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/{id}")
     public R<ReferenceRangeEntity> get(@PathVariable Long id) {
         return R.ok(service.getById(id));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/evaluate")
     public R<ReferenceRangeEntity> evaluate(
             @RequestParam Long conceptId,
@@ -44,7 +44,7 @@ public class ReferenceRangeController {
         return R.ok(result);
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping
     public R<ReferenceRangeEntity> create(@RequestBody ReferenceRangeEntity entity) {
         if (entity.getConceptId() == null) {
@@ -53,7 +53,7 @@ public class ReferenceRangeController {
         return R.ok(service.create(entity));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:update")
     @PutMapping("/{id}")
     public R<ReferenceRangeEntity> update(@PathVariable Long id, @RequestBody ReferenceRangeEntity entity) {
         return R.ok(service.update(id, entity));

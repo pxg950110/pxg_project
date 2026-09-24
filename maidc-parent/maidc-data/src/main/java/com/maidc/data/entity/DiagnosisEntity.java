@@ -25,10 +25,10 @@ public class DiagnosisEntity extends BaseEntity {
     @Column(name = "patient_id", nullable = false)
     private Long patientId;
 
-    @Column(name = "diagnosis_code", length = 32)
+    @Column(name = "icd_code", length = 32)
     private String diagnosisCode;
 
-    @Column(name = "diagnosis_name", length = 256)
+    @Column(name = "icd_name", length = 128)
     private String diagnosisName;
 
     @Column(name = "diagnosis_type", length = 16)

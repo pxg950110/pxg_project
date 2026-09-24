@@ -47,8 +47,13 @@ public enum ErrorCode {
 
     // ==================== 数据中心 50xx ====================
     PATIENT_NOT_FOUND(5001, "患者不存在"),
+    ENCOUNTER_NOT_FOUND(5002, "就诊记录不存在"),
     DATASET_NOT_FOUND(5011, "数据集不存在"),
-    ETL_TASK_FAILED(5021, "ETL任务执行失败");
+    ETL_TASK_FAILED(5021, "ETL任务执行失败"),
+    KB_SPACE_NOT_FOUND(5031, "知识空间不存在"),
+    KB_ITEM_NOT_FOUND(5032, "知识条目不存在"),
+    KB_SPACE_NAME_DUPLICATED(5033, "同名知识空间已存在"),
+    KB_AI_UNAVAILABLE(5034, "AI服务暂不可用，请稍后重试");
 
     private final int code;
     private final String message;

@@ -6,56 +6,57 @@
           <h2 class="template-page-title">消息模板管理</h2>
         </div>
         <div class="template-page-header-right">
-          <a-button type="primary" @click="handleCreate">
-            <PlusOutlined /> 新建模板
-          </a-button>
+          <el-button type="primary" @click="handleCreate">
+            <el-icon class="mr-1"><Plus /></el-icon> 新建模板
+          </el-button>
         </div>
       </div>
 
-      <a-table
-        :columns="columns"
-        :data-source="templates"
-        row-key="id"
-        size="middle"
-        :pagination="false"
-        :custom-header-row="() => ({ class: 'template-table-header' })"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'name'">
-            <span>{{ record.name }}</span>
-          </template>
-          <template v-if="column.key === 'code'">
-            <span class="text-muted">{{ record.code }}</span>
-          </template>
-          <template v-if="column.key === 'type'">
-            <span :style="{ color: record.typeColor || 'rgba(0, 0, 0, 0.45)' }">{{ record.type }}</span>
-          </template>
-          <template v-if="column.key === 'channel'">
-            <span class="text-muted">{{ record.channel }}</span>
-          </template>
-          <template v-if="column.key === 'status'">
-            <span v-if="record.enabled" style="color: #52c41a">已启用</span>
-            <span v-else class="text-muted">已禁用</span>
-          </template>
-          <template v-if="column.key === 'updatedAt'">
-            <span class="text-muted">{{ record.updatedAt }}</span>
-          </template>
-          <template v-if="column.key === 'action'">
-            <a-space>
-              <a class="action-link" @click="handleEdit(record)">编辑</a>
-              <a class="action-link" @click="handlePreview(record)">预览</a>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <el-table :data="templates" row-key="id" size="default">
+          <el-table-column label="模板名称" prop="name" min-width="140" />
+          <el-table-column label="模板编码" prop="code" min-width="150">
+            <template #default="{ row }">
+              <span class="text-muted">{{ row.code }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="消息类型" prop="type" width="120">
+            <template #default="{ row }">
+              <span :style="{ color: row.typeColor || '#94a3b8' }">{{ row.type }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="通知渠道" prop="channel" min-width="160">
+            <template #default="{ row }">
+              <span class="text-muted">{{ row.channel }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <span v-if="row.enabled" style="color: #10b981">已启用</span>
+              <span v-else class="text-muted">已禁用</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="更新时间" prop="updatedAt" width="140">
+            <template #default="{ row }">
+              <span class="text-muted">{{ row.updatedAt }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" align="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+              <el-button link type="primary" size="small" @click="handlePreview(row)">预览</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
     </template>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 
 interface Template {
@@ -69,34 +70,24 @@ interface Template {
   updatedAt: string
 }
 
-const columns = [
-  { title: '模板名称', dataIndex: 'name', key: 'name' },
-  { title: '模板编码', dataIndex: 'code', key: 'code' },
-  { title: '消息类型', dataIndex: 'type', key: 'type' },
-  { title: '通知渠道', dataIndex: 'channel', key: 'channel' },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '更新时间', dataIndex: 'updatedAt', key: 'updatedAt', width: 140 },
-  { title: '操作', key: 'action', width: 120, align: 'right' as const },
-]
-
 const templates = ref<Template[]>([
-  { id: 1, name: '告警通知模板', code: 'TPL_ALERT_001', type: '告警通知', typeColor: '#ff4d4f', channel: '邮件/短信/Webhook', enabled: true, updatedAt: '2026-04-08' },
-  { id: 2, name: '审批通知模板', code: 'TPL_APPROVAL_001', type: '审批通知', typeColor: '#1677ff', channel: '邮件/站内信', enabled: true, updatedAt: '2026-04-05' },
-  { id: 3, name: '任务完成通知', code: 'TPL_TASK_001', type: '任务通知', typeColor: '#52c41a', channel: '邮件/站内信', enabled: true, updatedAt: '2026-04-03' },
+  { id: 1, name: '告警通知模板', code: 'TPL_ALERT_001', type: '告警通知', typeColor: '#ef4444', channel: '邮件/短信/Webhook', enabled: true, updatedAt: '2026-04-08' },
+  { id: 2, name: '审批通知模板', code: 'TPL_APPROVAL_001', type: '审批通知', typeColor: '#0ea5e9', channel: '邮件/站内信', enabled: true, updatedAt: '2026-04-05' },
+  { id: 3, name: '任务完成通知', code: 'TPL_TASK_001', type: '任务通知', typeColor: '#10b981', channel: '邮件/站内信', enabled: true, updatedAt: '2026-04-03' },
   { id: 4, name: '系统维护通知', code: 'TPL_SYSTEM_001', type: '系统通知', typeColor: '', channel: '全渠道', enabled: true, updatedAt: '2026-03-20' },
   { id: 5, name: '数据质量告警', code: 'TPL_QUALITY_001', type: '系统通知', typeColor: '', channel: '邮件', enabled: false, updatedAt: '2026-03-15' },
 ])
 
 function handleCreate() {
-  message.info('新建模板')
+  ElMessage.info('新建模板')
 }
 
 function handleEdit(record: Template) {
-  message.info('编辑模板')
+  ElMessage.info('编辑模板')
 }
 
 function handlePreview(record: Template) {
-  message.info('预览模板')
+  ElMessage.info('预览模板')
 }
 </script>
 
@@ -117,7 +108,7 @@ function handlePreview(record: Template) {
 .template-page-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   margin: 0;
 }
 
@@ -127,24 +118,6 @@ function handlePreview(record: Template) {
 }
 
 .text-muted {
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.action-link {
-  color: #1677ff;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.action-link:hover {
-  color: #4096ff;
-}
-
-:deep(.template-table-header) {
-  background: #f9fafb;
-}
-
-:deep(.template-table-header > th) {
-  background: #f9fafb;
+  color: #94a3b8;
 }
 </style>

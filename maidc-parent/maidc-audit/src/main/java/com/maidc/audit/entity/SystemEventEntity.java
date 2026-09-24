@@ -2,6 +2,8 @@ package com.maidc.audit.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -18,30 +20,43 @@ import java.time.LocalDateTime;
 public class SystemEventEntity {
 
     @Id
-    @Column(name = "id", length = 36)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // 对应 DDL BIGSERIAL，消费侧首次写表
+    @Column(name = "id")
+    private Long id;
 
-    @Column(name = "event_type", length = 50)
+    @Column(name = "event_type", length = 32)
     private String eventType;
 
-    @Column(name = "event_source", length = 100)
-    private String eventSource;
+    @Column(name = "event_level", length = 16)
+    private String eventLevel;
 
-    @Column(name = "severity", length = 20)
-    private String severity;
+    @Column(name = "source", length = 64)
+    private String source;
 
-    @Column(name = "title", length = 200)
-    private String title;
+    @Column(name = "event_title", length = 128)
+    private String eventTitle;
 
-    @Column(name = "detail", columnDefinition = "TEXT")
-    private String detail;
+    @Column(name = "event_detail", columnDefinition = "TEXT")
+    private String eventDetail;
 
-    @Column(name = "operator", length = 100)
-    private String operator;
+    @Column(name = "event_data", columnDefinition = "JSONB")
+    private String eventData;
 
-    @Column(name = "ip", length = 50)
-    private String ip;
+    @Column(name = "trace_id", length = 64)
+    private String traceId;
+
+    @Column(name = "resolved")
+    private Boolean resolved = false;
+
+    @Column(name = "resolved_by", length = 64)
+    private String resolvedBy;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "org_id")
+    private Long orgId;
 }

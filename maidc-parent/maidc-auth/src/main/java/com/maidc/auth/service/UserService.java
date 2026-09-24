@@ -35,6 +35,7 @@ public class UserService {
     private final UserRoleRepository userRoleRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PermissionCacheService permissionCacheService;
 
     public PageResult<UserVO> listUsers(int page, int pageSize, String keyword, String status) {
         Specification<UserEntity> spec = (root, query, cb) -> {
@@ -103,6 +104,8 @@ public class UserService {
                 ur.setOrgId(dto.getOrgId());
                 userRoleRepository.save(ur);
             }
+            // 用户角色分配后失效其权限缓存（提交后执行；新用户缓存必不存在，失效为空操作）
+            permissionCacheService.evictUserAfterCommit(user.getId());
         }
 
         log.info("用户创建成功: username={}", user.getUsername());
@@ -175,6 +178,8 @@ public class UserService {
                 ur.setOrgId(user.getOrgId());
                 userRoleRepository.save(ur);
             }
+            // 用户角色增删后失效其权限缓存（提交后执行）
+            permissionCacheService.evictUserAfterCommit(user.getId());
         }
 
         return UserVO.builder()

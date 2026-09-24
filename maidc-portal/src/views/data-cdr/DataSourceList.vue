@@ -1,93 +1,104 @@
 <template>
   <PageContainer title="数据源管理">
     <template #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
+      <el-button type="primary" @click="handleCreate">
+        <el-icon class="mr-1"><Plus /></el-icon>
         新建数据源
-      </a-button>
+      </el-button>
     </template>
 
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table :columns="columns" :data-source="tableData" :loading="loading"
-      :pagination="pagination" @change="handleTableChange" row-key="id">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'sourceTypeCode'">
-          <a-tag :color="categoryColorMap[getTypeCategory(record.sourceTypeCode)] || 'default'">
-            {{ getTypeName(record.sourceTypeCode) || record.sourceType || record.source_type }}
-          </a-tag>
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="数据源名称" prop="sourceName" width="180" show-overflow-tooltip />
+      <el-table-column label="类型" width="120">
+        <template #default="{ row }">
+          <el-tag :type="categoryColorMap[getTypeCategory(row.sourceTypeCode)] || 'info'" size="small">
+            {{ getTypeName(row.sourceTypeCode) || row.sourceType || row.source_type }}
+          </el-tag>
         </template>
-        <template v-if="column.key === 'lastSyncTime'">
-          {{ record.lastSyncTime ? formatDateTime(record.lastSyncTime) : '-' }}
+      </el-table-column>
+      <el-table-column label="最后同步时间" width="170">
+        <template #default="{ row }">
+          {{ row.lastSyncTime ? formatDateTime(row.lastSyncTime) : '-' }}
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
-            <a-button type="link" size="small" @click="handleTestConnection(record)">测试连接</a-button>
-            <a-button type="link" size="small" @click="router.push(`/etl/datasources/${record.id}`)">详情</a-button>
-            <a-popconfirm title="确定删除此数据源？" @confirm="handleDelete(record)">
-              <a-button type="link" danger size="small">删除</a-button>
-            </a-popconfirm>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="280" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+          <el-button link type="primary" size="small" @click="handleTestConnection(row)">测试连接</el-button>
+          <el-button link type="primary" size="small" @click="router.push(`/etl/datasources/${row.id}`)">详情</el-button>
+          <el-popconfirm title="确定删除此数据源？" @confirm="handleDelete(row)">
+            <template #reference>
+              <el-button link type="danger" size="small">删除</el-button>
+            </template>
+          </el-popconfirm>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
-    <a-modal v-model:open="modalVisible" :title="isEdit ? '编辑数据源' : '新建数据源'"
-      :width="720" @cancel="handleModalCancel"
-      destroy-on-close>
-      <a-form ref="formRef" :model="formState" :rules="formRules"
-        :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-        <a-form-item label="数据源名称" name="sourceName">
-          <a-input v-model:value="formState.sourceName" placeholder="请输入数据源名称" />
-        </a-form-item>
-        <a-form-item label="数据源类型" name="sourceTypeCode">
-          <a-select v-model:value="formState.sourceTypeCode" placeholder="请选择类型"
-            :disabled="isEdit" @change="handleTypeChange">
-            <a-select-option v-for="t in dataSourceTypes" :key="t.typeCode" :value="t.typeCode">
-              {{ t.typeName }}
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="描述" name="description">
-          <a-textarea v-model:value="formState.description" :rows="2" placeholder="可选描述" />
-        </a-form-item>
+    <el-dialog v-model="modalVisible" :title="isEdit ? '编辑数据源' : '新建数据源'"
+      width="720px" :destroy-on-close="true">
+      <el-form ref="formRef" :model="formState" :rules="formRules"
+        label-width="100px">
+        <el-form-item label="数据源名称" prop="sourceName">
+          <el-input v-model="formState.sourceName" placeholder="请输入数据源名称" />
+        </el-form-item>
+        <el-form-item label="数据源类型" prop="sourceTypeCode">
+          <el-select v-model="formState.sourceTypeCode" placeholder="请选择类型"
+            :disabled="isEdit" style="width: 100%" @change="handleTypeChange">
+            <el-option v-for="t in dataSourceTypes" :key="t.typeCode" :value="t.typeCode" :label="t.typeName" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="formState.description" type="textarea" :rows="2" placeholder="可选描述" />
+        </el-form-item>
 
         <template v-if="currentSchema">
-          <a-divider orientation="left">连接配置</a-divider>
+          <el-divider content-position="left">连接配置</el-divider>
           <DynamicFormRenderer :schema="currentSchema" v-model="formState.connectionParams" />
         </template>
 
-      </a-form>
+      </el-form>
       <template #footer>
-        <a-space>
-          <span v-if="testResult" :style="{ color: testResult.success ? '#52c41a' : '#ff4d4f', fontSize: '13px' }">
+        <div class="flex items-center justify-end gap-2">
+          <span v-if="testResult" class="test-result" :class="testResult.success ? 'test-result--ok' : 'test-result--fail'">
             {{ testResult.success ? `连接成功 (${testResult.latencyMs}ms)` : `失败: ${testResult.message}` }}
           </span>
-          <a-button v-if="formState.sourceTypeCode" @click="handleTestPreSave" :loading="testLoading">
+          <el-button v-if="formState.sourceTypeCode" @click="handleTestPreSave" :loading="testLoading">
             测试连接
-          </a-button>
-          <a-button @click="handleModalCancel">取消</a-button>
-          <a-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</a-button>
-        </a-space>
+          </el-button>
+          <el-button @click="handleModalCancel">取消</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        </div>
       </template>
-    </a-modal>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+import { ElMessage, ElLoading, type FormInstance, type FormItemRule } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import DynamicFormRenderer from '@/components/DynamicFormRenderer/index.vue'
 import { useTable } from '@/hooks/useTable'
 import {
   getDataSources, createDataSource, updateDataSource, deleteDataSource,
-  getDataSourceTypes, testConnectionPreSave,
+  getDataSourceTypes, testConnectionPreSave, testDataSourceConnection as testConnection,
 } from '@/api/data'
 import { formatDateTime } from '@/utils/date'
 
@@ -102,7 +113,9 @@ const typeMap = computed(() => {
 })
 function getTypeName(code: string) { return typeMap.value[code]?.typeName }
 function getTypeCategory(code: string) { return typeMap.value[code]?.category }
-const categoryColorMap: Record<string, string> = { DATABASE: 'blue', API: 'green', FILE: 'orange' }
+const categoryColorMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  DATABASE: 'primary', API: 'success', FILE: 'warning',
+}
 
 async function loadTypes() {
   const res = await getDataSourceTypes()
@@ -118,19 +131,23 @@ let currentSearchParams: Record<string, any> = {}
 function handleSearch(values: Record<string, any>) { currentSearchParams = values; fetchData({ page: 1 }) }
 function handleReset() { currentSearchParams = {}; fetchData({ page: 1 }) }
 
-const columns = [
-  { title: '数据源名称', dataIndex: 'sourceName', key: 'sourceName', width: 180, ellipsis: true },
-  { title: '类型', key: 'sourceTypeCode', width: 120 },
-  { title: '最后同步时间', key: 'lastSyncTime', width: 170 },
-  { title: '操作', key: 'action', width: 280, fixed: 'right' as const },
-]
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   async (params) => {
     const res = await getDataSources({ page: params.page, page_size: params.pageSize, ...currentSearchParams })
     const page = res.data.data
-    return { data: { code: res.data.code, message: res.data.message, data: { items: page.content, total: page.totalElements, page: page.number + 1, pageSize: page.size, totalPages: page.totalPages }, traceId: res.data.traceId } }
+    return { data: { code: res.data.code, message: res.data.message, data: { ...page, items: page.content, total: page.totalElements, page: page.number + 1, pageSize: page.size }, traceId: res.data.traceId } }
   },
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 const modalVisible = ref(false)
 const submitLoading = ref(false)
@@ -147,7 +164,7 @@ const formState = reactive({
   connectionParams: {} as Record<string, any>,
 })
 
-const formRules: Record<string, Rule[]> = {
+const formRules: Record<string, FormItemRule[]> = {
   sourceName: [{ required: true, message: '请输入数据源名称' }],
   sourceTypeCode: [{ required: true, message: '请选择数据源类型' }],
 }
@@ -193,7 +210,7 @@ async function handleTestPreSave() {
 }
 
 async function handleSubmit() {
-  await formRef.value?.validateFields()
+  await formRef.value?.validate()
   submitLoading.value = true
   try {
     const data = {
@@ -204,10 +221,10 @@ async function handleSubmit() {
     }
     if (isEdit.value) {
       await updateDataSource(editingId.value!, data)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createDataSource(data)
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     handleModalCancel()
     fetchData()
@@ -222,23 +239,33 @@ function handleModalCancel() {
 }
 
 async function handleTestConnection(record: any) {
-  const hide = message.loading('正在测试连接...', 0)
+  const loadingInstance = ElLoading.service({ fullscreen: true, text: '正在测试连接...' })
   try {
-    const res = await testConnectionPreSave({
-      type_code: record.sourceTypeCode || record.source_type_code,
-      connection_params: record.connectionParams || {},
-    })
-    hide()
-    if (res.data.data.success) message.success(`连接成功 (${res.data.data.latencyMs}ms)`)
-    else message.error(`连接失败: ${res.data.data.message}`)
-  } catch { hide() }
+    const res = await testConnection(record.id)
+    loadingInstance.close()
+    if (res.data.data.success) ElMessage.success(`连接成功 (${res.data.data.latencyMs}ms)`)
+    else ElMessage.error(`连接失败: ${res.data.data.message}`)
+  } catch { loadingInstance.close() }
 }
 
 async function handleDelete(record: any) {
   await deleteDataSource(record.id)
-  message.success('删除成功')
+  ElMessage.success('删除成功')
   fetchData()
 }
 
 onMounted(() => { loadTypes(); fetchData() })
 </script>
+
+<style scoped>
+.test-result {
+  font-size: 13px;
+  margin-right: auto;
+}
+.test-result--ok {
+  color: #10b981;
+}
+.test-result--fail {
+  color: #ef4444;
+}
+</style>

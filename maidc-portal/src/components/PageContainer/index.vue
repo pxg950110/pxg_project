@@ -1,12 +1,11 @@
 <template>
   <div class="page-container">
     <div v-if="breadcrumb && breadcrumb.length" class="page-breadcrumb">
-      <a-breadcrumb>
-        <a-breadcrumb-item v-for="(item, idx) in breadcrumb" :key="idx">
-          <router-link v-if="item.path" :to="item.path">{{ item.title }}</router-link>
-          <span v-else>{{ item.title }}</span>
-        </a-breadcrumb-item>
-      </a-breadcrumb>
+      <el-breadcrumb separator="/">
+        <el-breadcrumb-item v-for="(item, idx) in breadcrumb" :key="idx" :to="item.path">
+          {{ item.title }}
+        </el-breadcrumb-item>
+      </el-breadcrumb>
     </div>
     <div v-if="title" class="page-header">
       <div class="page-header-left">
@@ -17,11 +16,9 @@
         <slot name="extra" />
       </div>
     </div>
-    <a-spin :spinning="loading ?? false">
-      <div class="page-content">
-        <slot />
-      </div>
-    </a-spin>
+    <div v-loading="loading ?? false" class="page-content">
+      <slot />
+    </div>
     <div v-if="$slots.footer" class="page-footer">
       <slot name="footer" />
     </div>
@@ -46,8 +43,8 @@ defineProps<Props>()
 
 <style scoped>
 .page-container {
-  background: #fff;
-  border-radius: 8px;
+  background: var(--el-bg-color);
+  border-radius: 10px;
   padding: 24px;
   min-height: 100%;
 }
@@ -68,12 +65,12 @@ defineProps<Props>()
 .page-title {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: var(--el-text-color-primary);
   margin: 0;
 }
 .page-subtitle {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--el-text-color-secondary);
 }
 .page-content {
   min-height: 200px;
@@ -81,7 +78,7 @@ defineProps<Props>()
 .page-footer {
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--el-border-color-lighter);
   text-align: right;
 }
 </style>

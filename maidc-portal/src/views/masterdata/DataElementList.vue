@@ -1,23 +1,23 @@
 <template>
   <PageContainer title="数据元管理">
     <template #extra>
-      <a-space>
-        <a-button @click="importModalRef?.open()">
-          <template #icon><UploadOutlined /></template>
+      <div class="flex items-center gap-2">
+        <el-button @click="importModalRef?.open()">
+          <el-icon class="mr-1"><Upload /></el-icon>
           导入
-        </a-button>
-        <a-button type="primary" @click="handleCreate">
-          <template #icon><PlusOutlined /></template>
+        </el-button>
+        <el-button type="primary" @click="handleCreate">
+          <el-icon class="mr-1"><Plus /></el-icon>
           新增数据元
-        </a-button>
-      </a-space>
+        </el-button>
+      </div>
     </template>
 
     <div style="display: flex; gap: 16px; height: calc(100vh - 180px)">
       <!-- Left: Category tree -->
       <div style="width: 240px; flex-shrink: 0; display: flex; flex-direction: column">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
-          <span style="font-weight: 600; font-size: 13px; color: #666">数据元分类</span>
+          <span style="font-weight: 600; font-size: 13px; color: #64748b">数据元分类</span>
         </div>
         <div class="cat-list" style="flex: 1; overflow-y: auto">
           <div class="cat-item" :class="{ active: !selectedCategory }" @click="selectCategory(null)">
@@ -40,354 +40,355 @@
       <!-- Right: Data element table -->
       <div style="flex: 1; display: flex; flex-direction: column; min-width: 0">
         <!-- Search bar -->
-        <a-card :bordered="false" style="margin-bottom: 12px; padding: 8px 16px" size="small">
-          <a-row :gutter="12" align="middle">
-            <a-col :span="5">
-              <a-select
-                v-model:value="filters.registrationStatus"
-                placeholder="注册状态"
-                allow-clear
-                style="width: 100%"
-                @change="fetchList(1)"
-              >
-                <a-select-option value="DRAFT">草稿</a-select-option>
-                <a-select-option value="PUBLISHED">已发布</a-select-option>
-                <a-select-option value="RETIRED">已废止</a-select-option>
-              </a-select>
-            </a-col>
-            <a-col :span="9">
-              <a-input-search
-                v-model:value="filters.keyword"
-                placeholder="搜索标识符或名称"
-                enter-button
-                @search="fetchList(1)"
-                allow-clear
-                @clear="fetchList(1)"
-              />
-            </a-col>
-            <a-col :span="4">
-              <a-button @click="resetFilters">重置</a-button>
-            </a-col>
-          </a-row>
-        </a-card>
+        <el-card shadow="never" :body-style="{ padding: '8px 16px' }" style="margin-bottom: 12px">
+          <div class="flex flex-wrap items-center gap-3">
+            <el-select
+              v-model="filters.registrationStatus"
+              placeholder="注册状态"
+              clearable
+              style="width: 160px"
+              @change="fetchList(1)"
+            >
+              <el-option value="DRAFT" label="草稿" />
+              <el-option value="PUBLISHED" label="已发布" />
+              <el-option value="RETIRED" label="已废止" />
+            </el-select>
+            <el-input
+              v-model="filters.keyword"
+              placeholder="搜索标识符或名称"
+              clearable
+              :suffix-icon="Search"
+              style="width: 320px"
+              @keyup.enter="fetchList(1)"
+              @clear="fetchList(1)"
+            />
+            <el-button @click="resetFilters">重置</el-button>
+          </div>
+        </el-card>
 
         <!-- Table -->
-        <a-table
-          :columns="columns"
-          :data-source="dataElements"
-          :loading="loading"
-          row-key="id"
-          size="small"
-          :pagination="false"
-          :scroll="{ y: 'calc(100vh - 360px)' }"
-          @row="(record: any) => ({ onClick: () => openDetail(record) })"
-          style="cursor: pointer"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'registrationStatus'">
-              <a-tag :color="statusColor(record.registrationStatus)">
-                {{ statusLabel(record.registrationStatus) }}
-              </a-tag>
-            </template>
-            <template v-if="column.key === 'dataType'">
-              {{ dataTypeLabel(record.dataType) }}
-            </template>
-            <template v-if="column.key === 'action'">
-              <a-space>
-                <a-button type="link" size="small" @click.stop="handleEdit(record)">编辑</a-button>
-                <a-popconfirm title="确认删除该数据元？" @confirm="handleDelete(record)">
-                  <a-button type="link" size="small" danger @click.stop>删除</a-button>
-                </a-popconfirm>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
+        <div style="flex: 1; min-height: 0">
+          <el-table
+            :data="dataElements"
+            v-loading="loading"
+            row-key="id"
+            size="small"
+            style="cursor: pointer; width: 100%"
+            height="100%"
+            @row-click="openDetail"
+          >
+            <el-table-column label="标识符" prop="elementCode" width="150" show-overflow-tooltip />
+            <el-table-column label="规范名称" prop="name" show-overflow-tooltip />
+            <el-table-column label="对象类" prop="objectClassName" width="120" show-overflow-tooltip />
+            <el-table-column label="数据类型" width="100">
+              <template #default="{ row }">
+                {{ dataTypeLabel(row.dataType) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="表示类" prop="representationClass" width="100" show-overflow-tooltip />
+            <el-table-column label="分类" prop="category" width="100" />
+            <el-table-column label="版本" prop="version" width="70" />
+            <el-table-column label="注册状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="statusColor(row.registrationStatus)">
+                  {{ statusLabel(row.registrationStatus) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120" fixed="right">
+              <template #default="{ row }">
+                <div class="flex items-center gap-2" @click.stop>
+                  <el-button link type="primary" size="small" @click.stop="handleEdit(row)">编辑</el-button>
+                  <el-popconfirm title="确认删除该数据元？" @confirm="handleDelete(row)">
+                    <template #reference>
+                      <el-button link type="danger" size="small">删除</el-button>
+                    </template>
+                  </el-popconfirm>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
 
         <!-- Pagination -->
-        <div style="margin-top: 12px; text-align: right">
-          <a-pagination
+        <div class="mt-3 text-right">
+          <el-pagination
             v-if="pagination.total > pagination.pageSize"
-            :current="pagination.current"
-            :total="pagination.total"
-            :page-size="pagination.pageSize"
-            @change="fetchList"
             size="small"
-            show-quick-jumper
-            :show-total="(total: number) => `共 ${total} 条`"
+            background
+            layout="total, prev, pager, next, jumper"
+            :total="pagination.total"
+            :current-page="pagination.current"
+            :page-size="pagination.pageSize"
+            @current-change="fetchList"
           />
         </div>
       </div>
     </div>
 
     <!-- Detail drawer -->
-    <a-drawer
-      v-model:open="drawerVisible"
-      :title="currentElement ? '数据元详情' : '数据元详情'"
-      width="720"
-      destroy-on-close
+    <el-drawer
+      v-model="drawerVisible"
+      :title="editingId ? '编辑数据元' : '数据元详情'"
+      size="720px"
+      :destroy-on-close="true"
     >
-      <a-tabs v-model:activeKey="activeTab">
+      <el-tabs v-model="activeTab">
         <!-- Tab 1: Basic info -->
-        <a-tab-pane key="basic" tab="基本信息">
-          <a-form
+        <el-tab-pane label="基本信息" name="basic">
+          <el-form
             ref="formRef"
             :model="formState"
             :rules="formRules"
-            :label-col="{ span: 5 }"
-            :wrapper-col="{ span: 18 }"
+            label-width="100px"
           >
-            <a-form-item label="标识符" name="elementCode">
-              <a-input v-model:value="formState.elementCode" placeholder="如 DE04.50.001" :disabled="!!editingId" />
-            </a-form-item>
-            <a-form-item label="规范名称" name="name">
-              <a-input v-model:value="formState.name" placeholder="数据元规范名称" />
-            </a-form-item>
-            <a-form-item label="英文名称">
-              <a-input v-model:value="formState.nameEn" placeholder="English name" />
-            </a-form-item>
-            <a-form-item label="定义" name="definition">
-              <a-textarea v-model:value="formState.definition" :rows="3" placeholder="数据元定义描述" />
-            </a-form-item>
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-form-item label="对象类" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input v-model:value="formState.objectClassName" placeholder="对象类名称" />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <a-form-item label="特性" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input v-model:value="formState.propertyName" placeholder="特性名称" />
-                </a-form-item>
-              </a-col>
-            </a-row>
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-form-item label="数据类型" name="dataType" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-select v-model:value="formState.dataType" placeholder="选择数据类型">
-                    <a-select-option value="ST">字符串 (ST)</a-select-option>
-                    <a-select-option value="INT">整数 (INT)</a-select-option>
-                    <a-select-option value="REAL">实数 (REAL)</a-select-option>
-                    <a-select-option value="DT">日期 (DT)</a-select-option>
-                    <a-select-option value="DTM">日期时间 (DTM)</a-select-option>
-                    <a-select-option value="TM">时间 (TM)</a-select-option>
-                    <a-select-option value="CD">代码 (CD)</a-select-option>
-                    <a-select-option value="BL">布尔 (BL)</a-select-option>
-                    <a-select-option value="BIN">二进制 (BIN)</a-select-option>
-                  </a-select>
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <a-form-item label="表示类" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input v-model:value="formState.representationClass" placeholder="表示类" />
-                </a-form-item>
-              </a-col>
-            </a-row>
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-form-item label="最小长度" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input-number v-model:value="formState.minLength" placeholder="最小长度" style="width: 100%" :min="0" />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <a-form-item label="最大长度" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input-number v-model:value="formState.maxLength" placeholder="最大长度" style="width: 100%" :min="0" />
-                </a-form-item>
-              </a-col>
-            </a-row>
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-form-item label="格式" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input v-model:value="formState.format" placeholder="格式约束" />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <a-form-item label="计量单位" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input v-model:value="formState.unitOfMeasure" placeholder="如 mmHg、kg" />
-                </a-form-item>
-              </a-col>
-            </a-row>
-            <a-form-item label="分类">
-              <a-select v-model:value="formState.category" placeholder="选择分类" allow-clear>
-                <a-select-option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</a-select-option>
-              </a-select>
-            </a-form-item>
-            <a-form-item label="标准来源">
-              <a-input v-model:value="formState.standardSource" placeholder="如 WS363、GB/T" />
-            </a-form-item>
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-form-item label="注册状态" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-select v-model:value="formState.registrationStatus" placeholder="选择状态">
-                    <a-select-option value="DRAFT">草稿</a-select-option>
-                    <a-select-option value="PUBLISHED">已发布</a-select-option>
-                    <a-select-option value="RETIRED">已废止</a-select-option>
-                  </a-select>
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <a-form-item label="版本" :label-col="{ span: 10 }" :wrapper-col="{ span: 13 }">
-                  <a-input v-model:value="formState.version" placeholder="如 1.0" />
-                </a-form-item>
-              </a-col>
-            </a-row>
-            <a-form-item :wrapper-col="{ offset: 5, span: 18 }">
-              <a-space>
-                <a-button type="primary" @click="handleFormSubmit" :loading="submitting">
+            <el-form-item label="标识符" prop="elementCode">
+              <el-input v-model="formState.elementCode" placeholder="如 DE04.50.001" :disabled="!!editingId" />
+            </el-form-item>
+            <el-form-item label="规范名称" prop="name">
+              <el-input v-model="formState.name" placeholder="数据元规范名称" />
+            </el-form-item>
+            <el-form-item label="英文名称">
+              <el-input v-model="formState.nameEn" placeholder="English name" />
+            </el-form-item>
+            <el-form-item label="定义" prop="definition">
+              <el-input v-model="formState.definition" type="textarea" :rows="3" placeholder="数据元定义描述" />
+            </el-form-item>
+            <div class="grid grid-cols-2 gap-x-4">
+              <el-form-item label="对象类" label-width="90px">
+                <el-input v-model="formState.objectClassName" placeholder="对象类名称" />
+              </el-form-item>
+              <el-form-item label="特性" label-width="90px">
+                <el-input v-model="formState.propertyName" placeholder="特性名称" />
+              </el-form-item>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4">
+              <el-form-item label="数据类型" prop="dataType" label-width="90px">
+                <el-select v-model="formState.dataType" placeholder="选择数据类型" class="w-full">
+                  <el-option value="ST" label="字符串 (ST)" />
+                  <el-option value="INT" label="整数 (INT)" />
+                  <el-option value="REAL" label="实数 (REAL)" />
+                  <el-option value="DT" label="日期 (DT)" />
+                  <el-option value="DTM" label="日期时间 (DTM)" />
+                  <el-option value="TM" label="时间 (TM)" />
+                  <el-option value="CD" label="代码 (CD)" />
+                  <el-option value="BL" label="布尔 (BL)" />
+                  <el-option value="BIN" label="二进制 (BIN)" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="表示类" label-width="90px">
+                <el-input v-model="formState.representationClass" placeholder="表示类" />
+              </el-form-item>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4">
+              <el-form-item label="最小长度" label-width="90px">
+                <el-input-number v-model="formState.minLength" placeholder="最小长度" class="w-full" :min="0" />
+              </el-form-item>
+              <el-form-item label="最大长度" label-width="90px">
+                <el-input-number v-model="formState.maxLength" placeholder="最大长度" class="w-full" :min="0" />
+              </el-form-item>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4">
+              <el-form-item label="格式" label-width="90px">
+                <el-input v-model="formState.format" placeholder="格式约束" />
+              </el-form-item>
+              <el-form-item label="计量单位" label-width="90px">
+                <el-input v-model="formState.unitOfMeasure" placeholder="如 mmHg、kg" />
+              </el-form-item>
+            </div>
+            <el-form-item label="分类">
+              <el-select v-model="formState.category" placeholder="选择分类" clearable class="w-full">
+                <el-option v-for="cat in categories" :key="cat" :value="cat" :label="cat" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="标准来源">
+              <el-input v-model="formState.standardSource" placeholder="如 WS363、GB/T" />
+            </el-form-item>
+            <div class="grid grid-cols-2 gap-x-4">
+              <el-form-item label="注册状态" label-width="90px">
+                <el-select v-model="formState.registrationStatus" placeholder="选择状态" class="w-full">
+                  <el-option value="DRAFT" label="草稿" />
+                  <el-option value="PUBLISHED" label="已发布" />
+                  <el-option value="RETIRED" label="已废止" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="版本" label-width="90px">
+                <el-input v-model="formState.version" placeholder="如 1.0" />
+              </el-form-item>
+            </div>
+            <el-form-item>
+              <div class="flex items-center gap-2" style="margin-left: 0">
+                <el-button type="primary" @click="handleFormSubmit" :loading="submitting">
                   {{ editingId ? '保存修改' : '创建' }}
-                </a-button>
-                <a-button @click="drawerVisible = false">取消</a-button>
-              </a-space>
-            </a-form-item>
-          </a-form>
-        </a-tab-pane>
+                </el-button>
+                <el-button @click="drawerVisible = false">取消</el-button>
+              </div>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
 
         <!-- Tab 2: Allowed values -->
-        <a-tab-pane key="values" tab="允许值" :disabled="!editingId">
+        <el-tab-pane label="允许值" name="values" :disabled="!editingId">
           <template v-if="editingId && formState.dataType === 'CD'">
             <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center">
-              <span style="color: #999; font-size: 13px">数据类型为「代码 (CD)」时可管理允许值列表</span>
-              <a-space>
-                <a-button size="small" @click="addValueRow">
-                  <template #icon><PlusOutlined /></template>
+              <span style="color: #94a3b8; font-size: 13px">数据类型为「代码 (CD)」时可管理允许值列表</span>
+              <div class="flex items-center gap-2">
+                <el-button size="small" @click="addValueRow">
+                  <el-icon class="mr-1"><Plus /></el-icon>
                   添加行
-                </a-button>
-                <a-button size="small" type="primary" :loading="valuesSaving" @click="handleSaveValues">
+                </el-button>
+                <el-button size="small" type="primary" :loading="valuesSaving" @click="handleSaveValues">
                   保存
-                </a-button>
-              </a-space>
+                </el-button>
+              </div>
             </div>
-            <a-table
-              :columns="valueColumns"
-              :data-source="valueRows"
-              :pagination="false"
+            <el-table
+              :data="valueRows"
               row-key="_idx"
               size="small"
-              bordered
+              border
             >
-              <template #bodyCell="{ column, record, index }">
-                <template v-if="column.key === 'valueCode'">
-                  <a-input v-model:value="record.valueCode" size="small" placeholder="值编码" />
+              <el-table-column label="值编码" width="180">
+                <template #default="{ row }">
+                  <el-input v-model="row.valueCode" size="small" placeholder="值编码" />
                 </template>
-                <template v-if="column.key === 'valueMeaning'">
-                  <a-input v-model:value="record.valueMeaning" size="small" placeholder="值含义" />
+              </el-table-column>
+              <el-table-column label="值含义">
+                <template #default="{ row }">
+                  <el-input v-model="row.valueMeaning" size="small" placeholder="值含义" />
                 </template>
-                <template v-if="column.key === 'sortOrder'">
-                  <a-input-number v-model:value="record.sortOrder" size="small" :min="0" style="width: 80px" />
+              </el-table-column>
+              <el-table-column label="排序" width="120">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.sortOrder" size="small" :min="0" style="width: 100px" />
                 </template>
-                <template v-if="column.key === 'valueAction'">
-                  <a-button type="link" danger size="small" @click="removeValueRow(index)">删除</a-button>
+              </el-table-column>
+              <el-table-column label="操作" width="80">
+                <template #default="{ $index }">
+                  <el-button link type="danger" size="small" @click="removeValueRow($index)">删除</el-button>
                 </template>
-              </template>
-            </a-table>
+              </el-table-column>
+            </el-table>
           </template>
-          <a-empty v-else-if="editingId" description="仅数据类型为「代码 (CD)」时支持允许值管理" />
-          <a-empty v-else description="请先保存数据元基本信息" />
-        </a-tab-pane>
+          <el-empty v-else-if="editingId" description="仅数据类型为「代码 (CD)」时支持允许值管理" :image-size="60" />
+          <el-empty v-else description="请先保存数据元基本信息" :image-size="60" />
+        </el-tab-pane>
 
         <!-- Tab 3: Field mappings -->
-        <a-tab-pane key="mappings" tab="字段映射" :disabled="!editingId">
+        <el-tab-pane label="字段映射" name="mappings" :disabled="!editingId">
           <template v-if="editingId">
             <div style="margin-bottom: 12px; display: flex; justify-content: flex-end">
-              <a-button size="small" type="primary" @click="mappingModalVisible = true">
-                <template #icon><PlusOutlined /></template>
+              <el-button size="small" type="primary" @click="mappingModalVisible = true">
+                <el-icon class="mr-1"><Plus /></el-icon>
                 添加映射
-              </a-button>
+              </el-button>
             </div>
-            <a-table
-              :columns="mappingColumns"
-              :data-source="mappings"
-              :loading="mappingsLoading"
-              :pagination="false"
+            <el-table
+              :data="mappings"
+              v-loading="mappingsLoading"
               row-key="id"
               size="small"
             >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'columnPath'">
-                  {{ record.schemaName }}.{{ record.tableName }}.{{ record.columnName }}
+              <el-table-column label="字段路径" width="220">
+                <template #default="{ row }">
+                  {{ row.schemaName }}.{{ row.tableName }}.{{ row.columnName }}
                 </template>
-                <template v-if="column.key === 'mappingStatus'">
-                  <a-tag :color="mappingStatusColor(record.mappingStatus)">
-                    {{ mappingStatusLabel(record.mappingStatus) }}
-                  </a-tag>
+              </el-table-column>
+              <el-table-column label="映射类型" prop="mappingType" width="100" />
+              <el-table-column label="置信度" prop="confidence" width="80" />
+              <el-table-column label="状态" width="90">
+                <template #default="{ row }">
+                  <el-tag :type="mappingStatusColor(row.mappingStatus)">
+                    {{ mappingStatusLabel(row.mappingStatus) }}
+                  </el-tag>
                 </template>
-                <template v-if="column.key === 'mappingAction'">
-                  <a-space>
-                    <a-button
-                      v-if="record.mappingStatus === 'PENDING'"
-                      type="link"
+              </el-table-column>
+              <el-table-column label="转换规则" prop="transformRule" show-overflow-tooltip />
+              <el-table-column label="操作" width="160">
+                <template #default="{ row }">
+                  <div class="flex items-center gap-2" @click.stop>
+                    <el-button
+                      v-if="row.mappingStatus === 'PENDING'"
+                      link
+                      type="primary"
                       size="small"
-                      @click.stop="handleConfirmMapping(record.id)"
-                    >确认</a-button>
-                    <a-button
-                      v-if="record.mappingStatus === 'PENDING'"
-                      type="link"
+                      @click.stop="handleConfirmMapping(row.id)"
+                    >确认</el-button>
+                    <el-button
+                      v-if="row.mappingStatus === 'PENDING'"
+                      link
+                      type="danger"
                       size="small"
-                      danger
-                      @click.stop="handleRejectMapping(record.id)"
-                    >拒绝</a-button>
-                    <a-popconfirm title="确认删除该映射？" @confirm="handleDeleteMapping(record.id)">
-                      <a-button type="link" size="small" danger @click.stop>删除</a-button>
-                    </a-popconfirm>
-                  </a-space>
+                      @click.stop="handleRejectMapping(row.id)"
+                    >拒绝</el-button>
+                    <el-popconfirm title="确认删除该映射？" @confirm="handleDeleteMapping(row.id)">
+                      <template #reference>
+                        <el-button link type="danger" size="small">删除</el-button>
+                      </template>
+                    </el-popconfirm>
+                  </div>
                 </template>
-              </template>
-            </a-table>
+              </el-table-column>
+            </el-table>
           </template>
-          <a-empty v-else description="请先保存数据元基本信息" />
-        </a-tab-pane>
-      </a-tabs>
-    </a-drawer>
+          <el-empty v-else description="请先保存数据元基本信息" :image-size="60" />
+        </el-tab-pane>
+      </el-tabs>
+    </el-drawer>
 
     <!-- Add mapping modal -->
-    <a-modal
-      v-model:open="mappingModalVisible"
+    <el-dialog
+      v-model="mappingModalVisible"
       title="添加字段映射"
-      @ok="handleAddMapping"
-      destroy-on-close
-      width="500"
+      :destroy-on-close="true"
+      width="500px"
     >
-      <a-form :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-        <a-form-item label="Schema">
-          <a-input v-model:value="mappingForm.schemaName" placeholder="如 public" />
-        </a-form-item>
-        <a-form-item label="Table">
-          <a-input v-model:value="mappingForm.tableName" placeholder="表名" />
-        </a-form-item>
-        <a-form-item label="Column">
-          <a-input v-model:value="mappingForm.columnName" placeholder="列名" />
-        </a-form-item>
-        <a-form-item label="映射类型">
-          <a-select v-model:value="mappingForm.mappingType" placeholder="选择映射类型" allow-clear>
-            <a-select-option value="DIRECT">直接映射</a-select-option>
-            <a-select-option value="TRANSFORM">转换映射</a-select-option>
-            <a-select-option value="COMPOSITE">复合映射</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="置信度">
-          <a-input-number
-            v-model:value="mappingForm.confidence"
+      <el-form label-width="100px">
+        <el-form-item label="Schema">
+          <el-input v-model="mappingForm.schemaName" placeholder="如 public" />
+        </el-form-item>
+        <el-form-item label="Table">
+          <el-input v-model="mappingForm.tableName" placeholder="表名" />
+        </el-form-item>
+        <el-form-item label="Column">
+          <el-input v-model="mappingForm.columnName" placeholder="列名" />
+        </el-form-item>
+        <el-form-item label="映射类型">
+          <el-select v-model="mappingForm.mappingType" placeholder="选择映射类型" clearable class="w-full">
+            <el-option value="DIRECT" label="直接映射" />
+            <el-option value="TRANSFORM" label="转换映射" />
+            <el-option value="COMPOSITE" label="复合映射" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="置信度">
+          <el-input-number
+            v-model="mappingForm.confidence"
             :min="0"
             :max="1"
             :step="0.1"
-            style="width: 100%"
+            class="w-full"
             placeholder="0 ~ 1"
           />
-        </a-form-item>
-        <a-form-item label="转换规则">
-          <a-textarea v-model:value="mappingForm.transformRule" :rows="2" placeholder="可选" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        </el-form-item>
+        <el-form-item label="转换规则">
+          <el-input v-model="mappingForm.transformRule" type="textarea" :rows="2" placeholder="可选" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="mappingModalVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleAddMapping">确定</el-button>
+      </template>
+    </el-dialog>
     <!-- Import modal -->
     <DataElementImportModal ref="importModalRef" @success="onImportSuccess" />
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { message, Modal } from 'ant-design-vue'
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Plus, Upload, Search } from '@element-plus/icons-vue'
+import { type FormInstance, type FormItemRule } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
   getDataElements,
@@ -408,19 +409,21 @@ import DataElementImportModal from './DataElementImportModal.vue'
 
 defineOptions({ name: 'DataElementList' })
 
+type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
+
 // ── Constants ──
 const STATUS_MAP: Record<string, string> = {
   DRAFT: '草稿',
   PUBLISHED: '已发布',
   RETIRED: '已废止',
 }
-const STATUS_COLOR: Record<string, string> = {
-  DRAFT: 'orange',
-  PUBLISHED: 'green',
-  RETIRED: 'red',
+const STATUS_COLOR: Record<string, TagType> = {
+  DRAFT: 'warning',
+  PUBLISHED: 'success',
+  RETIRED: 'danger',
 }
 const statusLabel = (s: string) => STATUS_MAP[s] || s
-const statusColor = (s: string) => STATUS_COLOR[s] || 'default'
+const statusColor = (s: string): TagType => STATUS_COLOR[s] || 'info'
 
 const DATA_TYPE_MAP: Record<string, string> = {
   ST: '字符串',
@@ -440,13 +443,13 @@ const MAPPING_STATUS_MAP: Record<string, string> = {
   CONFIRMED: '已确认',
   REJECTED: '已拒绝',
 }
-const MAPPING_STATUS_COLOR: Record<string, string> = {
-  PENDING: 'default',
-  CONFIRMED: 'green',
-  REJECTED: 'red',
+const MAPPING_STATUS_COLOR: Record<string, TagType> = {
+  PENDING: 'info',
+  CONFIRMED: 'success',
+  REJECTED: 'danger',
 }
 const mappingStatusLabel = (s: string) => MAPPING_STATUS_MAP[s] || s
-const mappingStatusColor = (s: string) => MAPPING_STATUS_COLOR[s] || 'default'
+const mappingStatusColor = (s: string): TagType => MAPPING_STATUS_COLOR[s] || 'info'
 
 // ── Categories ──
 const categories = ref<string[]>([])
@@ -485,18 +488,6 @@ const filters = reactive({
 })
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 
-const columns = [
-  { title: '标识符', dataIndex: 'elementCode', key: 'elementCode', width: 150, ellipsis: true },
-  { title: '规范名称', dataIndex: 'name', key: 'name', ellipsis: true },
-  { title: '对象类', dataIndex: 'objectClassName', key: 'objectClassName', width: 120, ellipsis: true },
-  { title: '数据类型', key: 'dataType', width: 100 },
-  { title: '表示类', dataIndex: 'representationClass', key: 'representationClass', width: 100, ellipsis: true },
-  { title: '分类', dataIndex: 'category', key: 'category', width: 100 },
-  { title: '版本', dataIndex: 'version', key: 'version', width: 70 },
-  { title: '注册状态', key: 'registrationStatus', width: 100 },
-  { title: '操作', key: 'action', width: 120, fixed: 'right' },
-]
-
 async function fetchList(page = 1) {
   loading.value = true
   try {
@@ -510,7 +501,7 @@ async function fetchList(page = 1) {
     pagination.total = data?.totalElements || data?.total || 0
     pagination.current = (data?.number ?? page - 1) + 1
   } catch {
-    message.error('加载数据元列表失败')
+    ElMessage.error('加载数据元列表失败')
   } finally {
     loading.value = false
   }
@@ -548,7 +539,7 @@ const formState = reactive({
   version: '',
 })
 
-const formRules: Record<string, Rule[]> = {
+const formRules: Record<string, FormItemRule[]> = {
   elementCode: [{ required: true, message: '请输入标识符' }],
   name: [{ required: true, message: '请输入规范名称' }],
   definition: [{ required: true, message: '请输入定义' }],
@@ -659,23 +650,23 @@ async function openDetail(record: any) {
 }
 
 async function handleFormSubmit() {
-  await formRef.value?.validateFields()
+  await formRef.value?.validate()
   submitting.value = true
   try {
     const data = { ...formState }
     if (editingId.value) {
       await updateDataElement(editingId.value, data)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       const res = await createDataElement(data)
       const created = res.data.data
       editingId.value = created?.id || null
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     fetchList()
     fetchStats()
   } catch {
-    message.error('保存失败')
+    ElMessage.error('保存失败')
   } finally {
     submitting.value = false
   }
@@ -683,11 +674,11 @@ async function handleFormSubmit() {
 
 function handleDelete(record: any) {
   return deleteDataElement(record.id).then(() => {
-    message.success('删除成功')
+    ElMessage.success('删除成功')
     fetchList()
     fetchStats()
   }).catch(() => {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   })
 }
 
@@ -695,13 +686,6 @@ function handleDelete(record: any) {
 const valueRows = ref<any[]>([])
 const valuesSaving = ref(false)
 let valueRowIdx = 0
-
-const valueColumns = [
-  { title: '值编码', key: 'valueCode', width: 180 },
-  { title: '值含义', key: 'valueMeaning' },
-  { title: '排序', key: 'sortOrder', width: 100 },
-  { title: '操作', key: 'valueAction', width: 80 },
-]
 
 async function loadValues(elementId: number) {
   try {
@@ -730,15 +714,15 @@ async function handleSaveValues() {
     sortOrder: v.sortOrder ?? 0,
   }))
   if (data.some((d: any) => !d.valueCode || !d.valueMeaning)) {
-    return message.warning('请填写完整的值编码和值含义')
+    return ElMessage.warning('请填写完整的值编码和值含义')
   }
   valuesSaving.value = true
   try {
     await updateDataElementValues(editingId.value, data)
-    message.success('允许值保存成功')
+    ElMessage.success('允许值保存成功')
     loadValues(editingId.value)
   } catch {
-    message.error('保存允许值失败')
+    ElMessage.error('保存允许值失败')
   } finally {
     valuesSaving.value = false
   }
@@ -757,15 +741,6 @@ const mappingForm = reactive({
   transformRule: '',
 })
 
-const mappingColumns = [
-  { title: '字段路径', key: 'columnPath', width: 220 },
-  { title: '映射类型', dataIndex: 'mappingType', key: 'mappingType', width: 100 },
-  { title: '置信度', dataIndex: 'confidence', key: 'confidence', width: 80 },
-  { title: '状态', key: 'mappingStatus', width: 90 },
-  { title: '转换规则', dataIndex: 'transformRule', key: 'transformRule', ellipsis: true },
-  { title: '操作', key: 'mappingAction', width: 160 },
-]
-
 async function loadMappings(elementId: number) {
   mappingsLoading.value = true
   try {
@@ -781,11 +756,11 @@ async function loadMappings(elementId: number) {
 async function handleAddMapping() {
   if (!editingId.value) return
   if (!mappingForm.schemaName || !mappingForm.tableName || !mappingForm.columnName) {
-    return message.warning('请填写完整的 Schema、Table 和 Column')
+    return ElMessage.warning('请填写完整的 Schema、Table 和 Column')
   }
   try {
     await addDataElementMapping(editingId.value, { ...mappingForm })
-    message.success('映射添加成功')
+    ElMessage.success('映射添加成功')
     mappingModalVisible.value = false
     Object.assign(mappingForm, {
       schemaName: '',
@@ -797,37 +772,37 @@ async function handleAddMapping() {
     })
     loadMappings(editingId.value)
   } catch {
-    message.error('添加映射失败')
+    ElMessage.error('添加映射失败')
   }
 }
 
 async function handleConfirmMapping(mappingId: number) {
   try {
     await updateDataElementMapping(mappingId, 'CONFIRMED')
-    message.success('已确认')
+    ElMessage.success('已确认')
     if (editingId.value) loadMappings(editingId.value)
   } catch {
-    message.error('操作失败')
+    ElMessage.error('操作失败')
   }
 }
 
 async function handleRejectMapping(mappingId: number) {
   try {
     await updateDataElementMapping(mappingId, 'REJECTED')
-    message.success('已拒绝')
+    ElMessage.success('已拒绝')
     if (editingId.value) loadMappings(editingId.value)
   } catch {
-    message.error('操作失败')
+    ElMessage.error('操作失败')
   }
 }
 
 async function handleDeleteMapping(mappingId: number) {
   try {
     await deleteDataElementMapping(mappingId)
-    message.success('已删除')
+    ElMessage.success('已删除')
     if (editingId.value) loadMappings(editingId.value)
   } catch {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 
@@ -861,23 +836,23 @@ onMounted(() => {
   transition: background 0.2s;
 }
 .cat-item:hover {
-  background: #f5f5f5;
+  background: #f8fafc;
 }
 .cat-item.active {
-  background: #e8f4ff;
-  color: #1677ff;
+  background: #f0f9ff;
+  color: #0ea5e9;
   font-weight: 600;
 }
 .cat-count {
   font-size: 12px;
-  color: #999;
-  background: #f0f0f0;
+  color: #94a3b8;
+  background: #f1f5f9;
   padding: 0 6px;
   border-radius: 10px;
   line-height: 20px;
 }
 .cat-item.active .cat-count {
-  background: #bae0ff;
-  color: #1677ff;
+  background: #e0f2fe;
+  color: #0ea5e9;
 }
 </style>

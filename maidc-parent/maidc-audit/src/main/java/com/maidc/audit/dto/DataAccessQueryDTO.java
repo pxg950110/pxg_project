@@ -7,11 +7,15 @@ import java.time.LocalDateTime;
 @Data
 public class DataAccessQueryDTO {
 
-    private String userId;
+    private Long userId;
 
-    private String dataType;
+    private String dataDomain;
 
-    private String patientId;
+    private String accessType;
+
+    private Long patientId;
+
+    private String traceId;
 
     private LocalDateTime startTime;
 

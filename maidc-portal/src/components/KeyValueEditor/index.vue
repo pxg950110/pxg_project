@@ -1,38 +1,38 @@
 <template>
   <div class="kv-editor">
     <div v-for="(item, idx) in rows" :key="idx" class="kv-row">
-      <a-input
-        v-model:value="item.key"
+      <el-input
+        v-model="item.key"
         placeholder="键"
         class="kv-input"
-        @change="handleChange"
+        @input="handleChange"
       />
       <span class="kv-separator">:</span>
-      <a-input
-        v-model:value="item.value"
+      <el-input
+        v-model="item.value"
         placeholder="值"
         class="kv-input"
-        @change="handleChange"
+        @input="handleChange"
       />
-      <a-button
-        type="text"
-        danger
+      <el-button
+        type="danger"
+        link
         :disabled="rows.length <= 1"
         @click="removeRow(idx)"
       >
-        <DeleteOutlined />
-      </a-button>
+        <el-icon><Delete /></el-icon>
+      </el-button>
     </div>
-    <a-button type="dashed" block @click="addRow">
-      <PlusOutlined />
+    <el-button class="w-full !border-dashed mt-1" @click="addRow">
+      <el-icon class="mr-1"><Plus /></el-icon>
       添加
-    </a-button>
+    </el-button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { Delete, Plus } from '@element-plus/icons-vue'
 
 interface KVPair {
   key: string
@@ -88,7 +88,7 @@ function handleChange() {
   flex: 1;
 }
 .kv-separator {
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   flex-shrink: 0;
 }
 </style>

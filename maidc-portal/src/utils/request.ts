@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { getToken, getRefreshToken, setToken, removeToken } from './auth'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 
 export interface ApiResponse<T = any> {
   code: number
@@ -11,11 +11,19 @@ export interface ApiResponse<T = any> {
 }
 
 export interface PageResult<T = any> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
+  content: T[]
+  totalElements: number
   totalPages: number
+  number: number
+  size: number
+  first: boolean
+  last: boolean
+  empty: boolean
+  // Legacy fields for backward compatibility
+  items?: T[]
+  total?: number
+  page?: number
+  pageSize?: number
 }
 
 const service: AxiosInstance = axios.create({
@@ -45,9 +53,13 @@ let refreshSubscribers: Array<(token: string) => void> = []
 
 service.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
+    // Blob responses (file downloads) bypass JSON code checking
+    if (response.config.responseType === 'blob') {
+      return response
+    }
     const res = response.data
     if (res.code !== 200 && res.code !== 201) {
-      message.error(res.message || '请求失败')
+      ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message))
     }
     return response
@@ -55,7 +67,7 @@ service.interceptors.response.use(
   async (error) => {
     const { response, config } = error
     if (!response) {
-      message.error('网络异常，请检查网络连接')
+      ElMessage.error('网络异常，请检查网络连接')
       return Promise.reject(error)
     }
     switch (response.status) {
@@ -85,11 +97,11 @@ service.interceptors.response.use(
           })
         }
       }
-      case 403: message.error('无权限访问'); break
-      case 404: message.error('请求的资源不存在'); break
-      case 429: message.warning('请求过于频繁'); break
-      case 500: message.error('服务器内部错误'); break
-      default: message.error(response.data?.message || '请求失败')
+      case 403: ElMessage.error('无权限访问'); break
+      case 404: ElMessage.error('请求的资源不存在'); break
+      case 429: ElMessage.warning('请求过于频繁'); break
+      case 500: ElMessage.error('服务器内部错误'); break
+      default: ElMessage.error(response.data?.message || '请求失败')
     }
     return Promise.reject(error)
   },

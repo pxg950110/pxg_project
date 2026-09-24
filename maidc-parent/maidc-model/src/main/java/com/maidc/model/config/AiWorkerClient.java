@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -16,8 +17,10 @@ public class AiWorkerClient {
     @Value("${maidc.aiworker.url:http://localhost:8090}")
     private String aiWorkerUrl;
 
-    public AiWorkerClient() {
-        this.restTemplate = new RestTemplate();
+    public AiWorkerClient(RestTemplateBuilder restTemplateBuilder) {
+        // RestTemplateBuilder 自动应用 common-log 的 TraceRestTemplateCustomizer，
+        // 调用 aiworker 时自动透传 X-Trace-Id 等链路头
+        this.restTemplate = restTemplateBuilder.build();
     }
 
     public JsonNode predict(String endpointUrl, JsonNode input) {

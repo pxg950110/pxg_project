@@ -1,126 +1,138 @@
 <template>
   <PageContainer :title="project?.name || '项目详情'" :loading="loading">
     <template #extra>
-      <a-button @click="router.back()">返回</a-button>
+      <el-button @click="router.back()">返回</el-button>
     </template>
 
     <template v-if="project">
       <!-- Basic Info -->
-      <a-card style="margin-bottom: 16px">
-        <a-descriptions :column="3" bordered size="small">
-          <a-descriptions-item label="项目名称">{{ project.name }}</a-descriptions-item>
-          <a-descriptions-item label="负责人 (PI)">{{ project.pi_name }}</a-descriptions-item>
-          <a-descriptions-item label="状态">
-            <a-tag :color="project.status === 'ACTIVE' ? 'green' : 'default'">{{ project.status }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="开始时间">{{ formatDateTime(project.start_date) }}</a-descriptions-item>
-          <a-descriptions-item label="结束时间">{{ formatDateTime(project.end_date) }}</a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ formatDateTime(project.created_at) }}</a-descriptions-item>
-          <a-descriptions-item label="描述" :span="3">{{ project.description || '-' }}</a-descriptions-item>
-        </a-descriptions>
-      </a-card>
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm mb-4">
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="项目名称">{{ project.name }}</el-descriptions-item>
+          <el-descriptions-item label="负责人 (PI)">{{ project.pi_name }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="project.status === 'ACTIVE' ? 'success' : 'info'">{{ project.status }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="开始时间">{{ formatDateTime(project.start_date) }}</el-descriptions-item>
+          <el-descriptions-item label="结束时间">{{ formatDateTime(project.end_date) }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(project.created_at) }}</el-descriptions-item>
+          <el-descriptions-item label="描述" :span="3">{{ project.description || '-' }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
 
       <!-- Tabs -->
-      <a-card>
-        <a-tabs v-model:activeKey="activeTab">
+      <el-card shadow="never" class="!rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <el-tabs v-model="activeTab">
           <!-- Members Tab -->
-          <a-tab-pane key="members" tab="成员">
-            <div style="margin-bottom: 16px">
-              <a-button type="primary" @click="inviteModal.open()">
-                <PlusOutlined /> 邀请成员
-              </a-button>
+          <el-tab-pane label="成员" name="members">
+            <div class="mb-4">
+              <el-button type="primary" @click="inviteModal.open()">
+                <el-icon class="mr-1"><Plus /></el-icon> 邀请成员
+              </el-button>
             </div>
-            <a-table :columns="memberColumns" :data-source="members" :loading="membersLoading" size="small" row-key="id">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'role'">
-                  <a-tag :color="record.role === 'PI' ? 'blue' : record.role === 'RESEARCHER' ? 'green' : 'default'">
-                    {{ record.role }}
-                  </a-tag>
+            <el-table :data="members" v-loading="membersLoading" size="small" row-key="id">
+              <el-table-column label="姓名" prop="user_name" />
+              <el-table-column label="项目角色" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="row.role === 'PI' ? 'primary' : row.role === 'RESEARCHER' ? 'success' : 'info'">
+                    {{ row.role }}
+                  </el-tag>
                 </template>
-                <template v-if="column.key === 'joined_at'">
-                  {{ formatDateTime(record.joined_at) }}
+              </el-table-column>
+              <el-table-column label="加入时间" width="170">
+                <template #default="{ row }">{{ formatDateTime(row.joined_at) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="80">
+                <template #default="{ row }">
+                  <el-popconfirm title="确认移除该成员？" @confirm="handleRemoveMember(row.id)">
+                    <template #reference>
+                      <el-button link type="danger">移除</el-button>
+                    </template>
+                  </el-popconfirm>
                 </template>
-                <template v-if="column.key === 'action'">
-                  <a-popconfirm title="确认移除该成员？" @confirm="handleRemoveMember(record.id)">
-                    <a class="danger-link">移除</a>
-                  </a-popconfirm>
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
 
           <!-- Datasets Tab -->
-          <a-tab-pane key="datasets" tab="数据集">
-            <a-table :columns="datasetColumns" :data-source="datasets" :loading="datasetsLoading" size="small" row-key="id">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'action'">
-                  <a @click="router.push(`/data/rdr/datasets/${record.id}`)">详情</a>
+          <el-tab-pane label="数据集" name="datasets">
+            <el-table :data="datasets" v-loading="datasetsLoading" size="small" row-key="id">
+              <el-table-column label="数据集名称" prop="name" />
+              <el-table-column label="样本数" prop="sample_count" width="100" />
+              <el-table-column label="版本数" prop="version_count" width="80" />
+              <el-table-column label="创建人" prop="creator_name" width="100" />
+              <el-table-column label="操作" width="80">
+                <template #default="{ row }">
+                  <el-button link type="primary" @click="router.push(`/data/rdr/datasets/${row.id}`)">详情</el-button>
                 </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
 
           <!-- Cohorts Tab -->
-          <a-tab-pane key="cohorts" tab="队列">
-            <a-table :columns="cohortColumns" :data-source="cohorts" :loading="cohortsLoading" size="small" row-key="id">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'created_at'">
-                  {{ formatDateTime(record.created_at) }}
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+          <el-tab-pane label="队列" name="cohorts">
+            <el-table :data="cohorts" v-loading="cohortsLoading" size="small" row-key="id">
+              <el-table-column label="队列名称" prop="name" />
+              <el-table-column label="纳入标准" prop="criteria_summary" />
+              <el-table-column label="患者数" prop="patient_count" width="100" />
+              <el-table-column label="创建时间" width="170">
+                <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
 
           <!-- Activity Tab -->
-          <a-tab-pane key="activity" tab="活动记录">
-            <a-timeline>
-              <a-timeline-item
+          <el-tab-pane label="活动记录" name="activity">
+            <el-timeline>
+              <el-timeline-item
                 v-for="(item, index) in activities"
                 :key="index"
-                :color="activityColorMap[item.type] || 'blue'"
+                :color="activityColorMap[item.type] || '#0ea5e9'"
               >
                 <div class="activity-item">
                   <span class="activity-title">{{ item.title }}</span>
                   <span class="activity-desc">{{ item.description }}</span>
                   <span class="activity-time">{{ formatDateTime(item.created_at) }}</span>
                 </div>
-              </a-timeline-item>
-            </a-timeline>
-            <a-empty v-if="!activities.length" description="暂无活动记录" />
-          </a-tab-pane>
-        </a-tabs>
-      </a-card>
+              </el-timeline-item>
+            </el-timeline>
+            <el-empty v-if="!activities.length" description="暂无活动记录" :image-size="60" />
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
     </template>
 
-    <!-- Invite Member Modal -->
-    <a-modal
-      v-model:open="inviteModal.visible"
+    <!-- Invite Member Dialog -->
+    <el-dialog
+      v-model="inviteModal.visible"
       title="邀请成员"
-      @ok="handleInvite"
-      :confirm-loading="inviting"
       width="480px"
     >
-      <a-form layout="vertical">
-        <a-form-item label="选择用户" required>
-          <UserSelect v-model:value="inviteForm.user_id" placeholder="搜索用户" />
-        </a-form-item>
-        <a-form-item label="项目角色" required>
-          <a-select v-model:value="inviteForm.role" placeholder="选择角色">
-            <a-select-option value="RESEARCHER">研究员</a-select-option>
-            <a-select-option value="ANALYST">分析员</a-select-option>
-            <a-select-option value="COLLABORATOR">协作人</a-select-option>
-          </a-select>
-        </a-form-item>
-      </a-form>
-    </a-modal>
+      <el-form label-position="top">
+        <el-form-item label="选择用户" required>
+          <UserSelect v-model="inviteForm.user_id" placeholder="搜索用户" />
+        </el-form-item>
+        <el-form-item label="项目角色" required>
+          <el-select v-model="inviteForm.role" placeholder="选择角色">
+            <el-option value="RESEARCHER" label="研究员" />
+            <el-option value="ANALYST" label="分析员" />
+            <el-option value="COLLABORATOR" label="协作人" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="inviteModal.close()">取消</el-button>
+        <el-button type="primary" :loading="inviting" @click="handleInvite">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { PlusOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useModal } from '@/hooks/useModal'
@@ -152,37 +164,15 @@ const cohortsLoading = ref(false)
 const activities = ref<any[]>([])
 
 const activityColorMap: Record<string, string> = {
-  CREATE: 'green',
-  UPDATE: 'blue',
-  MEMBER_ADD: 'cyan',
-  MEMBER_REMOVE: 'orange',
-  DATASET_LINK: 'purple',
-  WARNING: 'red',
+  CREATE: '#10b981',
+  UPDATE: '#0ea5e9',
+  MEMBER_ADD: '#06b6d4',
+  MEMBER_REMOVE: '#f97316',
+  DATASET_LINK: '#8b5cf6',
+  WARNING: '#ef4444',
 }
 
 const inviteForm = reactive({ user_id: undefined as any, role: 'RESEARCHER' })
-
-const memberColumns = [
-  { title: '姓名', dataIndex: 'user_name', key: 'user_name' },
-  { title: '项目角色', dataIndex: 'role', key: 'role', width: 120 },
-  { title: '加入时间', dataIndex: 'joined_at', key: 'joined_at', width: 170 },
-  { title: '操作', key: 'action', width: 80 },
-]
-
-const datasetColumns = [
-  { title: '数据集名称', dataIndex: 'name', key: 'name' },
-  { title: '样本数', dataIndex: 'sample_count', key: 'sample_count', width: 100 },
-  { title: '版本数', dataIndex: 'version_count', key: 'version_count', width: 80 },
-  { title: '创建人', dataIndex: 'creator_name', key: 'creator_name', width: 100 },
-  { title: '操作', key: 'action', width: 80 },
-]
-
-const cohortColumns = [
-  { title: '队列名称', dataIndex: 'name', key: 'name' },
-  { title: '纳入标准', dataIndex: 'criteria_summary', key: 'criteria_summary' },
-  { title: '患者数', dataIndex: 'patient_count', key: 'patient_count', width: 100 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 170 },
-]
 
 async function loadProject() {
   loading.value = true
@@ -244,7 +234,7 @@ async function handleInvite() {
   inviting.value = true
   try {
     await request.post(`/rdr/projects/${route.params.id}/members`, inviteForm)
-    message.success('成员邀请成功')
+    ElMessage.success('成员邀请成功')
     inviteModal.close()
     loadMembers()
   } finally {
@@ -255,7 +245,7 @@ async function handleInvite() {
 async function handleRemoveMember(memberId: number) {
   try {
     await request.delete(`/rdr/projects/${route.params.id}/members/${memberId}`)
-    message.success('成员已移除')
+    ElMessage.success('成员已移除')
     loadMembers()
   } catch {
     // error handled by request interceptor
@@ -276,20 +266,14 @@ onMounted(async () => {
 }
 .activity-title {
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
+  color: #0f172a;
 }
 .activity-desc {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.55);
+  color: #64748b;
 }
 .activity-time {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.35);
-}
-.danger-link {
-  color: #ff4d4f;
-}
-.danger-link:hover {
-  color: #ff7875;
+  color: #94a3b8;
 }
 </style>

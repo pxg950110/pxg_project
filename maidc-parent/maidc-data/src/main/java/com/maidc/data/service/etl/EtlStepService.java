@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -120,11 +122,21 @@ public class EtlStepService {
 
     public List<EtlStepVO> listSteps(Long pipelineId) {
         List<EtlStepEntity> steps = stepRepository.findByPipelineIdAndIsDeletedFalseOrderByStepOrder(pipelineId);
+        if (steps.isEmpty()) {
+            return List.of();
+        }
+        // 一次查出全部字段映射，避免逐步骤查询
+        Map<Long, List<EtlFieldMappingVO>> mappingsByStep =
+                fieldMappingRepository.findByStepIdInAndIsDeletedFalseOrderByStepIdAscSortOrderAsc(
+                                steps.stream().map(EtlStepEntity::getId).toList())
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                EtlFieldMappingEntity::getStepId,
+                                Collectors.mapping(dataMapper::toEtlFieldMappingVO, Collectors.toList())));
+
         return steps.stream().map(entity -> {
             EtlStepVO vo = dataMapper.toEtlStepVO(entity);
-            List<EtlFieldMappingEntity> mappings =
-                    fieldMappingRepository.findByStepIdAndIsDeletedFalseOrderBySortOrder(entity.getId());
-            vo.setFieldMappings(mappings.stream().map(dataMapper::toEtlFieldMappingVO).toList());
+            vo.setFieldMappings(mappingsByStep.getOrDefault(entity.getId(), List.of()));
             return vo;
         }).toList();
     }
@@ -141,13 +153,16 @@ public class EtlStepService {
 
     @Transactional
     public void reorderSteps(Long pipelineId, List<Long> stepIds) {
+        Map<Long, EtlStepEntity> byId = stepRepository.findAllById(stepIds).stream()
+                .collect(Collectors.toMap(EtlStepEntity::getId, Function.identity()));
         for (int i = 0; i < stepIds.size(); i++) {
-            Long stepId = stepIds.get(i);
-            EtlStepEntity entity = stepRepository.findById(stepId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+            EtlStepEntity entity = byId.get(stepIds.get(i));
+            if (entity == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND);
+            }
             entity.setStepOrder(i + 1);
-            stepRepository.save(entity);
         }
+        stepRepository.saveAll(byId.values());
         log.info("ETL steps reordered: pipelineId={}, stepIds={}", pipelineId, stepIds);
     }
 

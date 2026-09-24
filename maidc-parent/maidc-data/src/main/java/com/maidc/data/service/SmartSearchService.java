@@ -161,27 +161,30 @@ public class SmartSearchService {
     }
 
     private String domainSubSql(String domain) {
+        // 全文匹配走 DDL 预建的 fts 生成列（14-smart-search-fts.sql，GIN 索引）。
+        // 查询配置用 'simple'：与运行库 fts 列的生成配置一致（部署镜像无 zhparser，'zh' 配置不存在）；
+        // 升级 zhparser 需更换镜像并以 'zh' 重建生成列后同步此处配置。
         return switch (domain) {
             case "PATIENT" -> """
                 SELECT 'PATIENT' AS domain, p.id, p.id AS patient_id,
                        p.name AS title, p.gender || ' ' || p.birth_date AS subtitle,
                        ts_rank_cd(p.fts, q) AS score,
-                       ts_headline('simple', coalesce(p.name,''), q) AS headline
+                       ts_headline('simple', p.name, q) AS headline
                 FROM cdr.c_patient p, tsq
                 WHERE p.fts @@ q AND p.is_deleted = false""";
             case "ENCOUNTER" -> """
                 SELECT 'ENCOUNTER' AS domain, e.id, e.patient_id,
-                       coalesce(e.diagnosis_summary, '-') AS title,
-                       coalesce(e.department,'') || ' ' || coalesce(e.attending_doctor,'') AS subtitle,
+                       coalesce(e.diagnosis_name, '-') AS title,
+                       coalesce(e.dept_name,'') || ' ' || coalesce(e.doctor_name,'') AS subtitle,
                        ts_rank_cd(e.fts, q) AS score,
-                       ts_headline('simple', coalesce(e.attending_doctor,'') || ' ' || coalesce(e.diagnosis_summary,'') || ' ' || coalesce(e.department,''), q) AS headline
+                       ts_headline('simple', coalesce(e.doctor_name,'') || ' ' || coalesce(e.diagnosis_name,'') || ' ' || coalesce(e.dept_name,''), q) AS headline
                 FROM cdr.c_encounter e, tsq
                 WHERE e.fts @@ q AND e.is_deleted = false""";
             case "DIAGNOSIS" -> """
                 SELECT 'DIAGNOSIS' AS domain, d.id, d.patient_id,
-                       d.diagnosis_name AS title, d.diagnosis_code AS subtitle,
+                       d.icd_name AS title, d.icd_code AS subtitle,
                        ts_rank_cd(d.fts, q) AS score,
-                       ts_headline('simple', coalesce(d.diagnosis_name,'') || ' ' || coalesce(d.diagnosis_code,''), q) AS headline
+                       ts_headline('simple', coalesce(d.icd_name,'') || ' ' || coalesce(d.icd_code,''), q) AS headline
                 FROM cdr.c_diagnosis d, tsq
                 WHERE d.fts @@ q AND d.is_deleted = false""";
             case "LAB" -> """
@@ -242,16 +245,16 @@ public class SmartSearchService {
                 WHERE n.fts @@ q AND n.is_deleted = false""";
             case "PROJECT" -> """
                 SELECT 'PROJECT' AS domain, p.id, NULL::bigint AS patient_id,
-                       p.name AS title, coalesce(p.description,'') AS subtitle,
+                       coalesce(p.project_name, p.name) AS title, coalesce(p.description,'') AS subtitle,
                        ts_rank_cd(p.fts, q) AS score,
-                       ts_headline('simple', coalesce(p.name,'') || ' ' || coalesce(p.description,''), q) AS headline
+                       ts_headline('simple', coalesce(p.project_name, p.name) || ' ' || coalesce(p.description,''), q) AS headline
                 FROM rdr.r_study_project p, tsq
                 WHERE p.fts @@ q AND p.is_deleted = false""";
             case "DATASET" -> """
                 SELECT 'DATASET' AS domain, d.id, NULL::bigint AS patient_id,
-                       d.name AS title, coalesce(d.description,'') AS subtitle,
+                       coalesce(d.dataset_name, d.name) AS title, coalesce(d.description,'') AS subtitle,
                        ts_rank_cd(d.fts, q) AS score,
-                       ts_headline('simple', coalesce(d.name,'') || ' ' || coalesce(d.description,''), q) AS headline
+                       ts_headline('simple', coalesce(d.dataset_name, d.name) || ' ' || coalesce(d.description,''), q) AS headline
                 FROM rdr.r_dataset d, tsq
                 WHERE d.fts @@ q AND d.is_deleted = false""";
             default -> "SELECT NULL::text AS domain, NULL::bigint AS id, NULL::bigint AS patient_id, NULL::text AS title, NULL::text AS subtitle, 0::float AS score, NULL::text AS headline WHERE false";

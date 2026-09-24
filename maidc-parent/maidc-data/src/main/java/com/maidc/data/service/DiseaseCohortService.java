@@ -42,6 +42,7 @@ public class DiseaseCohortService {
     private final PatientRepository patientRepository;
     private final DataSource dataSource;
     private final ObjectMapper objectMapper;
+    private final DiseaseCohortEventService eventService;
 
     private static final Map<String, String> DOMAIN_TABLE_MAP = Map.of(
             "DIAGNOSIS", "cdr.c_diagnosis",
@@ -54,7 +55,7 @@ public class DiseaseCohortService {
 
     // field alias: template field name -> actual DB column name
     private static final Map<String, Map<String, String>> DOMAIN_FIELD_MAP = Map.of(
-            "DIAGNOSIS", Map.of("diagnosis_code", "icd_code", "diagnosis_name", "icd_name"),
+            "DIAGNOSIS", Map.of("icd_code", "icd_code", "icd_name", "icd_name"),
             "LAB", Map.of("test_code", "test_code", "test_name", "test_name"),
             "SURGERY", Map.of("operation_name", "operation_name", "operation_code", "operation_code"),
             "PATHOLOGY", Map.of("diagnosis_desc", "diagnosis_desc"),
@@ -151,6 +152,7 @@ public class DiseaseCohortService {
         Set<Long> allPatientIds = new HashSet<>(matchedPatientIds);
         allPatientIds.addAll(manualPatientIds);
         LocalDateTime now = LocalDateTime.now();
+        int inserted = 0;
         for (Long patientId : matchedPatientIds) {
             if (!manualPatientIds.contains(patientId)) {
                 DiseaseCohortPatientEntity cp = new DiseaseCohortPatientEntity();
@@ -159,6 +161,7 @@ public class DiseaseCohortService {
                 cp.setMatchSource("AUTO");
                 cp.setMatchedAt(now);
                 cohortPatientRepository.save(cp);
+                inserted++;
             }
         }
 
@@ -166,6 +169,10 @@ public class DiseaseCohortService {
         cohort.setPatientCount(allPatientIds.size());
         cohort.setLastSyncAt(now);
         cohortRepository.save(cohort);
+
+        // 队列动态事件（FR6）；record 内部 best-effort，不阻断同步主流程
+        eventService.record(DiseaseCohortEventService.TYPE_SYNC_DONE, cohortId, cohort.getOrgId(),
+                "队列「" + cohort.getName() + "」同步完成：新增 " + inserted + " 人，在管 " + allPatientIds.size() + " 人");
 
         log.info("匹配完成: cohortId={}, auto={}, manual={}, total={}",
                 cohortId, matchedPatientIds.size(), manualPatientIds.size(), allPatientIds.size());

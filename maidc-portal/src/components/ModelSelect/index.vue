@@ -1,21 +1,21 @@
 <template>
-  <a-select
-    :value="modelValue"
+  <el-select
+    :model-value="modelValue"
     :placeholder="placeholder || '请选择模型'"
-    show-search
-    :filter-option="false"
+    filterable
+    remote
+    :remote-method="handleSearch"
     :loading="fetching"
-    allow-clear
+    clearable
     style="width: 100%"
-    @search="handleSearch"
     @change="handleChange"
     @focus="handleFocus"
   >
-    <a-select-option v-for="item in options" :key="item.id" :value="String(item.id)">
+    <el-option v-for="item in options" :key="item.id" :value="String(item.id)" :label="item.model_name">
       <span>{{ item.model_name }}</span>
       <span class="option-code">{{ item.model_code }}</span>
-    </a-select-option>
-  </a-select>
+    </el-option>
+  </el-select>
 </template>
 
 <script setup lang="ts">
@@ -43,7 +43,7 @@ async function fetchModels(keyword?: string) {
   fetching.value = true
   try {
     const res = await getModels({ keyword, page: 1, page_size: 50 })
-    options.value = res.data.data.items
+    options.value = res.data.data.items ?? []
   } catch {
     options.value = []
   } finally {
@@ -65,7 +65,7 @@ function handleFocus() {
 }
 
 function handleChange(value: string | undefined) {
-  emit('update:modelValue', value)
+  emit('update:modelValue', value || undefined)
   const selected = options.value.find((m) => String(m.id) === value)
   emit('change', selected)
 }

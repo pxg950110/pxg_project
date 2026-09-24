@@ -1,39 +1,24 @@
 <template>
-  <a-upload
+  <el-upload
     :accept="accept"
     :multiple="multiple"
     :before-upload="handleBeforeUpload"
-    :custom-request="handleUpload"
+    :http-request="handleUpload"
     :file-list="fileList"
-    @remove="handleRemove"
+    :on-remove="handleRemove"
   >
-    <a-button>
-      <UploadOutlined />
+    <el-button type="primary" plain>
+      <el-icon class="mr-1"><Upload /></el-icon>
       点击上传
-    </a-button>
-    <template #itemRender="{ file }">
-      <span :class="['custom-file-item', file.status]">
-        <PaperClipOutlined />
-        <span class="file-name">{{ file.name }}</span>
-        <LoadingOutlined v-if="file.status === 'uploading'" />
-        <CheckCircleOutlined v-else-if="file.status === 'done'" style="color: #52c41a" />
-        <CloseCircleOutlined v-else-if="file.status === 'error'" style="color: #ff4d4f" />
-      </span>
-    </template>
-  </a-upload>
+    </el-button>
+  </el-upload>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { message } from 'ant-design-vue'
-import {
-  UploadOutlined,
-  PaperClipOutlined,
-  LoadingOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-} from '@ant-design/icons-vue'
-import type { UploadFile, UploadProps } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
+import type { UploadFile, UploadUserFile } from 'element-plus'
+import { Upload } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 interface FileInfo {
@@ -63,12 +48,12 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
-const fileList = ref<UploadFile[]>([])
+const fileList = ref<UploadUserFile[]>([])
 
 function handleBeforeUpload(file: File) {
   const sizeMB = file.size / 1024 / 1024
   if (sizeMB > props.maxSize) {
-    message.error(`文件大小不能超过 ${props.maxSize}MB`)
+    ElMessage.error(`文件大小不能超过 ${props.maxSize}MB`)
     emit('error', `文件大小不能超过 ${props.maxSize}MB`)
     return false
   }
@@ -124,7 +109,7 @@ async function handleUpload(options: any) {
     onError(err)
     const msg = err?.message || '上传失败'
     emit('error', msg)
-    message.error(msg)
+    ElMessage.error(msg)
   }
 }
 

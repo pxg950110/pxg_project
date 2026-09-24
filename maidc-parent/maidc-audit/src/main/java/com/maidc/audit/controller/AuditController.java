@@ -9,6 +9,7 @@ import com.maidc.audit.vo.DataAccessLogVO;
 import com.maidc.audit.vo.SystemEventVO;
 import com.maidc.common.core.result.PageResult;
 import com.maidc.common.core.result.R;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,7 +39,7 @@ public class AuditController {
      */
     @PreAuthorize("hasPermission('audit:read')")
     @GetMapping("/operations/{id}")
-    public R<AuditLogVO> getAuditLogDetail(@PathVariable String id) {
+    public R<AuditLogVO> getAuditLogDetail(@PathVariable Long id) {
         return R.ok(auditService.getAuditLogDetail(id));
     }
 
@@ -69,5 +70,23 @@ public class AuditController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
         return R.ok(auditService.getComplianceReport(startTime, endTime));
+    }
+
+    @PreAuthorize("hasPermission('audit:read')")
+    @GetMapping("/operations/export")
+    public void exportAuditLogs(AuditLogQueryDTO queryDTO, HttpServletResponse response) throws Exception {
+        auditService.exportAuditLogsCsv(queryDTO, response);
+    }
+
+    @PreAuthorize("hasPermission('audit:read')")
+    @GetMapping("/data-access/export")
+    public void exportDataAccessLogs(DataAccessQueryDTO queryDTO, HttpServletResponse response) throws Exception {
+        auditService.exportDataAccessLogsCsv(queryDTO, response);
+    }
+
+    @PreAuthorize("hasPermission('audit:read')")
+    @GetMapping("/events/export")
+    public void exportSystemEvents(EventQueryDTO queryDTO, HttpServletResponse response) throws Exception {
+        auditService.exportSystemEventsCsv(queryDTO, response);
     }
 }

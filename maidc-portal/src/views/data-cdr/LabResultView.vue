@@ -2,19 +2,19 @@
   <div class="lab-result-view">
     <!-- Category Filter -->
     <div class="lab-filter">
-      <a-space>
+      <div class="flex items-center gap-2">
         <span class="filter-label">检验类别：</span>
-        <a-radio-group v-model:value="selectedCategory" button-style="solid" size="small" @change="handleCategoryChange">
-          <a-radio-button value="">全部</a-radio-button>
-          <a-radio-button
+        <el-radio-group v-model="selectedCategory" size="small" @change="handleCategoryChange">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button
             v-for="cat in categories"
             :key="cat.value"
             :value="cat.value"
           >
             {{ cat.label }}
-          </a-radio-button>
-        </a-radio-group>
-      </a-space>
+          </el-radio-button>
+        </el-radio-group>
+      </div>
     </div>
 
     <!-- Grouped Tables -->
@@ -22,40 +22,40 @@
       <div class="lab-group-header">
         <span class="lab-group-icon">{{ group.icon }}</span>
         <span class="lab-group-title">{{ group.label }}</span>
-        <a-tag color="default">{{ group.items.length }}项</a-tag>
+        <el-tag type="info" size="small">{{ group.items.length }}项</el-tag>
       </div>
-      <a-table
-        :columns="columns"
-        :data-source="group.items"
-        :pagination="false"
-        row-key="id"
-        size="small"
-        class="lab-table"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'result_value'">
-            <span :class="{ 'abnormal-value': record.abnormal_flag && record.abnormal_flag !== 'N' }">
-              {{ record.result_value }}
+      <el-table :data="group.items" row-key="id" size="small" class="lab-table">
+        <el-table-column label="检验项目" prop="test_name" width="160" show-overflow-tooltip />
+        <el-table-column label="结果" width="100">
+          <template #default="{ row }">
+            <span :class="{ 'abnormal-value': row.abnormal_flag && row.abnormal_flag !== 'N' }">
+              {{ row.result_value }}
             </span>
           </template>
-          <template v-if="column.key === 'abnormal_flag'">
-            <template v-if="record.abnormal_flag && record.abnormal_flag !== 'N'">
-              <a-tag :color="abnormalColorMap[record.abnormal_flag] || 'red'">
-                {{ abnormalLabelMap[record.abnormal_flag] || record.abnormal_flag }}
-              </a-tag>
+        </el-table-column>
+        <el-table-column label="单位" prop="unit" width="80" />
+        <el-table-column label="参考范围" prop="reference_range" width="130" />
+        <el-table-column label="标志" width="80">
+          <template #default="{ row }">
+            <template v-if="row.abnormal_flag && row.abnormal_flag !== 'N'">
+              <el-tag :type="abnormalColorMap[row.abnormal_flag] || 'danger'" size="small">
+                {{ abnormalLabelMap[row.abnormal_flag] || row.abnormal_flag }}
+              </el-tag>
             </template>
             <template v-else>
               <span class="normal-flag">正常</span>
             </template>
           </template>
-          <template v-if="column.key === 'test_time'">
-            {{ formatDateTime(record.test_time) }}
+        </el-table-column>
+        <el-table-column label="检验时间" width="170">
+          <template #default="{ row }">
+            {{ formatDateTime(row.test_time) }}
           </template>
-        </template>
-      </a-table>
+        </el-table-column>
+      </el-table>
     </div>
 
-    <a-empty v-if="!loading && filteredGroups.length === 0" description="暂无检验结果" />
+    <el-empty v-if="!loading && filteredGroups.length === 0" description="暂无检验结果" :image-size="60" />
   </div>
 </template>
 
@@ -85,12 +85,12 @@ const categories = [
   { label: '微生物', value: 'microbiology', icon: '🦠' },
 ]
 
-const abnormalColorMap: Record<string, string> = {
-  H: 'red',
-  HH: 'red',
-  L: 'orange',
-  LL: 'red',
-  A: 'purple',
+const abnormalColorMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  H: 'danger',
+  HH: 'danger',
+  L: 'warning',
+  LL: 'danger',
+  A: 'danger',
 }
 
 const abnormalLabelMap: Record<string, string> = {
@@ -101,15 +101,6 @@ const abnormalLabelMap: Record<string, string> = {
   A: '异常',
   N: '正常',
 }
-
-const columns = [
-  { title: '检验项目', dataIndex: 'test_name', key: 'test_name', width: 160, ellipsis: true },
-  { title: '结果', dataIndex: 'result_value', key: 'result_value', width: 100 },
-  { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
-  { title: '参考范围', dataIndex: 'reference_range', key: 'reference_range', width: 130 },
-  { title: '标志', dataIndex: 'abnormal_flag', key: 'abnormal_flag', width: 80 },
-  { title: '检验时间', dataIndex: 'test_time', key: 'test_time', width: 170 },
-]
 
 const categoryLabelMap: Record<string, { label: string; icon: string }> = {
   blood: { label: '血液检验', icon: '🩸' },
@@ -161,12 +152,12 @@ onMounted(loadData)
 .lab-filter {
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: #fafafa;
+  background: #f8fafc;
   border-radius: 6px;
 }
 .filter-label {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   font-weight: 500;
 }
 .lab-group {
@@ -178,7 +169,7 @@ onMounted(loadData)
   gap: 8px;
   margin-bottom: 8px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 .lab-group-icon {
   font-size: 18px;
@@ -186,17 +177,14 @@ onMounted(loadData)
 .lab-group-title {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: #0f172a;
 }
 .abnormal-value {
-  color: #ff4d4f;
+  color: #ef4444;
   font-weight: 600;
 }
 .normal-flag {
-  color: rgba(0, 0, 0, 0.25);
+  color: #cbd5e1;
   font-size: 13px;
-}
-.lab-table :deep(.ant-table-thead > tr > th) {
-  background: #fafafa;
 }
 </style>

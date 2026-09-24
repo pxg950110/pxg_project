@@ -74,4 +74,29 @@ public class MonitoringService {
                 .dataPoints(dataPoints)
                 .build();
     }
+
+    public PageResult<Map<String, Object>> getAllInferenceLogs(int page, int pageSize, String status) {
+        Page<InferenceLogEntity> result;
+        if (status != null && !status.isEmpty()) {
+            result = inferenceLogRepository.findByStatus(status, PageRequest.of(page - 1, pageSize));
+        } else {
+            result = inferenceLogRepository.findAll(PageRequest.of(page - 1, pageSize));
+        }
+
+        Page<Map<String, Object>> mapped = result.map(log -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", log.getId());
+            map.put("request_id", log.getRequestId());
+            map.put("deployment_id", log.getDeploymentId());
+            map.put("patient_id", log.getPatientId());
+            map.put("status", log.getStatus());
+            map.put("latency", log.getLatencyMs());
+            map.put("created_at", log.getCreatedAt() != null ? log.getCreatedAt().toString() : null);
+            map.put("input_data", log.getInputSummary());
+            map.put("output_data", log.getOutputResult());
+            return map;
+        });
+
+        return PageResult.of(mapped);
+    }
 }

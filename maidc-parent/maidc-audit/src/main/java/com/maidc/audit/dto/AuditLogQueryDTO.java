@@ -7,17 +7,19 @@ import java.time.LocalDateTime;
 @Data
 public class AuditLogQueryDTO {
 
-    private String module;
+    private String serviceName;
 
     private String operation;
 
     private String username;
 
+    private String traceId;
+
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
 
-    private Short status;
+    private String status;
 
     private Integer page = 1;
 

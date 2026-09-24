@@ -2,6 +2,8 @@ package com.maidc.data.service;
 
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
+import com.maidc.common.core.result.PageResult;
+import com.maidc.data.dto.PatientQueryDTO;
 import com.maidc.data.entity.PatientEntity;
 import com.maidc.data.mapper.DataMapper;
 import com.maidc.data.repository.PatientRepository;
@@ -11,9 +13,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -80,5 +87,44 @@ class PatientServiceTest {
         assertEquals(ErrorCode.PATIENT_NOT_FOUND.getCode(), exception.getCode());
         verify(patientRepository).findByIdAndIsDeletedFalse(nonExistingId);
         verifyNoInteractions(dataMapper);
+    }
+
+    // ==================== PII 脱敏（列表/详情出口不回明文证件号/手机号，对齐就诊流） ====================
+
+    @Test
+    void getPatient_masksIdCardAndPhone() {
+        PatientEntity entity = new PatientEntity();
+        entity.setId(1L);
+        entity.setName("张三");
+        entity.setIdCardNo("320102199001011234");
+        entity.setPhone("13812345678");
+        when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(entity));
+        when(dataMapper.toPatientVO(entity)).thenReturn(PatientVO.builder()
+                .id(1L).name("张三")
+                .idCardNo("320102199001011234").phone("13812345678")
+                .build());
+
+        PatientVO vo = patientService.getPatient(1L);
+
+        assertEquals("320***********1234", vo.getIdCardNo());
+        assertEquals("138****5678", vo.getPhone());
+    }
+
+    @Test
+    void listPatients_masksIdCardAndPhone() {
+        PatientEntity entity = new PatientEntity();
+        entity.setId(2L);
+        entity.setIdCardNo("320102199001011234");
+        entity.setPhone("13812345678");
+        Page<PatientEntity> page = new PageImpl<>(List.of(entity));
+        when(patientRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        when(dataMapper.toPatientVO(any(PatientEntity.class))).thenReturn(PatientVO.builder()
+                .id(2L).idCardNo("320102199001011234").phone("13812345678")
+                .build());
+
+        PageResult<PatientVO> result = patientService.listPatients(new PatientQueryDTO());
+
+        assertEquals("320***********1234", result.getItems().get(0).getIdCardNo());
+        assertEquals("138****5678", result.getItems().get(0).getPhone());
     }
 }

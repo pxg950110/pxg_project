@@ -4,7 +4,7 @@ import com.maidc.common.core.result.R;
 import com.maidc.data.entity.DrugInteractionEntity;
 import com.maidc.data.service.DrugInteractionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,7 +16,7 @@ public class DrugInteractionController {
 
     private final DrugInteractionService service;
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping
     public R<List<DrugInteractionEntity>> list(
             @RequestParam(required = false) Long drug1,
@@ -25,7 +25,7 @@ public class DrugInteractionController {
         return R.ok(service.list(drug1, drug2, severity));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/check")
     public R<List<DrugInteractionEntity>> check(
             @RequestParam Long drug1,
@@ -33,7 +33,7 @@ public class DrugInteractionController {
         return R.ok(service.checkPair(drug1, drug2));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @PostMapping("/check-list")
     public R<List<DrugInteractionEntity>> checkList(@RequestBody List<Long> drugIds) {
         if (drugIds == null || drugIds.size() < 2) {
@@ -42,7 +42,7 @@ public class DrugInteractionController {
         return R.ok(service.checkList(drugIds));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping
     public R<DrugInteractionEntity> create(@RequestBody DrugInteractionEntity entity) {
         if (entity.getDrugConceptId1() == null || entity.getDrugConceptId2() == null) {

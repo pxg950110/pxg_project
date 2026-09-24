@@ -70,6 +70,7 @@ public class AlertNotifyConsumer extends BaseMessageConsumer {
         return switch (eventType) {
             case "alert.triggered", "alert.acknowledged", "alert.resolved" -> "ALERT";
             case "approval.created", "approval.approved", "approval.rejected" -> "APPROVAL";
+            case "followup.due", "followup.overdue", "followup.escalate" -> "FOLLOWUP";
             default -> "SYSTEM";
         };
     }

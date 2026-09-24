@@ -4,255 +4,254 @@
     <!-- Filter Bar -->
     <div class="filter-bar">
       <div class="filter-left">
-        <a-select
-          v-model:value="filters.task_type"
+        <el-select
+          v-model="filters.task_type"
           placeholder="类型"
-          allow-clear
+          clearable
           style="width: 130px"
           @change="applyFilters"
         >
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option value="IMAGE">影像标注</a-select-option>
-          <a-select-option value="TEXT">文本标注</a-select-option>
-        </a-select>
+          <el-option label="全部" value="" />
+          <el-option label="影像标注" value="IMAGE" />
+          <el-option label="文本标注" value="TEXT" />
+        </el-select>
 
-        <a-select
-          v-model:value="filters.format"
+        <el-select
+          v-model="filters.format"
           placeholder="格式"
-          allow-clear
+          clearable
           style="width: 130px"
           @change="applyFilters"
         >
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option value="矩形框标注">矩形框</a-select-option>
-          <a-select-option value="多边形标注">多边形</a-select-option>
-          <a-select-option value="NER标注">NER</a-select-option>
-        </a-select>
+          <el-option label="全部" value="" />
+          <el-option label="矩形框" value="矩形框标注" />
+          <el-option label="多边形" value="多边形标注" />
+          <el-option label="NER" value="NER标注" />
+        </el-select>
 
-        <a-select
-          v-model:value="filters.status"
+        <el-select
+          v-model="filters.status"
           placeholder="状态"
-          allow-clear
+          clearable
           style="width: 130px"
           @change="applyFilters"
         >
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option value="PENDING">待标注</a-select-option>
-          <a-select-option value="IN_PROGRESS">进行中</a-select-option>
-          <a-select-option value="COMPLETED">已完成</a-select-option>
-          <a-select-option value="PAUSED">已暂停</a-select-option>
-        </a-select>
+          <el-option label="全部" value="" />
+          <el-option label="待标注" value="PENDING" />
+          <el-option label="进行中" value="IN_PROGRESS" />
+          <el-option label="已完成" value="COMPLETED" />
+          <el-option label="已暂停" value="PAUSED" />
+        </el-select>
 
-        <a-input-search
-          v-model:value="filters.keyword"
+        <el-input
+          v-model="filters.keyword"
           placeholder="搜索任务名称..."
           style="width: 220px"
-          allow-clear
-          @search="applyFilters"
-          @pressEnter="applyFilters"
+          clearable
+          @keyup.enter="applyFilters"
         />
       </div>
       <div class="filter-right">
-        <a-button type="primary" @click="taskModal.open()">
-          <PlusOutlined /> 新建任务
-        </a-button>
+        <el-button type="primary" @click="taskModal.open()">
+          <el-icon class="mr-1"><Plus /></el-icon> 新建任务
+        </el-button>
       </div>
     </div>
 
     <!-- Metric Cards Row -->
-    <a-row :gutter="[16, 16]" class="metric-row">
-      <a-col :span="6">
+    <el-row :gutter="16" class="metric-row">
+      <el-col :span="6">
         <MetricCard
           title="标注任务"
-          :value="18"
+          :value="summary.totalTasks"
           suffix="个"
-        >
-          <template #icon><FileTextOutlined /></template>
-        </MetricCard>
-      </a-col>
-      <a-col :span="6">
+          :icon="Document"
+        />
+      </el-col>
+      <el-col :span="6">
         <MetricCard
           title="进行中"
-          :value="7"
+          :value="summary.inProgress"
           suffix="个"
           :trend="{ value: 3, type: 'up' }"
-        >
-          <template #icon><PlayCircleOutlined /></template>
-        </MetricCard>
-      </a-col>
-      <a-col :span="6">
+          :icon="VideoPlay"
+        />
+      </el-col>
+      <el-col :span="6">
         <MetricCard
           title="已标注数据"
-          :value="23456"
+          :value="summary.labeledData"
           suffix="条"
           :trend="{ value: 12, type: 'up' }"
-        >
-          <template #icon><CheckCircleOutlined /></template>
-        </MetricCard>
-      </a-col>
-      <a-col :span="6">
+          :icon="CircleCheck"
+        />
+      </el-col>
+      <el-col :span="6">
         <MetricCard
           title="平均一致性"
-          :value="0.92"
+          :value="summary.avgConsistency"
           :trend="{ value: 3, type: 'up' }"
-        >
-          <template #icon><SafetyCertificateOutlined /></template>
-        </MetricCard>
-      </a-col>
-    </a-row>
+          :icon="CircleCheckFilled"
+        />
+      </el-col>
+    </el-row>
 
     <!-- Card Grid -->
-    <a-row :gutter="[16, 16]" class="task-card-grid">
-      <a-col v-for="task in filteredTasks" :key="task.id" :span="8">
+    <el-row :gutter="16" class="task-card-grid">
+      <el-col v-for="task in tableData" :key="task.id" :span="8">
         <div class="task-card" @click="router.push(`/label/detail/${task.id}`)">
           <div class="task-card-header">
             <span class="task-name">{{ task.name }}</span>
-            <a-tag :color="typeColorMap[task.task_type]" class="type-tag">
+            <el-tag :type="typeColorMap[task.task_type] || 'primary'" class="type-tag">
               {{ task.task_type === 'IMAGE' ? '影像标注' : '文本标注' }}
-            </a-tag>
+            </el-tag>
           </div>
 
           <div class="task-card-format">{{ task.format }}</div>
           <div class="task-card-dataset">{{ task.dataset_name }}</div>
 
           <div class="task-card-progress">
-            <a-progress
-              :percent="task.progress"
-              :stroke-color="task.progress === 100 ? '#52c41a' : '#1677ff'"
-              size="small"
+            <el-progress
+              :percentage="task.progress"
+              :color="task.progress === 100 ? '#10b981' : '#0ea5e9'"
+              :stroke-width="6"
             />
             <span class="progress-text">{{ task.completed }}/{{ task.total }}</span>
           </div>
 
           <div class="task-card-meta">
             <div class="meta-item">
-              <UserOutlined />
+              <el-icon><User /></el-icon>
               <span>{{ task.assignees.length > 0 ? task.assignees.join(', ') : '未分配' }}</span>
             </div>
             <div v-if="task.deadline" class="meta-item">
-              <CalendarOutlined />
+              <el-icon><Calendar /></el-icon>
               <span>{{ task.deadline }}</span>
             </div>
           </div>
 
           <div class="task-card-footer">
-            <a-badge
-              :status="statusMap[task.status]?.color"
-              :text="statusMap[task.status]?.label"
-            />
+            <span class="inline-flex items-center gap-1.5">
+              <span class="inline-block h-2 w-2 rounded-full" :style="{ background: statusMap[task.status]?.color || '#94a3b8' }" />
+              {{ statusMap[task.status]?.label }}
+            </span>
             <a class="view-detail-link" @click.stop="router.push(`/label/detail/${task.id}`)">
               查看详情 &rarr;
             </a>
           </div>
         </div>
-      </a-col>
-    </a-row>
+      </el-col>
+    </el-row>
 
     <!-- Pagination -->
     <div class="pagination-bar">
-      <span class="pagination-total">共 {{ filteredTasks.length }} 个任务</span>
-      <a-pagination
-        v-model:current="pagination.current"
-        v-model:page-size="pagination.pageSize"
-        :total="filteredTasks.length"
-        :page-size-options="['6', '12', '18']"
-        show-size-changer
-        size="small"
+      <span class="pagination-total">共 {{ pagination.total }} 个任务</span>
+      <el-pagination
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="pagination.total"
+        :current-page="pagination.current"
+        :page-size="pagination.pageSize"
+        :page-sizes="[6, 12, 18]"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
       />
     </div>
 
     <!-- Create Task Modal (two-column) -->
-    <a-modal
-      v-model:open="taskModal.visible"
+    <el-dialog
+      v-model="taskModal.visible"
       title="新建标注任务"
       width="720px"
-      @ok="handleCreate"
-      :confirm-loading="submitting"
     >
-      <a-form layout="vertical">
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="任务名称" required>
-              <a-input v-model:value="taskForm.name" placeholder="请输入任务名称" />
-            </a-form-item>
-            <a-form-item label="关联数据集" required>
-              <DatasetSelect v-model:value="taskForm.dataset_id" />
-            </a-form-item>
-            <a-form-item label="标签列表">
-              <a-select
-                v-model:value="taskForm.labels"
-                mode="tags"
+      <el-form label-position="top">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="任务名称" required>
+              <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
+            </el-form-item>
+            <el-form-item label="关联数据集" required>
+              <DatasetSelect v-model="taskForm.dataset_id" />
+            </el-form-item>
+            <el-form-item label="标签列表">
+              <el-select
+                v-model="taskForm.labels"
+                multiple
+                filterable
+                allow-create
+                default-first-option
                 placeholder="输入标签后回车添加"
+                style="width: 100%"
               />
-            </a-form-item>
-            <a-form-item label="分配审核员">
-              <UserSelect v-model:value="taskForm.reviewer_id" placeholder="选择审核员" />
-            </a-form-item>
-            <a-form-item label="AI 预标注">
-              <a-switch v-model:checked="taskForm.ai_preannotate" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="标注类型" required>
-              <a-select v-model:value="taskForm.task_type" placeholder="请选择标注类型">
-                <a-select-option value="IMAGE">影像标注</a-select-option>
-                <a-select-option value="TEXT">文本标注</a-select-option>
-              </a-select>
-            </a-form-item>
-            <a-form-item label="标注格式" required>
-              <a-select v-model:value="taskForm.format" placeholder="请选择标注格式">
-                <a-select-option value="矩形框标注">矩形框</a-select-option>
-                <a-select-option value="多边形标注">多边形</a-select-option>
-                <a-select-option value="椭圆标注">椭圆</a-select-option>
-                <a-select-option value="自由绘制">自由绘制</a-select-option>
-                <a-select-option value="NER标注">NER</a-select-option>
-              </a-select>
-            </a-form-item>
-            <a-form-item label="分配标注员">
-              <UserSelect v-model:value="taskForm.assignee_ids" multiple placeholder="选择标注员" />
-            </a-form-item>
-            <a-form-item label="截止日期">
-              <a-date-picker
-                v-model:value="taskForm.deadline"
+            </el-form-item>
+            <el-form-item label="分配审核员">
+              <UserSelect v-model="taskForm.reviewer_id" placeholder="选择审核员" />
+            </el-form-item>
+            <el-form-item label="AI 预标注">
+              <el-switch v-model="taskForm.ai_preannotate" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="标注类型" required>
+              <el-select v-model="taskForm.task_type" placeholder="请选择标注类型">
+                <el-option label="影像标注" value="IMAGE" />
+                <el-option label="文本标注" value="TEXT" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="标注格式" required>
+              <el-select v-model="taskForm.format" placeholder="请选择标注格式">
+                <el-option label="矩形框" value="矩形框标注" />
+                <el-option label="多边形" value="多边形标注" />
+                <el-option label="椭圆" value="椭圆标注" />
+                <el-option label="自由绘制" value="自由绘制" />
+                <el-option label="NER" value="NER标注" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="分配标注员">
+              <UserSelect v-model="taskForm.assignee_ids" multiple placeholder="选择标注员" />
+            </el-form-item>
+            <el-form-item label="截止日期">
+              <el-date-picker
+                v-model="taskForm.deadline"
+                type="date"
+                value-format="YYYY-MM-DD"
                 placeholder="选择截止日期"
                 style="width: 100%"
               />
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-form-item label="描述">
-          <a-textarea
-            v-model:value="taskForm.description"
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="描述">
+          <el-input
+            v-model="taskForm.description"
+            type="textarea"
             :rows="3"
             placeholder="请输入任务描述（选填）"
           />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="taskModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreate">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  PlusOutlined,
-  FileTextOutlined,
-  PlayCircleOutlined,
-  CheckCircleOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-  CalendarOutlined,
-} from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+  Plus, Document, VideoPlay, CircleCheck, CircleCheckFilled, User, Calendar,
+} from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import MetricCard from '@/components/MetricCard/index.vue'
-import SearchForm from '@/components/SearchForm/index.vue'
 import DatasetSelect from '@/components/DatasetSelect/index.vue'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { useModal } from '@/hooks/useModal'
-import { getLabelTasks, createLabelTask } from '@/api/label'
+import { getLabelTasks, createLabelTask, getLabelTaskSummary } from '@/api/label'
 
 const router = useRouter()
 const taskModal = useModal()
@@ -260,40 +259,37 @@ const submitting = ref(false)
 
 // ============ Status & Type Maps ============
 const statusMap: Record<string, { label: string; color: string }> = {
-  PENDING: { label: '待标注', color: 'default' },
-  IN_PROGRESS: { label: '进行中', color: 'processing' },
-  COMPLETED: { label: '已完成', color: 'success' },
-  PAUSED: { label: '已暂停', color: 'warning' },
+  PENDING: { label: '待标注', color: '#94a3b8' },
+  IN_PROGRESS: { label: '进行中', color: '#0ea5e9' },
+  COMPLETED: { label: '已完成', color: '#10b981' },
+  PAUSED: { label: '已暂停', color: '#f59e0b' },
 }
 
-const typeColorMap: Record<string, string> = {
-  IMAGE: 'blue',
-  TEXT: 'green',
+const typeColorMap: Record<string, 'primary' | 'success'> = {
+  IMAGE: 'primary',
+  TEXT: 'success',
 }
 
-// ============ Mock Data ============
-interface LabelTask {
-  id: number
-  name: string
-  task_type: 'IMAGE' | 'TEXT'
-  format: string
-  dataset_name: string
-  assignees: string[]
-  progress: number
-  total: number
-  completed: number
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED'
-  deadline: string
-}
+// ============ Summary Stats ============
+const summary = reactive({
+  totalTasks: 0,
+  inProgress: 0,
+  labeledData: 0,
+  avgConsistency: 0,
+})
 
-const mockTasks = ref<LabelTask[]>([
-  { id: 1, name: '肺结节CT标注', task_type: 'IMAGE', format: '矩形框标注', dataset_name: 'CT肺结节数据集v2', assignees: ['李医生', '王技师'], progress: 75, total: 600, completed: 450, status: 'IN_PROGRESS', deadline: '2026-04-20' },
-  { id: 2, name: '病理切片多边形标注', task_type: 'IMAGE', format: '多边形标注', dataset_name: '病理切片数据集v1', assignees: ['张主任'], progress: 30, total: 200, completed: 60, status: 'IN_PROGRESS', deadline: '2026-05-01' },
-  { id: 3, name: '病理报告NER标注', task_type: 'TEXT', format: 'NER标注', dataset_name: '电子病历数据集', assignees: ['李医生', '赵实习生'], progress: 90, total: 450, completed: 405, status: 'IN_PROGRESS', deadline: '2026-04-15' },
-  { id: 4, name: 'DR胸片标注', task_type: 'IMAGE', format: '矩形框标注', dataset_name: 'DR胸片数据集', assignees: ['王技师'], progress: 100, total: 300, completed: 300, status: 'COMPLETED', deadline: '2026-04-10' },
-  { id: 5, name: '心电图异常检测标注', task_type: 'IMAGE', format: '矩形框标注', dataset_name: '心电图数据集v1', assignees: [], progress: 0, total: 500, completed: 0, status: 'PENDING', deadline: '2026-05-15' },
-  { id: 6, name: '检验报告实体标注', task_type: 'TEXT', format: 'NER标注', dataset_name: '检验报告数据集', assignees: ['赵实习生'], progress: 45, total: 380, completed: 171, status: 'IN_PROGRESS', deadline: '2026-04-25' },
-])
+async function fetchSummary() {
+  try {
+    const res = await getLabelTaskSummary()
+    const data = res.data.data
+    summary.totalTasks = data.totalTasks
+    summary.inProgress = data.inProgress
+    summary.labeledData = data.labeledData
+    summary.avgConsistency = data.avgConsistency
+  } catch {
+    // Summary fetch failure should not block the page
+  }
+}
 
 // ============ Filters ============
 const filters = reactive({
@@ -303,50 +299,33 @@ const filters = reactive({
   keyword: undefined as string | undefined,
 })
 
-const filteredTasks = computed(() => {
-  return mockTasks.value.filter((task) => {
-    if (filters.task_type && task.task_type !== filters.task_type) return false
-    if (filters.format && task.format !== filters.format) return false
-    if (filters.status && task.status !== filters.status) return false
-    if (filters.keyword && !task.name.includes(filters.keyword)) return false
-    return true
-  })
-})
+// ============ Table hook ============
+const { tableData, loading, pagination, fetchData } = useTable<any>(
+  (params) => getLabelTasks({
+    page: params.page,
+    page_size: params.pageSize,
+    status: filters.status || undefined,
+    task_type: filters.task_type || undefined,
+  } as any)
+)
+
+// Card grid defaults to 6 per page (matching the 6/12/18 page-size options)
+pagination.pageSize = 6
 
 function applyFilters() {
-  // Filtering is reactive via computed; this function triggers reactivity
+  fetchData()
 }
 
-// ============ Pagination (local) ============
-const pagination = reactive({
-  current: 1,
-  pageSize: 6,
-})
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
 
-// ============ Table hook (kept for future API integration) ============
-const searchFields = [
-  { name: 'task_type', label: '标注类型', type: 'select' as const, options: [
-    { label: '影像标注', value: 'IMAGE' }, { label: '文本标注', value: 'TEXT' },
-  ]},
-  { name: 'status', label: '状态', type: 'select' as const, options: [
-    { label: '待标注', value: 'PENDING' }, { label: '标注中', value: 'IN_PROGRESS' },
-    { label: '已完成', value: 'COMPLETED' },
-  ]},
-]
-
-const columns = [
-  { title: '任务名称', dataIndex: 'name', key: 'name' },
-  { title: '类型', dataIndex: 'task_type', key: 'task_type', width: 100 },
-  { title: '数据集', dataIndex: 'dataset_name', key: 'dataset_name' },
-  { title: '标注人', dataIndex: 'assignee_name', key: 'assignee_name', width: 100 },
-  { title: '进度', dataIndex: 'progress', key: 'progress', width: 100 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
-  { title: '操作', key: 'action', width: 130 },
-]
-
-const { tableData, loading, fetchData, handleTableChange } = useTable<any>(
-  (params) => getLabelTasks({ page: params.page, page_size: params.pageSize })
-)
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // ============ Task Form ============
 const taskForm = reactive({
@@ -363,27 +342,22 @@ const taskForm = reactive({
   ai_preannotate: false,
 })
 
-function handleSearch() { fetchData() }
-function handleReset() { fetchData() }
-
 async function handleCreate() {
   submitting.value = true
   try {
     await createLabelTask(taskForm)
-    message.success('标注任务创建成功')
+    ElMessage.success('标注任务创建成功')
     taskModal.close()
     fetchData()
+    fetchSummary()
   } finally {
     submitting.value = false
   }
 }
 
-function viewStats(record: any) {
-  message.info('标注统计: ' + record.name)
-}
-
 onMounted(() => {
-  // fetchData() // Using mock data for now; uncomment when API is ready
+  fetchSummary()
+  fetchData()
 })
 </script>
 
@@ -420,8 +394,8 @@ onMounted(() => {
 
 .task-card {
   background: #fff;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -431,8 +405,8 @@ onMounted(() => {
 }
 
 .task-card:hover {
-  border-color: #1677ff;
-  box-shadow: 0 2px 12px rgba(22, 119, 255, 0.12);
+  border-color: #0ea5e9;
+  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.12);
   transform: translateY(-2px);
 }
 
@@ -447,7 +421,7 @@ onMounted(() => {
 .task-name {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: #0f172a;
   line-height: 1.4;
   flex: 1;
 }
@@ -459,13 +433,13 @@ onMounted(() => {
 
 .task-card-format {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-bottom: 4px;
 }
 
 .task-card-dataset {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.55);
+  color: #64748b;
   margin-bottom: 14px;
 }
 
@@ -473,13 +447,13 @@ onMounted(() => {
   margin-bottom: 14px;
 }
 
-.task-card-progress :deep(.ant-progress) {
+.task-card-progress :deep(.el-progress) {
   margin-bottom: 4px;
 }
 
 .progress-text {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .task-card-meta {
@@ -495,11 +469,11 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.55);
+  color: #64748b;
 }
 
-.meta-item :deep(.anticon) {
-  color: rgba(0, 0, 0, 0.35);
+.meta-item .el-icon {
+  color: #cbd5e1;
   font-size: 14px;
 }
 
@@ -508,18 +482,18 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding-top: 12px;
-  border-top: 1px solid #f5f5f5;
+  border-top: 1px solid #f1f5f9;
 }
 
 .view-detail-link {
   font-size: 13px;
-  color: #1677ff;
+  color: #0ea5e9;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .view-detail-link:hover {
-  color: #4096ff;
+  color: #38bdf8;
 }
 
 /* Pagination */
@@ -534,6 +508,6 @@ onMounted(() => {
 
 .pagination-total {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 </style>

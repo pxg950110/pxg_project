@@ -7,21 +7,29 @@ import java.time.LocalDateTime;
 @Data
 public class SystemEventVO {
 
-    private String id;
+    private Long id;
 
     private String eventType;
 
-    private String eventSource;
+    private String eventLevel;
 
-    private String severity;
+    private String source;
 
-    private String title;
+    private String eventTitle;
 
-    private String detail;
+    private String eventDetail;
 
-    private String operator;
+    private String eventData;
 
-    private String ip;
+    private String traceId;
+
+    private Boolean resolved;
+
+    private String resolvedBy;
+
+    private LocalDateTime resolvedAt;
 
     private LocalDateTime createdAt;
+
+    private Long orgId;
 }

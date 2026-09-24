@@ -1,140 +1,156 @@
 <template>
   <PageContainer title="队列管理">
     <template #extra>
-      <a-button type="primary" @click="cohortModal.open()">
-        <PlusOutlined /> 新建队列
-      </a-button>
+      <el-button type="primary" @click="cohortModal.open()">
+        <el-icon class="mr-1"><Plus /></el-icon> 新建队列
+      </el-button>
     </template>
 
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
+    <el-table
+      :data="tableData"
+      v-loading="loading"
       row-key="id"
+      size="default"
     >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'criteria_summary'">
-          <a-tooltip :title="record.criteria_summary">
-            <span class="text-ellipsis">{{ record.criteria_summary || '-' }}</span>
-          </a-tooltip>
+      <el-table-column label="队列名称" prop="name" width="180" />
+      <el-table-column label="标准摘要" prop="criteria_summary" show-overflow-tooltip>
+        <template #default="{ row }">
+          <el-tooltip :content="row.criteria_summary || '-'" placement="top">
+            <span class="text-ellipsis">{{ row.criteria_summary || '-' }}</span>
+          </el-tooltip>
         </template>
-        <template v-if="column.key === 'inclusion_rules'">
-          <a-tag v-for="(rule, idx) in (record.inclusion_rules || []).slice(0, 3)" :key="idx" color="green">
+      </el-table-column>
+      <el-table-column label="患者数" prop="patient_count" width="90" />
+      <el-table-column label="纳入规则" width="200">
+        <template #default="{ row }">
+          <el-tag
+            v-for="(rule, idx) in (row.inclusion_rules || []).slice(0, 3)"
+            :key="idx"
+            type="success"
+            class="mr-1 mb-0.5"
+          >
             {{ rule.field }} {{ rule.operator }} {{ rule.value }}
-          </a-tag>
-          <span v-if="(record.inclusion_rules || []).length > 3"> +{{ record.inclusion_rules.length - 3 }}</span>
+          </el-tag>
+          <span v-if="(row.inclusion_rules || []).length > 3"> +{{ row.inclusion_rules.length - 3 }}</span>
         </template>
-        <template v-if="column.key === 'exclusion_rules'">
-          <a-tag v-for="(rule, idx) in (record.exclusion_rules || []).slice(0, 2)" :key="idx" color="red">
+      </el-table-column>
+      <el-table-column label="排除规则" width="160">
+        <template #default="{ row }">
+          <el-tag
+            v-for="(rule, idx) in (row.exclusion_rules || []).slice(0, 2)"
+            :key="idx"
+            type="danger"
+            class="mr-1 mb-0.5"
+          >
             {{ rule.field }} {{ rule.operator }} {{ rule.value }}
-          </a-tag>
-          <span v-if="(record.exclusion_rules || []).length > 2"> +{{ record.exclusion_rules.length - 2 }}</span>
-          <span v-if="!(record.exclusion_rules || []).length">-</span>
+          </el-tag>
+          <span v-if="(row.exclusion_rules || []).length > 2"> +{{ row.exclusion_rules.length - 2 }}</span>
+          <span v-if="!(row.exclusion_rules || []).length">-</span>
         </template>
-        <template v-if="column.key === 'created_at'">
-          {{ formatDateTime(record.created_at) }}
+      </el-table-column>
+      <el-table-column label="创建时间" width="170">
+        <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="120">
+        <template #default="{ row }">
+          <div class="flex items-center gap-2">
+            <el-button link type="primary" @click="viewCohort(row)">查看</el-button>
+            <el-popconfirm title="确认删除该队列？" @confirm="handleDelete(row.id)">
+              <template #reference>
+                <el-button link type="danger">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </div>
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="viewCohort(record)">查看</a>
-            <a-popconfirm title="确认删除该队列？" @confirm="handleDelete(record.id)">
-              <a class="danger-link">删除</a>
-            </a-popconfirm>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
 
-    <!-- Create/Edit Cohort Modal -->
-    <a-modal
-      v-model:open="cohortModal.visible"
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
+
+    <!-- Create/Edit Cohort Dialog -->
+    <el-dialog
+      v-model="cohortModal.visible"
       :title="isEdit ? '编辑队列' : '新建队列'"
-      @ok="handleSubmit"
-      :confirm-loading="submitting"
       width="700px"
     >
-      <a-form layout="vertical">
-        <a-form-item label="队列名称" required>
-          <a-input v-model:value="cohortForm.name" placeholder="请输入队列名称" />
-        </a-form-item>
+      <el-form label-position="top">
+        <el-form-item label="队列名称" required>
+          <el-input v-model="cohortForm.name" placeholder="请输入队列名称" />
+        </el-form-item>
 
-        <a-divider orientation="left">纳入条件</a-divider>
+        <el-divider content-position="left">纳入条件</el-divider>
         <div v-for="(condition, idx) in cohortForm.inclusion_rules" :key="'inc-' + idx" class="condition-row">
-          <a-row :gutter="8" align="middle">
-            <a-col :span="7">
-              <a-input v-model:value="condition.field" placeholder="字段名" />
-            </a-col>
-            <a-col :span="5">
-              <a-select v-model:value="condition.operator" placeholder="运算符">
-                <a-select-option value="=">=</a-select-option>
-                <a-select-option value="!=">!=</a-select-option>
-                <a-select-option value=">">></a-select-option>
-                <a-select-option value="<"><</a-select-option>
-                <a-select-option value=">=">>=</a-select-option>
-                <a-select-option value="<="><=</a-select-option>
-                <a-select-option value="IN">IN</a-select-option>
-                <a-select-option value="LIKE">LIKE</a-select-option>
-              </a-select>
-            </a-col>
-            <a-col :span="8">
-              <a-input v-model:value="condition.value" placeholder="值" />
-            </a-col>
-            <a-col :span="4">
-              <a-button type="text" danger @click="removeCondition('inclusion', idx)">
-                <DeleteOutlined />
-              </a-button>
-            </a-col>
-          </a-row>
+          <div class="grid grid-cols-[7fr_5fr_8fr_4fr] items-center gap-2">
+            <el-input v-model="condition.field" placeholder="字段名" />
+            <el-select v-model="condition.operator" placeholder="运算符">
+              <el-option value="=" label="=" />
+              <el-option value="!=" label="!=" />
+              <el-option value=">" label=">" />
+              <el-option value="<" label="<" />
+              <el-option value=">=" label=">=" />
+              <el-option value="<=" label="<=" />
+              <el-option value="IN" label="IN" />
+              <el-option value="LIKE" label="LIKE" />
+            </el-select>
+            <el-input v-model="condition.value" placeholder="值" />
+            <el-button type="danger" text @click="removeCondition('inclusion', idx)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
         </div>
-        <a-button type="dashed" block @click="addCondition('inclusion')">
-          <PlusOutlined /> 添加纳入条件
-        </a-button>
+        <el-button class="w-full" plain style="border-style: dashed" @click="addCondition('inclusion')">
+          <el-icon class="mr-1"><Plus /></el-icon> 添加纳入条件
+        </el-button>
 
-        <a-divider orientation="left">排除条件</a-divider>
+        <el-divider content-position="left">排除条件</el-divider>
         <div v-for="(condition, idx) in cohortForm.exclusion_rules" :key="'exc-' + idx" class="condition-row">
-          <a-row :gutter="8" align="middle">
-            <a-col :span="7">
-              <a-input v-model:value="condition.field" placeholder="字段名" />
-            </a-col>
-            <a-col :span="5">
-              <a-select v-model:value="condition.operator" placeholder="运算符">
-                <a-select-option value="=">=</a-select-option>
-                <a-select-option value="!=">!=</a-select-option>
-                <a-select-option value=">">></a-select-option>
-                <a-select-option value="<"><</a-select-option>
-                <a-select-option value=">=">>=</a-select-option>
-                <a-select-option value="<="><=</a-select-option>
-                <a-select-option value="IN">IN</a-select-option>
-                <a-select-option value="LIKE">LIKE</a-select-option>
-              </a-select>
-            </a-col>
-            <a-col :span="8">
-              <a-input v-model:value="condition.value" placeholder="值" />
-            </a-col>
-            <a-col :span="4">
-              <a-button type="text" danger @click="removeCondition('exclusion', idx)">
-                <DeleteOutlined />
-              </a-button>
-            </a-col>
-          </a-row>
+          <div class="grid grid-cols-[7fr_5fr_8fr_4fr] items-center gap-2">
+            <el-input v-model="condition.field" placeholder="字段名" />
+            <el-select v-model="condition.operator" placeholder="运算符">
+              <el-option value="=" label="=" />
+              <el-option value="!=" label="!=" />
+              <el-option value=">" label=">" />
+              <el-option value="<" label="<" />
+              <el-option value=">=" label=">=" />
+              <el-option value="<=" label="<=" />
+              <el-option value="IN" label="IN" />
+              <el-option value="LIKE" label="LIKE" />
+            </el-select>
+            <el-input v-model="condition.value" placeholder="值" />
+            <el-button type="danger" text @click="removeCondition('exclusion', idx)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
         </div>
-        <a-button type="dashed" block @click="addCondition('exclusion')">
-          <PlusOutlined /> 添加排除条件
-        </a-button>
-      </a-form>
-    </a-modal>
+        <el-button class="w-full" plain style="border-style: dashed" @click="addCondition('exclusion')">
+          <el-icon class="mr-1"><Plus /></el-icon> 添加排除条件
+        </el-button>
+      </el-form>
+      <template #footer>
+        <el-button @click="cohortModal.close()">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { Plus, Delete } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import { useTable } from '@/hooks/useTable'
@@ -155,19 +171,20 @@ const searchFields = [
   { name: 'project_id', label: '所属项目', type: 'select', options: [] },
 ]
 
-const columns = [
-  { title: '队列名称', dataIndex: 'name', key: 'name', width: 180 },
-  { title: '标准摘要', dataIndex: 'criteria_summary', key: 'criteria_summary', ellipsis: true },
-  { title: '患者数', dataIndex: 'patient_count', key: 'patient_count', width: 90 },
-  { title: '纳入规则', dataIndex: 'inclusion_rules', key: 'inclusion_rules', width: 200 },
-  { title: '排除规则', dataIndex: 'exclusion_rules', key: 'exclusion_rules', width: 160 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 170 },
-  { title: '操作', key: 'action', width: 120 },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => request.get('/rdr/cohorts', { params: { page: params.page, page_size: params.pageSize } })
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 interface Condition {
   field: string
@@ -209,13 +226,13 @@ function handleReset() { fetchData() }
 
 async function handleSubmit() {
   if (!cohortForm.name) {
-    message.warning('请输入队列名称')
+    ElMessage.warning('请输入队列名称')
     return
   }
   submitting.value = true
   try {
     await request.post('/rdr/cohorts', cohortForm)
-    message.success(isEdit.value ? '队列更新成功' : '队列创建成功')
+    ElMessage.success(isEdit.value ? '队列更新成功' : '队列创建成功')
     cohortModal.close()
     resetForm()
     fetchData()
@@ -227,7 +244,7 @@ async function handleSubmit() {
 async function handleDelete(id: number) {
   try {
     await request.delete(`/rdr/cohorts/${id}`)
-    message.success('队列已删除')
+    ElMessage.success('队列已删除')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -235,7 +252,7 @@ async function handleDelete(id: number) {
 }
 
 function viewCohort(record: any) {
-  message.info('查看队列: ' + record.name)
+  ElMessage.info('查看队列: ' + record.name)
 }
 
 onMounted(() => fetchData())
@@ -252,11 +269,5 @@ onMounted(() => fetchData())
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
-}
-.danger-link {
-  color: #ff4d4f;
-}
-.danger-link:hover {
-  color: #ff7875;
 }
 </style>

@@ -1,8 +1,6 @@
 <template>
-  <div class="metric-chart-wrapper">
-    <a-spin v-if="loading" class="chart-spin">
-      <div class="chart-skeleton" :style="{ height: height }" />
-    </a-spin>
+  <div v-loading="loading" class="metric-chart-wrapper">
+    <div v-if="loading" class="chart-skeleton" :style="{ height: height }" />
     <v-chart
       v-show="!loading"
       :option="option"
@@ -17,7 +15,7 @@
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, BarChart, PieChart, ScatterChart, HeatmapChart } from 'echarts/charts'
+import { LineChart, BarChart, PieChart, ScatterChart, HeatmapChart, RadarChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -35,6 +33,7 @@ use([
   PieChart,
   ScatterChart,
   HeatmapChart,
+  RadarChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,

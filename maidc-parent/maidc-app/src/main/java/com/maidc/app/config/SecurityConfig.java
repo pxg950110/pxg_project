@@ -1,0 +1,90 @@
+package com.maidc.app.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
+/**
+ * 合并单体的统一安全配置（原 7 个服务各自的 SecurityConfig 收敛于此，内容一致；
+ * auth 版本额外提供 PasswordEncoder）。网关负责 JWT 校验与用户头注入，本应用信任网关头。
+ */
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = false)  // dev 环境禁用方法安全：hasPermission evaluator 未实现，与原各服务策略一致
+public class SecurityConfig {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+    @Profile("dev")
+    @Configuration
+    static class DevSecurityConfig {
+
+        @Autowired
+        private CorsConfigurationSource corsConfigurationSource;
+
+        @Bean
+        public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
+            http
+                    .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                    .csrf(csrf -> csrf.disable())
+                    .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/actuator/**").permitAll()
+                            // 服务间内部端点（权限缓存懒加载），网关不路由此前缀，仅内网直连
+                            .requestMatchers("/api/v1/internal/**").permitAll()
+                            .anyRequest().permitAll());
+            return http.build();
+        }
+    }
+
+    @Profile("!dev")
+    @Configuration
+    static class ProdSecurityConfig {
+
+        @Autowired
+        private CorsConfigurationSource corsConfigurationSource;
+
+        @Bean
+        public SecurityFilterChain prodFilterChain(HttpSecurity http) throws Exception {
+            http
+                    .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                    .csrf(csrf -> csrf.disable())
+                    .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh",
+                                    "/api/v1/auth/captcha", "/actuator/**").permitAll()
+                            .requestMatchers("/api/v1/internal/**").permitAll()
+                            .anyRequest().authenticated());
+            return http.build();
+        }
+    }
+}

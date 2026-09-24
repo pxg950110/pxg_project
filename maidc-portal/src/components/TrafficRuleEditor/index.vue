@@ -1,63 +1,71 @@
 <template>
   <div class="traffic-rule-editor">
-    <a-table
-      :columns="columns"
-      :data-source="rules"
-      :pagination="false"
+    <el-table
+      :data="rules"
       size="small"
-      bordered
+      border
       row-key="versionId"
+      class="!rounded-lg overflow-hidden"
     >
-      <template #bodyCell="{ column, record, index }">
-        <template v-if="column.dataIndex === 'weight'">
-          <div class="weight-cell">
-            <a-slider
-              v-model:value="record.weight"
+      <el-table-column prop="versionId" label="版本ID" width="180">
+        <template #default="{ row }">
+          <el-input v-model="row.versionId" placeholder="版本号/ID" size="small" @input="emitValue" />
+        </template>
+      </el-table-column>
+      <el-table-column prop="weight" label="流量权重">
+        <template #default="{ row }">
+          <div class="weight-cell flex items-center gap-3">
+            <el-slider
+              v-model="row.weight"
               :min="0"
               :max="100"
               :step="1"
-              style="flex: 1; margin: 0 8px 0 0"
-              @change="handleWeightChange"
+              class="flex-1"
+              @input="handleWeightChange"
             />
-            <a-input-number
-              v-model:value="record.weight"
+            <el-input-number
+              v-model="row.weight"
               :min="0"
               :max="100"
-              style="width: 70px"
+              size="small"
+              class="!w-24"
               @change="handleWeightChange"
             />
-            <span class="weight-percent">%</span>
+            <span class="weight-percent text-xs text-slate-400 font-mono">%</span>
           </div>
         </template>
-        <template v-if="column.dataIndex === 'action'">
-          <a-button
-            type="text"
-            danger
+      </el-table-column>
+      <el-table-column label="操作" width="80" align="center">
+        <template #default="{ $index }">
+          <el-button
+            type="danger"
+            link
             size="small"
             :disabled="rules.length <= 1"
-            @click="removeRule(index)"
+            @click="removeRule($index)"
           >
-            <DeleteOutlined />
-          </a-button>
+            <el-icon><Delete /></el-icon>
+          </el-button>
         </template>
-      </template>
-    </a-table>
-    <div class="traffic-footer">
-      <div class="total-weight">
-        权重合计：<span :class="totalWeightClass">{{ totalWeight }}%</span>
-        <span v-if="totalWeight !== 100" class="weight-warning">（建议合计为100%）</span>
+      </el-table-column>
+    </el-table>
+
+    <div class="traffic-footer flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+      <div class="total-weight text-xs">
+        权重合计：<span :class="totalWeightClass" class="font-bold font-mono text-sm">{{ totalWeight }}%</span>
+        <span v-if="totalWeight !== 100" class="text-amber-500 text-xs ml-1">（建议合计为100%）</span>
       </div>
-      <a-button type="dashed" size="small" @click="addRule">
-        <PlusOutlined />
+      <el-button size="small" class="!border-dashed" @click="addRule">
+        <el-icon class="mr-1"><Plus /></el-icon>
         添加版本
-      </a-button>
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { Delete, Plus } from '@element-plus/icons-vue'
 
 interface TrafficRule {
   versionId: string
@@ -85,17 +93,11 @@ watch(
   { deep: true },
 )
 
-const columns = [
-  { title: '版本ID', dataIndex: 'versionId', width: '35%' },
-  { title: '流量权重', dataIndex: 'weight', width: '55%' },
-  { title: '操作', dataIndex: 'action', width: '10%', align: 'center' as const },
-]
-
 const totalWeight = computed(() => rules.value.reduce((sum, r) => sum + (r.weight ?? 0), 0))
 
 const totalWeightClass = computed(() => ({
-  'weight-ok': totalWeight.value === 100,
-  'weight-error': totalWeight.value !== 100,
+  'text-emerald-600': totalWeight.value === 100,
+  'text-amber-500': totalWeight.value !== 100,
 }))
 
 function handleWeightChange() {
@@ -120,39 +122,5 @@ function emitValue() {
 <style scoped>
 .traffic-rule-editor {
   width: 100%;
-}
-.weight-cell {
-  display: flex;
-  align-items: center;
-}
-.weight-percent {
-  margin-left: 4px;
-  color: rgba(0, 0, 0, 0.45);
-  font-size: 12px;
-}
-.traffic-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
-}
-.total-weight {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
-}
-.weight-ok {
-  color: #52c41a;
-  font-weight: 500;
-}
-.weight-error {
-  color: #faad14;
-  font-weight: 500;
-}
-.weight-warning {
-  color: rgba(0, 0, 0, 0.35);
-  font-size: 12px;
-  margin-left: 4px;
 }
 </style>

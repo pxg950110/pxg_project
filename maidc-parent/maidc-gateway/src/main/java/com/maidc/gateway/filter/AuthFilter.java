@@ -18,6 +18,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -29,6 +30,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String ORG_ID_HEADER = "X-Org-Id";
     private static final String USERNAME_HEADER = "X-Username";
+    private static final String USER_ROLES_HEADER = "X-User-Roles";
 
     private final SecretKey key;
     private final StringRedisTemplate redisTemplate;
@@ -77,11 +79,16 @@ public class AuthFilter implements GlobalFilter, Ordered {
             String username = claims.getSubject();
             Object userId = claims.get("userId");
             Object orgId = claims.get("orgId");
+            Object roles = claims.get("roles");
+            String rolesHeader = roles instanceof List<?> roleList
+                    ? roleList.stream().map(String::valueOf).collect(Collectors.joining(","))
+                    : "";
 
             ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                     .header(USER_ID_HEADER, String.valueOf(userId))
                     .header(ORG_ID_HEADER, String.valueOf(orgId))
                     .header(USERNAME_HEADER, username)
+                    .header(USER_ROLES_HEADER, rolesHeader)
                     .build();
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
