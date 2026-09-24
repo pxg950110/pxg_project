@@ -8,6 +8,7 @@ import com.maidc.data.dto.PatientCreateDTO;
 import com.maidc.data.dto.PatientQueryDTO;
 import com.maidc.data.entity.*;
 import com.maidc.data.service.*;
+import com.maidc.data.service.cdr.DataStatisticsService;
 import com.maidc.data.vo.EncounterVO;
 import com.maidc.data.vo.PatientDetailVO;
 import com.maidc.data.vo.PatientVO;
@@ -18,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/cdr")
@@ -55,6 +57,7 @@ public class CdrController {
     private final DocumentTemplateService documentTemplateService;
     private final EncounterSubresourceService encounterSubresourceService;
     private final PatientEncounterService patientEncounterService;
+    private final DataStatisticsService dataStatisticsService;
 
     // ==================== Patient ====================
 
@@ -165,6 +168,23 @@ public class CdrController {
         encounterSubresourceService.requireEncounterOfPatient(patientId, encounterId);
         return R.ok(clinicalNoteService.searchNotes(
                 encounterId, null, null, null, null, null, null, keyword, 1, 500));
+    }
+
+    // ==================== Statistics（前端 DataDashboard） ====================
+
+    /** 月度数据增长趋势：{months[], clinical[], research[], imaging[], pathology[]} */
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/statistics/data-growth-trend")
+    public R<Map<String, Object>> getDataGrowthTrend(
+            @RequestParam(defaultValue = "6") int months) {
+        return R.ok(dataStatisticsService.getDataGrowthTrend(months));
+    }
+
+    /** 数据来源分布：[{name: source_system, value: 患者数}] */
+    @PreAuthorize("hasPermission('cdr:read')")
+    @GetMapping("/statistics/source-distribution")
+    public R<List<Map<String, Object>>> getSourceDistribution() {
+        return R.ok(dataStatisticsService.getSourceDistribution());
     }
 
     // ==================== LabTest ====================
