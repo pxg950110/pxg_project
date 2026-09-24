@@ -27,8 +27,8 @@
 
         <div class="flex items-center gap-2">
           <el-radio-group v-model="group.logic" size="small" @change="emitUpdate">
-            <el-radio-button label="AND">组内 AND</el-radio-button>
-            <el-radio-button label="OR">组内 OR</el-radio-button>
+            <el-radio-button value="AND">组内 AND</el-radio-button>
+            <el-radio-button value="OR">组内 OR</el-radio-button>
           </el-radio-group>
           <el-button
             link
@@ -138,8 +138,8 @@
         <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200">
           <span class="text-xs text-sky-700 font-medium">组间逻辑关系：</span>
           <el-radio-group v-model="groupLogic" size="small" @change="emitUpdate">
-            <el-radio-button label="AND">AND (同时满足)</el-radio-button>
-            <el-radio-button label="OR">OR (任一满足)</el-radio-button>
+            <el-radio-button value="AND">AND (同时满足)</el-radio-button>
+            <el-radio-button value="OR">OR (任一满足)</el-radio-button>
           </el-radio-group>
         </div>
       </div>

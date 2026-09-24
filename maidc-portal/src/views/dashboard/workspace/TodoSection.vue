@@ -27,10 +27,10 @@
 
         <!-- 分类筛选单选按钮组 -->
         <el-radio-group v-model="activeFilter" size="small">
-          <el-radio-button label="ALL">全部</el-radio-button>
-          <el-radio-button v-if="hasFollowup" label="FOLLOWUP">随访</el-radio-button>
-          <el-radio-button label="APPROVAL">审批</el-radio-button>
-          <el-radio-button label="OTHER">其他</el-radio-button>
+          <el-radio-button value="ALL">全部</el-radio-button>
+          <el-radio-button v-if="hasFollowup" value="FOLLOWUP">随访</el-radio-button>
+          <el-radio-button value="APPROVAL">审批</el-radio-button>
+          <el-radio-button value="OTHER">其他</el-radio-button>
         </el-radio-group>
       </div>
     </div>

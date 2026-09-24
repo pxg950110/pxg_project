@@ -14,8 +14,8 @@
 
       <div class="flex items-center gap-3">
         <el-radio-group v-model="mineOnly" size="small" @change="load">
-          <el-radio-button :label="true">我负责的</el-radio-button>
-          <el-radio-button :label="false">全部任务</el-radio-button>
+          <el-radio-button :value="true">我负责的</el-radio-button>
+          <el-radio-button :value="false">全部任务</el-radio-button>
         </el-radio-group>
 
         <el-input
@@ -350,9 +350,9 @@
       <el-form label-position="top" class="space-y-3">
         <el-form-item label="治疗类别" required>
           <el-radio-group v-model="treatForm.category" size="small">
-            <el-radio-button label="MEDICATION">药物治疗</el-radio-button>
-            <el-radio-button label="SURGERY">手术操作</el-radio-button>
-            <el-radio-button label="OTHER">其他干预</el-radio-button>
+            <el-radio-button value="MEDICATION">药物治疗</el-radio-button>
+            <el-radio-button value="SURGERY">手术操作</el-radio-button>
+            <el-radio-button value="OTHER">其他干预</el-radio-button>
           </el-radio-group>
         </el-form-item>
 

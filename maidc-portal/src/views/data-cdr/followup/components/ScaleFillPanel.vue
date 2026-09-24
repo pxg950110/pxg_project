@@ -43,7 +43,7 @@
           <div v-for="item in itemsOf('LEFT')" :key="item.no" class="pb-2.5 border-b border-slate-100 last:border-0 space-y-1.5">
             <div class="text-xs font-medium text-slate-700">{{ item.no }}. {{ item.text }}</div>
             <el-radio-group v-model="answers[item.no]" size="small">
-              <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :label="opt.value">
+              <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
               </el-radio-button>
             </el-radio-group>
@@ -57,7 +57,7 @@
           <div v-for="item in itemsOf('RIGHT')" :key="item.no" class="pb-2.5 border-b border-slate-100 last:border-0 space-y-1.5">
             <div class="text-xs font-medium text-slate-700">{{ item.no }}. {{ item.text }}</div>
             <el-radio-group v-model="answers[item.no]" size="small">
-              <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :label="opt.value">
+              <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
               </el-radio-button>
             </el-radio-group>
@@ -107,7 +107,7 @@
 
           <!-- 多选 -->
           <el-checkbox-group v-else-if="item.type === 'CHECKBOX'" v-model="answers[item.no]" class="flex flex-wrap gap-2">
-            <el-checkbox v-for="o in optionsOf(item)" :key="String(o.value)" :label="o.value">
+            <el-checkbox v-for="o in optionsOf(item)" :key="String(o.value)" :value="o.value">
               {{ o.label }}
             </el-checkbox>
           </el-checkbox-group>
@@ -131,7 +131,7 @@
 
           <!-- 单选按钮组 -->
           <el-radio-group v-else-if="item.type === 'RADIO'" v-model="answers[item.no]" size="small">
-            <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :label="opt.value">
+            <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :value="opt.value">
               {{ opt.label }}
             </el-radio-button>
           </el-radio-group>
@@ -159,7 +159,7 @@
 
           <!-- 默认回退单选 -->
           <el-radio-group v-else v-model="answers[item.no]" size="small">
-            <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :label="opt.value">
+            <el-radio-button v-for="opt in optionsOf(item)" :key="opt.value" :value="opt.value">
               {{ opt.label }}
             </el-radio-button>
           </el-radio-group>

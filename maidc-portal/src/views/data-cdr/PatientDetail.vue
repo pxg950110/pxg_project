@@ -265,6 +265,7 @@
     </el-card>
 
     </template>
+    <el-empty v-else-if="!loading" description="未找到患者数据或加载失败，请稍后重试" class="mt-10" />
   </PageContainer>
 </template>
 

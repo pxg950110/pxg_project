@@ -211,7 +211,7 @@
 
                 <div v-if="assessedCodes.length" class="flex items-center gap-1.5 flex-wrap">
                   <el-radio-group v-model="chartScale" size="small">
-                    <el-radio-button v-for="c in assessedCodes" :key="c" :label="c">
+                    <el-radio-button v-for="c in assessedCodes" :key="c" :value="c">
                       {{ shortScale(c) }}
                     </el-radio-button>
                   </el-radio-group>
@@ -403,9 +403,9 @@
       <el-form label-position="top" class="space-y-3">
         <el-form-item label="治疗类别" required>
           <el-radio-group v-model="treatForm.category" size="small">
-            <el-radio-button label="MEDICATION">药物</el-radio-button>
-            <el-radio-button label="SURGERY">手术</el-radio-button>
-            <el-radio-button label="OTHER">其他</el-radio-button>
+            <el-radio-button value="MEDICATION">药物</el-radio-button>
+            <el-radio-button value="SURGERY">手术</el-radio-button>
+            <el-radio-button value="OTHER">其他</el-radio-button>
           </el-radio-group>
         </el-form-item>
 

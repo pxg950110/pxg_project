@@ -114,10 +114,7 @@
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
       />
-    </template>
-  </PageContainer>
-
-  <!-- Create User Modal -->
+    <!-- Create User Modal -->
   <el-dialog
     v-model="userModal.visible"
     title="新建用户"
@@ -192,6 +189,8 @@
       <el-button type="primary" :loading="submitting" @click="handleResetPwd">确定</el-button>
     </template>
   </el-dialog>
+    </template>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">

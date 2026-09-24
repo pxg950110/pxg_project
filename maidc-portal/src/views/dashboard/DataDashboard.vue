@@ -4,10 +4,10 @@
       <div class="flex items-center gap-3">
         <!-- Time Range Selector -->
         <el-radio-group v-model="timeRange" size="small" @change="fetchDashboardData">
-          <el-radio-button label="today">今日</el-radio-button>
-          <el-radio-button label="7d">近7天</el-radio-button>
-          <el-radio-button label="30d">近30天</el-radio-button>
-          <el-radio-button label="6m">近半年</el-radio-button>
+          <el-radio-button value="today">今日</el-radio-button>
+          <el-radio-button value="7d">近7天</el-radio-button>
+          <el-radio-button value="30d">近30天</el-radio-button>
+          <el-radio-button value="6m">近半年</el-radio-button>
         </el-radio-group>
 
         <!-- Auto Refresh Switch -->
@@ -182,7 +182,7 @@
             <h3 class="text-base font-semibold text-slate-900">实时清洗与入库流水线</h3>
             <p class="text-xs text-slate-500 mt-0.5">最新批次任务运行监测与处理吞吐</p>
           </div>
-          <router-link to="/data/etl/executions" class="text-xs text-sky-600 hover:text-sky-700 font-medium">
+          <router-link to="/etl/executions" class="text-xs text-sky-600 hover:text-sky-700 font-medium">
             查看全部任务 &rarr;
           </router-link>
         </div>

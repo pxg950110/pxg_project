@@ -191,9 +191,9 @@
 
                 <el-form-item v-if="isScoreType(selected.type)" label="解剖侧别（双侧分栏评估）">
                   <el-radio-group v-model="selectedSide" size="small">
-                    <el-radio-button :label="null">无侧别</el-radio-button>
-                    <el-radio-button label="LEFT">左侧</el-radio-button>
-                    <el-radio-button label="RIGHT">右侧</el-radio-button>
+                    <el-radio-button :value="null">无侧别</el-radio-button>
+                    <el-radio-button value="LEFT">左侧</el-radio-button>
+                    <el-radio-button value="RIGHT">右侧</el-radio-button>
                   </el-radio-group>
                 </el-form-item>
 
@@ -293,9 +293,9 @@
 
                         <el-form-item label="带入模式">
                           <el-radio-group v-model="selected.binding.mode" size="small">
-                            <el-radio-button label="AUTO_READONLY">只读快照</el-radio-button>
-                            <el-radio-button label="AUTO_EDITABLE">带入可改</el-radio-button>
-                            <el-radio-button label="OPTIONS">动态选项源</el-radio-button>
+                            <el-radio-button value="AUTO_READONLY">只读快照</el-radio-button>
+                            <el-radio-button value="AUTO_EDITABLE">带入可改</el-radio-button>
+                            <el-radio-button value="OPTIONS">动态选项源</el-radio-button>
                           </el-radio-group>
                         </el-form-item>
 

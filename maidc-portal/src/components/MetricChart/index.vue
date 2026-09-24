@@ -15,7 +15,7 @@
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, BarChart, PieChart, ScatterChart, HeatmapChart } from 'echarts/charts'
+import { LineChart, BarChart, PieChart, ScatterChart, HeatmapChart, RadarChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -33,6 +33,7 @@ use([
   PieChart,
   ScatterChart,
   HeatmapChart,
+  RadarChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,

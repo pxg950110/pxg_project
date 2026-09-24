@@ -12,9 +12,9 @@
 
         <!-- Time Range Selector -->
         <el-radio-group v-model="timeRange" size="small" @change="fetchDashboard">
-          <el-radio-button label="today">今日</el-radio-button>
-          <el-radio-button label="7d">近7天</el-radio-button>
-          <el-radio-button label="30d">近30天</el-radio-button>
+          <el-radio-button value="today">今日</el-radio-button>
+          <el-radio-button value="7d">近7天</el-radio-button>
+          <el-radio-button value="30d">近30天</el-radio-button>
         </el-radio-group>
 
         <!-- Auto Refresh -->

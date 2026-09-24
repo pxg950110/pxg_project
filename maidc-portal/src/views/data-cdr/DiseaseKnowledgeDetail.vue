@@ -58,12 +58,12 @@
           <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div class="flex items-center gap-3 flex-wrap flex-1">
               <el-radio-group v-model="itemType" size="small" @change="onFilterChange">
-                <el-radio-button label="">全部 ({{ detail?.itemTotal ?? 0 }})</el-radio-button>
-                <el-radio-button label="GUIDELINE">指南/共识 ({{ detail?.counts?.GUIDELINE ?? 0 }})</el-radio-button>
-                <el-radio-button label="LITERATURE">学术文献 ({{ detail?.counts?.LITERATURE ?? 0 }})</el-radio-button>
-                <el-radio-button label="PATHWAY">临床路径 ({{ detail?.counts?.PATHWAY ?? 0 }})</el-radio-button>
-                <el-radio-button label="SCALE">量表/表单 ({{ detail?.counts?.SCALE ?? 0 }})</el-radio-button>
-                <el-radio-button label="ARCHIVED">已归档</el-radio-button>
+                <el-radio-button value="">全部 ({{ detail?.itemTotal ?? 0 }})</el-radio-button>
+                <el-radio-button value="GUIDELINE">指南/共识 ({{ detail?.counts?.GUIDELINE ?? 0 }})</el-radio-button>
+                <el-radio-button value="LITERATURE">学术文献 ({{ detail?.counts?.LITERATURE ?? 0 }})</el-radio-button>
+                <el-radio-button value="PATHWAY">临床路径 ({{ detail?.counts?.PATHWAY ?? 0 }})</el-radio-button>
+                <el-radio-button value="SCALE">量表/表单 ({{ detail?.counts?.SCALE ?? 0 }})</el-radio-button>
+                <el-radio-button value="ARCHIVED">已归档</el-radio-button>
               </el-radio-group>
 
               <el-input

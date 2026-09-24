@@ -51,14 +51,13 @@
       @update:nodes="(n: any) => graph.nodes.value = n"
       @update:edges="(e: any) => graph.edges.value = e"
     />
-  </PageContainer>
-
   <!-- YAML Preview Modal -->
   <el-dialog v-model="previewVisible" title="Embulk YAML 预览" width="640px">
     <div v-loading="previewLoading">
       <pre class="yaml-preview">{{ previewYaml }}</pre>
     </div>
   </el-dialog>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">

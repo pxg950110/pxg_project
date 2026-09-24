@@ -234,8 +234,8 @@
         <div class="grid grid-cols-2 gap-4">
           <el-form-item label="专病启用状态">
             <el-radio-group v-model="diseaseForm.status">
-              <el-radio-button label="ACTIVE">已启用</el-radio-button>
-              <el-radio-button label="INACTIVE">未启用</el-radio-button>
+              <el-radio-button value="ACTIVE">已启用</el-radio-button>
+              <el-radio-button value="INACTIVE">未启用</el-radio-button>
             </el-radio-group>
           </el-form-item>
 
