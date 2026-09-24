@@ -39,7 +39,7 @@ export interface PatientEncounterListResponse {
  * @returns Promise with patient encounter list
  */
 export function getPatientEncounterList(patientId: number | string, params?: { page?: number; size?: number }) {
-  return request.get<ApiResponse<PatientEncounterListResponse>>(`/api/cdr/patients/${patientId}/encounters`, { params })
+  return request.get<ApiResponse<PatientEncounterListResponse>>(`/cdr/patient-encounters/patients/${patientId}/encounters`, { params })
 }
 
 /**
@@ -48,5 +48,5 @@ export function getPatientEncounterList(patientId: number | string, params?: { p
  * @returns Promise with encounter detail data
  */
 export function getEncounterDetail(encounterId: number | string) {
-  return request.get<ApiResponse<any>>(`/api/cdr/encounters/${encounterId}`)
+  return request.get<ApiResponse<any>>(`/cdr/patient-encounters/encounters/${encounterId}`)
 }

@@ -27,12 +27,16 @@ public class EncounterService {
 
     public List<EncounterVO> findByPatientId(Long patientId) {
         List<EncounterEntity> encounters = encounterRepository
-                .findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(patientId);
+                .findByPatientIdAndIsDeletedFalseOrderByAdmitTimeDesc(patientId);
         return encounters.stream().map(dataMapper::toEncounterVO).toList();
     }
 
     @Transactional
     public EncounterVO createEncounter(EncounterEntity entity) {
+        // encounter_no 为 DDL NOT NULL 列：调用方未提供时自动生成
+        if (entity.getEncounterNo() == null || entity.getEncounterNo().isBlank()) {
+            entity.setEncounterNo("E" + System.currentTimeMillis());
+        }
         entity = encounterRepository.save(entity);
         return dataMapper.toEncounterVO(entity);
     }

@@ -76,8 +76,8 @@ public class PatientEncounterService {
         dto.setPatientName(desensitizeName(patient.getName()));
         dto.setGender(patient.getGender());
         dto.setAge(calculateAge(patient.getBirthDate()));
-        dto.setIdCard(desensitizeIdCard(patient.getIdCardHash()));
-        dto.setPhone(desensitizePhone(patient.getPhoneHash()));
+        dto.setIdCard(desensitizeIdCard(patient.getIdCardNo()));
+        dto.setPhone(desensitizePhone(patient.getPhone()));
         dto.setEncounters(timelineList);
 
         return dto;
@@ -92,7 +92,7 @@ public class PatientEncounterService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         // DEPT 数据范围校验：就诊科室 ∉ 用户科室 → 与就诊未找到同响应（fail-closed，不暴露存在性）
-        checkDeptScope(Collections.singletonList(encounter.getDepartment()), ErrorCode.ENCOUNTER_NOT_FOUND);
+        checkDeptScope(Collections.singletonList(encounter.getDeptName()), ErrorCode.ENCOUNTER_NOT_FOUND);
 
         // 获取主诊断
         List<DiagnosisEntity> diagnoses = diagnosisRepository.findByEncounterIdAndIsDeletedFalse(encounterId);
@@ -151,7 +151,7 @@ public class PatientEncounterService {
         if (deptName == null) {
             return; // 非 DEPT 范围，无需过滤
         }
-        if (!encounterRepository.existsByPatientIdAndDepartmentAndIsDeletedFalse(patientId, deptName)) {
+        if (!encounterRepository.existsByPatientIdAndDeptNameAndIsDeletedFalse(patientId, deptName)) {
             throw new BusinessException(notFound);
         }
     }
@@ -243,14 +243,15 @@ public class PatientEncounterService {
     private EncounterTimelineDTO convertToTimelineDTO(EncounterEntity entity, String mainDiagnosis, Long currentEncounterId) {
         EncounterTimelineDTO dto = new EncounterTimelineDTO();
         dto.setEncounterId(entity.getId());
-        dto.setEncounterNo(String.valueOf(entity.getId())); // 使用ID作为就诊号
+        dto.setEncounterNo(entity.getEncounterNo() != null ? entity.getEncounterNo() : String.valueOf(entity.getId()));
         dto.setEncounterType(entity.getEncounterType());
-        dto.setDeptCode(entity.getDepartment());
-        dto.setDeptName(entity.getDepartment()); // 暂时使用department字段
-        dto.setAdmitTime(entity.getAdmissionTime());
+        dto.setDeptCode(entity.getDeptCode());
+        dto.setDeptName(entity.getDeptName());
+        dto.setAdmitTime(entity.getAdmitTime());
         dto.setDischargeTime(entity.getDischargeTime());
         dto.setMainDiagnosis(mainDiagnosis);
-        dto.setStatus(entity.getDischargeTime() == null ? "ACTIVE" : "DISCHARGED");
+        dto.setStatus(entity.getStatus() != null ? entity.getStatus()
+                : (entity.getDischargeTime() == null ? "ACTIVE" : "DISCHARGED"));
         dto.setIsCurrent(entity.getId().equals(currentEncounterId));
         return dto;
     }
@@ -261,16 +262,17 @@ public class PatientEncounterService {
     private EncounterBasicInfoDTO convertToBasicInfoDTO(EncounterEntity entity, String mainDiagnosis) {
         EncounterBasicInfoDTO dto = new EncounterBasicInfoDTO();
         dto.setEncounterId(entity.getId());
-        dto.setEncounterNo(String.valueOf(entity.getId()));
+        dto.setEncounterNo(entity.getEncounterNo() != null ? entity.getEncounterNo() : String.valueOf(entity.getId()));
         dto.setEncounterType(entity.getEncounterType());
-        dto.setDeptCode(entity.getDepartment());
-        dto.setDeptName(entity.getDepartment());
-        dto.setDoctorCode(entity.getAttendingDoctor());
-        dto.setDoctorName(entity.getAttendingDoctor());
-        dto.setAdmitTime(entity.getAdmissionTime());
+        dto.setDeptCode(entity.getDeptCode());
+        dto.setDeptName(entity.getDeptName());
+        dto.setDoctorCode(entity.getDoctorCode());
+        dto.setDoctorName(entity.getDoctorName());
+        dto.setAdmitTime(entity.getAdmitTime());
         dto.setDischargeTime(entity.getDischargeTime());
         dto.setMainDiagnosis(mainDiagnosis);
-        dto.setStatus(entity.getDischargeTime() == null ? "ACTIVE" : "DISCHARGED");
+        dto.setStatus(entity.getStatus() != null ? entity.getStatus()
+                : (entity.getDischargeTime() == null ? "ACTIVE" : "DISCHARGED"));
         return dto;
     }
 

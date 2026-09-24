@@ -39,8 +39,8 @@ class EncounterServiceTest {
         entity.setId(encounterId);
         entity.setPatientId(1L);
         entity.setEncounterType("INPATIENT");
-        entity.setDepartment("内科");
-        entity.setAdmissionTime(LocalDateTime.of(2025, 3, 10, 8, 0));
+        entity.setDeptName("内科");
+        entity.setAdmitTime(LocalDateTime.of(2025, 3, 10, 8, 0));
 
         EncounterVO expectedVO = EncounterVO.builder()
                 .id(encounterId)
@@ -100,7 +100,7 @@ class EncounterServiceTest {
         EncounterVO vo1 = EncounterVO.builder().id(10L).encounterType("OUTPATIENT").build();
         EncounterVO vo2 = EncounterVO.builder().id(11L).encounterType("INPATIENT").build();
 
-        when(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(patientId))
+        when(encounterRepository.findByPatientIdAndIsDeletedFalseOrderByAdmitTimeDesc(patientId))
                 .thenReturn(entities);
         when(dataMapper.toEncounterVO(encounter1)).thenReturn(vo1);
         when(dataMapper.toEncounterVO(encounter2)).thenReturn(vo2);
@@ -113,7 +113,7 @@ class EncounterServiceTest {
         assertEquals(2, results.size());
         assertEquals("OUTPATIENT", results.get(0).getEncounterType());
         assertEquals("INPATIENT", results.get(1).getEncounterType());
-        verify(encounterRepository).findByPatientIdAndIsDeletedFalseOrderByAdmissionTimeDesc(patientId);
+        verify(encounterRepository).findByPatientIdAndIsDeletedFalseOrderByAdmitTimeDesc(patientId);
     }
 
     @Test
@@ -122,13 +122,13 @@ class EncounterServiceTest {
         EncounterEntity entity = new EncounterEntity();
         entity.setPatientId(1L);
         entity.setEncounterType("INPATIENT");
-        entity.setDepartment("外科");
+        entity.setDeptName("外科");
 
         EncounterEntity savedEntity = new EncounterEntity();
         savedEntity.setId(100L);
         savedEntity.setPatientId(1L);
         savedEntity.setEncounterType("INPATIENT");
-        savedEntity.setDepartment("外科");
+        savedEntity.setDeptName("外科");
 
         EncounterVO expectedVO = EncounterVO.builder()
                 .id(100L)

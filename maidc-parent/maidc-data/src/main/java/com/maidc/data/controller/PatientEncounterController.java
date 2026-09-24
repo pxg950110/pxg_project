@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 患者就诊360视图控制器
+ * <p>挂载 /api/v1/cdr/patient-encounters：与 CdrController 的 /api/v1/cdr/patients/{p}/encounters
+ * （EncounterService 扁平列表）路径隔离，且符合全局 /api/v1 前缀约定。
  */
 @RestController
-@RequestMapping("/api/cdr")
+@RequestMapping("/api/v1/cdr/patient-encounters")
 @RequiredArgsConstructor
 public class PatientEncounterController {
 
@@ -37,7 +39,7 @@ public class PatientEncounterController {
             @RequestParam(defaultValue = "10") int size) {
 
         // 创建分页对象（page-1转换为零基索引，按入院时间降序排序）
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("admissionTime").descending());
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("admitTime").descending());
 
         PatientEncounterListDTO result = patientEncounterService.getPatientEncounterList(patientId, pageable);
         return R.ok(result);

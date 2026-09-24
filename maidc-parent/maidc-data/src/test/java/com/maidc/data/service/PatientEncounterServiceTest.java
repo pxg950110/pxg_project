@@ -99,7 +99,7 @@ class PatientEncounterServiceTest {
     private EncounterEntity encounter(Long id, String department) {
         EncounterEntity e = new EncounterEntity();
         e.setId(id);
-        e.setDepartment(department);
+        e.setDeptName(department);
         return e;
     }
 
@@ -235,7 +235,7 @@ class PatientEncounterServiceTest {
         mockInstitution(DEPT_NAME);
         when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient(1L)));
         // ∃ 语义：混合就诊 [本科室, 其他科室] → exists 命中 → 可见（转科患者不消失）
-        when(encounterRepository.existsByPatientIdAndDepartmentAndIsDeletedFalse(1L, DEPT_NAME))
+        when(encounterRepository.existsByPatientIdAndDeptNameAndIsDeletedFalse(1L, DEPT_NAME))
                 .thenReturn(true);
         Pageable pageable = PageRequest.of(0, 10);
         when(encounterRepository.findByPatientId(1L, pageable)).thenReturn(Page.empty());
@@ -254,7 +254,7 @@ class PatientEncounterServiceTest {
         mockInstitution(DEPT_NAME);
         when(patientRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(patient(1L)));
         // 零就诊记录或全部就诊不在用户科室 → exists=false → 拒绝
-        when(encounterRepository.existsByPatientIdAndDepartmentAndIsDeletedFalse(1L, DEPT_NAME))
+        when(encounterRepository.existsByPatientIdAndDeptNameAndIsDeletedFalse(1L, DEPT_NAME))
                 .thenReturn(false);
 
         BusinessException ex = assertThrows(BusinessException.class,
@@ -279,7 +279,7 @@ class PatientEncounterServiceTest {
         assertEquals(ErrorCode.PATIENT_NOT_FOUND.getCode(), ex.getCode());
         assertEquals(ErrorCode.PATIENT_NOT_FOUND.getMessage(), ex.getMessage());
         verifyNoInteractions(institutionRepository);
-        verify(encounterRepository, never()).existsByPatientIdAndDepartmentAndIsDeletedFalse(anyLong(), any());
+        verify(encounterRepository, never()).existsByPatientIdAndDeptNameAndIsDeletedFalse(anyLong(), any());
     }
 
     @Test
@@ -306,7 +306,7 @@ class PatientEncounterServiceTest {
         PatientEncounterListDTO dto = patientEncounterService.getPatientEncounterList(1L, pageable);
 
         assertNotNull(dto);
-        verify(encounterRepository, never()).existsByPatientIdAndDepartmentAndIsDeletedFalse(anyLong(), any());
+        verify(encounterRepository, never()).existsByPatientIdAndDeptNameAndIsDeletedFalse(anyLong(), any());
         verifyNoInteractions(institutionRepository);
     }
 }

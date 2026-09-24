@@ -29,12 +29,17 @@ public class PatientService {
     @Transactional
     public PatientVO createPatient(PatientCreateDTO dto) {
         PatientEntity entity = new PatientEntity();
+        // patient_no 为 DDL NOT NULL 列：调用方未提供时自动生成
+        entity.setPatientNo(dto.getPatientNo() != null && !dto.getPatientNo().isBlank()
+                ? dto.getPatientNo() : "P" + System.currentTimeMillis());
         entity.setName(dto.getName());
         entity.setGender(dto.getGender());
         entity.setBirthDate(dto.getBirthDate());
-        entity.setIdCardHash(dto.getIdCardHash());
-        entity.setPhoneHash(dto.getPhoneHash());
+        entity.setIdCardNo(dto.getIdCardNo());
+        entity.setBloodType(dto.getBloodType());
+        entity.setPhone(dto.getPhone());
         entity.setAddress(dto.getAddress());
+        entity.setSourceSystem("MANUAL");
         entity.setOrgId(dto.getOrgId() != null ? dto.getOrgId() : 0L);
 
         entity = patientRepository.save(entity);

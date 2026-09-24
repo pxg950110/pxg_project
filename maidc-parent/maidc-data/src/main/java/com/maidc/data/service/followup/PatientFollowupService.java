@@ -49,7 +49,7 @@ public class PatientFollowupService {
                 .orElseThrow(() -> new BusinessException(404, "随访档案不存在: " + id));
         // DEPT 范围详情入口（fail-closed）：患者任一就诊科室 == 用户科室才可见，否则同"未找到"
         deptScopeService.deptFilterName(com.maidc.common.core.enums.ErrorCode.PATIENT_NOT_FOUND)
-                .filter(dept -> !encounterRepository.existsByPatientIdAndDepartmentAndIsDeletedFalse(f.getPatientId(), dept))
+                .filter(dept -> !encounterRepository.existsByPatientIdAndDeptNameAndIsDeletedFalse(f.getPatientId(), dept))
                 .ifPresent(x -> { throw new BusinessException(404, "随访档案不存在: " + id); });
         displayNameResolver.fill(List.of(f));
         return f;

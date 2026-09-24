@@ -161,118 +161,119 @@ public class SmartSearchService {
     }
 
     private String domainSubSql(String domain) {
+        // DDL 未预建 fts tsvector 列，全文匹配采用查询内联 to_tsvector 计算（无需 DDL 变更）
         return switch (domain) {
             case "PATIENT" -> """
                 SELECT 'PATIENT' AS domain, p.id, p.id AS patient_id,
                        p.name AS title, p.gender || ' ' || p.birth_date AS subtitle,
-                       ts_rank_cd(p.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(p.name,'') || ' ' || coalesce(p.patient_no,'') || ' ' || coalesce(p.id_card_no,'')), q) AS score,
                        ts_headline('simple', coalesce(p.name,''), q) AS headline
                 FROM cdr.c_patient p, tsq
-                WHERE p.fts @@ q AND p.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(p.name,'') || ' ' || coalesce(p.patient_no,'') || ' ' || coalesce(p.id_card_no,'')) @@ q AND p.is_deleted = false""";
             case "ENCOUNTER" -> """
                 SELECT 'ENCOUNTER' AS domain, e.id, e.patient_id,
-                       coalesce(e.diagnosis_summary, '-') AS title,
-                       coalesce(e.department,'') || ' ' || coalesce(e.attending_doctor,'') AS subtitle,
-                       ts_rank_cd(e.fts, q) AS score,
-                       ts_headline('simple', coalesce(e.attending_doctor,'') || ' ' || coalesce(e.diagnosis_summary,'') || ' ' || coalesce(e.department,''), q) AS headline
+                       coalesce(e.diagnosis_name, '-') AS title,
+                       coalesce(e.dept_name,'') || ' ' || coalesce(e.doctor_name,'') AS subtitle,
+                       ts_rank_cd(to_tsvector('simple', coalesce(e.dept_name,'') || ' ' || coalesce(e.doctor_name,'') || ' ' || coalesce(e.diagnosis_name,'')), q) AS score,
+                       ts_headline('simple', coalesce(e.doctor_name,'') || ' ' || coalesce(e.diagnosis_name,'') || ' ' || coalesce(e.dept_name,''), q) AS headline
                 FROM cdr.c_encounter e, tsq
-                WHERE e.fts @@ q AND e.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(e.dept_name,'') || ' ' || coalesce(e.doctor_name,'') || ' ' || coalesce(e.diagnosis_name,'')) @@ q AND e.is_deleted = false""";
             case "DIAGNOSIS" -> """
                 SELECT 'DIAGNOSIS' AS domain, d.id, d.patient_id,
                        d.icd_name AS title, d.icd_code AS subtitle,
-                       ts_rank_cd(d.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(d.icd_name,'') || ' ' || coalesce(d.icd_code,'')), q) AS score,
                        ts_headline('simple', coalesce(d.icd_name,'') || ' ' || coalesce(d.icd_code,''), q) AS headline
                 FROM cdr.c_diagnosis d, tsq
-                WHERE d.fts @@ q AND d.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(d.icd_name,'') || ' ' || coalesce(d.icd_code,'')) @@ q AND d.is_deleted = false""";
             case "LAB" -> """
                 SELECT 'LAB' AS domain, l.id, l.patient_id,
                        l.test_name AS title, coalesce(l.specimen_type,'') || ' ' || coalesce(l.status,'') AS subtitle,
-                       ts_rank_cd(l.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(l.test_name,'') || ' ' || coalesce(l.test_code,'') || ' ' || coalesce(l.ordering_doctor,'')), q) AS score,
                        ts_headline('simple', coalesce(l.test_name,'') || ' ' || coalesce(l.test_code,'') || ' ' || coalesce(l.ordering_doctor,''), q) AS headline
                 FROM cdr.c_lab_test l, tsq
-                WHERE l.fts @@ q AND l.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(l.test_name,'') || ' ' || coalesce(l.test_code,'') || ' ' || coalesce(l.ordering_doctor,'')) @@ q AND l.is_deleted = false""";
             case "MEDICATION" -> """
                 SELECT 'MEDICATION' AS domain, m.id, m.patient_id,
                        m.med_name AS title, coalesce(m.dosage,'') || ' ' || coalesce(m.route,'') || ' ' || coalesce(m.frequency,'') AS subtitle,
-                       ts_rank_cd(m.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(m.med_name,'') || ' ' || coalesce(m.med_code,'') || ' ' || coalesce(m.prescriber,'')), q) AS score,
                        ts_headline('simple', coalesce(m.med_name,'') || ' ' || coalesce(m.med_code,'') || ' ' || coalesce(m.prescriber,''), q) AS headline
                 FROM cdr.c_medication m, tsq
-                WHERE m.fts @@ q AND m.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(m.med_name,'') || ' ' || coalesce(m.med_code,'') || ' ' || coalesce(m.prescriber,'')) @@ q AND m.is_deleted = false""";
             case "IMAGING" -> """
                 SELECT 'IMAGING' AS domain, i.id, i.patient_id,
                        i.exam_type AS title, coalesce(i.body_part,'') || ' ' || coalesce(i.modality,'') AS subtitle,
-                       ts_rank_cd(i.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(i.exam_type,'') || ' ' || coalesce(i.body_part,'') || ' ' || coalesce(i.report_text,'')), q) AS score,
                        ts_headline('simple', coalesce(i.exam_type,'') || ' ' || coalesce(i.body_part,'') || ' ' || coalesce(i.report_text,''), q) AS headline
                 FROM cdr.c_imaging_exam i, tsq
-                WHERE i.fts @@ q AND i.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(i.exam_type,'') || ' ' || coalesce(i.body_part,'') || ' ' || coalesce(i.report_text,'')) @@ q AND i.is_deleted = false""";
             case "SURGERY" -> """
                 SELECT 'SURGERY' AS domain, o.id, o.patient_id,
                        o.operation_name AS title, coalesce(o.surgeon,'') || ' ' || coalesce(o.anesthesia_type,'') AS subtitle,
-                       ts_rank_cd(o.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(o.operation_name,'') || ' ' || coalesce(o.operation_code,'') || ' ' || coalesce(o.surgeon,'')), q) AS score,
                        ts_headline('simple', coalesce(o.operation_name,'') || ' ' || coalesce(o.operation_code,'') || ' ' || coalesce(o.surgeon,''), q) AS headline
                 FROM cdr.c_operation o, tsq
-                WHERE o.fts @@ q AND o.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(o.operation_name,'') || ' ' || coalesce(o.operation_code,'') || ' ' || coalesce(o.surgeon,'')) @@ q AND o.is_deleted = false""";
             case "PATHOLOGY" -> """
                 SELECT 'PATHOLOGY' AS domain, p.id, p.patient_id,
                        p.diagnosis_desc AS title, coalesce(p.grade,'') || ' ' || coalesce(p.stage,'') AS subtitle,
-                       ts_rank_cd(p.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(p.diagnosis_desc,'') || ' ' || coalesce(p.specimen_type,'')), q) AS score,
                        ts_headline('simple', coalesce(p.diagnosis_desc,'') || ' ' || coalesce(p.specimen_type,''), q) AS headline
                 FROM cdr.c_pathology p, tsq
-                WHERE p.fts @@ q AND p.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(p.diagnosis_desc,'') || ' ' || coalesce(p.specimen_type,'')) @@ q AND p.is_deleted = false""";
             case "VITAL" -> """
                 SELECT 'VITAL' AS domain, v.id, v.patient_id,
                        v.sign_type AS title, cast(v.sign_value as text) || ' ' || coalesce(v.unit,'') AS subtitle,
-                       ts_rank_cd(v.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(v.sign_type,'')), q) AS score,
                        ts_headline('simple', coalesce(v.sign_type,''), q) AS headline
                 FROM cdr.c_vital_sign v, tsq
-                WHERE v.fts @@ q AND v.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(v.sign_type,'')) @@ q AND v.is_deleted = false""";
             case "ALLERGY" -> """
                 SELECT 'ALLERGY' AS domain, a.id, a.patient_id,
                        a.allergen AS title, coalesce(a.reaction,'') || ' ' || coalesce(a.severity,'') AS subtitle,
-                       ts_rank_cd(a.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(a.allergen,'') || ' ' || coalesce(a.reaction,'')), q) AS score,
                        ts_headline('simple', coalesce(a.allergen,'') || ' ' || coalesce(a.reaction,''), q) AS headline
                 FROM cdr.c_allergy a, tsq
-                WHERE a.fts @@ q AND a.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(a.allergen,'') || ' ' || coalesce(a.reaction,'')) @@ q AND a.is_deleted = false""";
             case "NOTE" -> """
                 SELECT 'NOTE' AS domain, n.id, n.patient_id,
                        n.title AS title, coalesce(n.note_type,'') || ' ' || coalesce(n.author,'') AS subtitle,
-                       ts_rank_cd(n.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(n.title,'') || ' ' || coalesce(n.content,'') || ' ' || coalesce(n.author,'')), q) AS score,
                        ts_headline('simple', coalesce(n.title,'') || ' ' || coalesce(n.content,'') || ' ' || coalesce(n.author,''), q) AS headline
                 FROM cdr.c_clinical_note n, tsq
-                WHERE n.fts @@ q AND n.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(n.title,'') || ' ' || coalesce(n.content,'') || ' ' || coalesce(n.author,'')) @@ q AND n.is_deleted = false""";
             case "PROJECT" -> """
                 SELECT 'PROJECT' AS domain, p.id, NULL::bigint AS patient_id,
                        p.name AS title, coalesce(p.description,'') AS subtitle,
-                       ts_rank_cd(p.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(p.name,'') || ' ' || coalesce(p.description,'')), q) AS score,
                        ts_headline('simple', coalesce(p.name,'') || ' ' || coalesce(p.description,''), q) AS headline
                 FROM rdr.r_study_project p, tsq
-                WHERE p.fts @@ q AND p.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(p.name,'') || ' ' || coalesce(p.description,'')) @@ q AND p.is_deleted = false""";
             case "DATASET" -> """
                 SELECT 'DATASET' AS domain, d.id, NULL::bigint AS patient_id,
                        d.name AS title, coalesce(d.description,'') AS subtitle,
-                       ts_rank_cd(d.fts, q) AS score,
+                       ts_rank_cd(to_tsvector('simple', coalesce(d.name,'') || ' ' || coalesce(d.description,'')), q) AS score,
                        ts_headline('simple', coalesce(d.name,'') || ' ' || coalesce(d.description,''), q) AS headline
                 FROM rdr.r_dataset d, tsq
-                WHERE d.fts @@ q AND d.is_deleted = false""";
+                WHERE to_tsvector('simple', coalesce(d.name,'') || ' ' || coalesce(d.description,'')) @@ q AND d.is_deleted = false""";
             default -> "SELECT NULL::text AS domain, NULL::bigint AS id, NULL::bigint AS patient_id, NULL::text AS title, NULL::text AS subtitle, 0::float AS score, NULL::text AS headline WHERE false";
         };
     }
 
     private String domainSubCountSql(String domain) {
         return switch (domain) {
-            case "PATIENT" -> "SELECT 1 FROM cdr.c_patient p, tsq WHERE p.fts @@ q AND p.is_deleted = false";
-            case "ENCOUNTER" -> "SELECT 1 FROM cdr.c_encounter e, tsq WHERE e.fts @@ q AND e.is_deleted = false";
-            case "DIAGNOSIS" -> "SELECT 1 FROM cdr.c_diagnosis d, tsq WHERE d.fts @@ q AND d.is_deleted = false";
-            case "LAB" -> "SELECT 1 FROM cdr.c_lab_test l, tsq WHERE l.fts @@ q AND l.is_deleted = false";
-            case "MEDICATION" -> "SELECT 1 FROM cdr.c_medication m, tsq WHERE m.fts @@ q AND m.is_deleted = false";
-            case "IMAGING" -> "SELECT 1 FROM cdr.c_imaging_exam i, tsq WHERE i.fts @@ q AND i.is_deleted = false";
-            case "SURGERY" -> "SELECT 1 FROM cdr.c_operation o, tsq WHERE o.fts @@ q AND o.is_deleted = false";
-            case "PATHOLOGY" -> "SELECT 1 FROM cdr.c_pathology p, tsq WHERE p.fts @@ q AND p.is_deleted = false";
-            case "VITAL" -> "SELECT 1 FROM cdr.c_vital_sign v, tsq WHERE v.fts @@ q AND v.is_deleted = false";
-            case "ALLERGY" -> "SELECT 1 FROM cdr.c_allergy a, tsq WHERE a.fts @@ q AND a.is_deleted = false";
-            case "NOTE" -> "SELECT 1 FROM cdr.c_clinical_note n, tsq WHERE n.fts @@ q AND n.is_deleted = false";
-            case "PROJECT" -> "SELECT 1 FROM rdr.r_study_project p, tsq WHERE p.fts @@ q AND p.is_deleted = false";
-            case "DATASET" -> "SELECT 1 FROM rdr.r_dataset d, tsq WHERE d.fts @@ q AND d.is_deleted = false";
+            case "PATIENT" -> "SELECT 1 FROM cdr.c_patient p, tsq WHERE to_tsvector('simple', coalesce(p.name,'') || ' ' || coalesce(p.patient_no,'') || ' ' || coalesce(p.id_card_no,'')) @@ q AND p.is_deleted = false";
+            case "ENCOUNTER" -> "SELECT 1 FROM cdr.c_encounter e, tsq WHERE to_tsvector('simple', coalesce(e.dept_name,'') || ' ' || coalesce(e.doctor_name,'') || ' ' || coalesce(e.diagnosis_name,'')) @@ q AND e.is_deleted = false";
+            case "DIAGNOSIS" -> "SELECT 1 FROM cdr.c_diagnosis d, tsq WHERE to_tsvector('simple', coalesce(d.icd_name,'') || ' ' || coalesce(d.icd_code,'')) @@ q AND d.is_deleted = false";
+            case "LAB" -> "SELECT 1 FROM cdr.c_lab_test l, tsq WHERE to_tsvector('simple', coalesce(l.test_name,'') || ' ' || coalesce(l.test_code,'') || ' ' || coalesce(l.ordering_doctor,'')) @@ q AND l.is_deleted = false";
+            case "MEDICATION" -> "SELECT 1 FROM cdr.c_medication m, tsq WHERE to_tsvector('simple', coalesce(m.med_name,'') || ' ' || coalesce(m.med_code,'') || ' ' || coalesce(m.prescriber,'')) @@ q AND m.is_deleted = false";
+            case "IMAGING" -> "SELECT 1 FROM cdr.c_imaging_exam i, tsq WHERE to_tsvector('simple', coalesce(i.exam_type,'') || ' ' || coalesce(i.body_part,'') || ' ' || coalesce(i.report_text,'')) @@ q AND i.is_deleted = false";
+            case "SURGERY" -> "SELECT 1 FROM cdr.c_operation o, tsq WHERE to_tsvector('simple', coalesce(o.operation_name,'') || ' ' || coalesce(o.operation_code,'') || ' ' || coalesce(o.surgeon,'')) @@ q AND o.is_deleted = false";
+            case "PATHOLOGY" -> "SELECT 1 FROM cdr.c_pathology p, tsq WHERE to_tsvector('simple', coalesce(p.diagnosis_desc,'') || ' ' || coalesce(p.specimen_type,'')) @@ q AND p.is_deleted = false";
+            case "VITAL" -> "SELECT 1 FROM cdr.c_vital_sign v, tsq WHERE to_tsvector('simple', coalesce(v.sign_type,'')) @@ q AND v.is_deleted = false";
+            case "ALLERGY" -> "SELECT 1 FROM cdr.c_allergy a, tsq WHERE to_tsvector('simple', coalesce(a.allergen,'') || ' ' || coalesce(a.reaction,'')) @@ q AND a.is_deleted = false";
+            case "NOTE" -> "SELECT 1 FROM cdr.c_clinical_note n, tsq WHERE to_tsvector('simple', coalesce(n.title,'') || ' ' || coalesce(n.content,'') || ' ' || coalesce(n.author,'')) @@ q AND n.is_deleted = false";
+            case "PROJECT" -> "SELECT 1 FROM rdr.r_study_project p, tsq WHERE to_tsvector('simple', coalesce(p.name,'') || ' ' || coalesce(p.description,'')) @@ q AND p.is_deleted = false";
+            case "DATASET" -> "SELECT 1 FROM rdr.r_dataset d, tsq WHERE to_tsvector('simple', coalesce(d.name,'') || ' ' || coalesce(d.description,'')) @@ q AND d.is_deleted = false";
             default -> "SELECT NULL WHERE false";
         };
     }
