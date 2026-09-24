@@ -399,18 +399,18 @@ git commit -m "refactor(dashboard): modernize workspace and overview with Elemen
 - Modify: `maidc-portal/src/views/data-cdr/PatientList.vue`
 - Modify: `maidc-portal/src/views/data-cdr/patient/Patient360Overview.vue`
 
-- [ ] **Step 1: 重构 ClinicalSearch.vue 检索表单**
+- [x] **Step 1: 重构 ClinicalSearch.vue 检索表单**
 
 基于 `el-form` 内联排版与 `ProTable` 实现多条件组合筛选（ICD诊断、就诊科室、检验指标异常状态）。
 
-- [ ] **Step 2: 重构 Patient360Overview.vue**
+- [x] **Step 2: 重构 Patient360Overview.vue**
 
 实现：
 1. 顶部患者画像基本信息栏（年龄、性别、血型、过敏史，带风险等级徽标）；
 2. 左侧就诊事件垂直轴（门诊/急诊/住院）；
 3. 右侧检验指标历史时序联动 `TrendChart` 图表。
 
-- [ ] **Step 3: 验证与提交**
+- [x] **Step 3: 验证与提交**
 
 ```bash
 git add maidc-portal/src/views/data-cdr/ClinicalSearch.vue maidc-portal/src/views/data-cdr/PatientList.vue maidc-portal/src/views/data-cdr/patient/
@@ -425,11 +425,11 @@ git commit -m "refactor(clinical): rebuild clinical search and patient 360 overv
 - Modify: `maidc-portal/src/views/data-cdr/DiseaseList.vue`
 - Modify: `maidc-portal/src/views/followup/FollowupWorkbench.vue`
 
-- [ ] **Step 1: 重构 FollowupWorkbench.vue**
+- [x] **Step 1: 重构 FollowupWorkbench.vue**
 
 使用 `el-segmented` 分段器进行随访状态切换，结合 `el-drawer` 抽屉式快速完成问卷录入。
 
-- [ ] **Step 2: 验证与提交**
+- [x] **Step 2: 验证与提交**
 
 ```bash
 git add maidc-portal/src/views/data-cdr/DiseaseList.vue maidc-portal/src/views/followup/FollowupWorkbench.vue
@@ -446,21 +446,21 @@ git commit -m "refactor(followup): rebuild disease management and followup workb
 - Modify: `maidc-portal/package.json`
 - Test: 全站 TypeScript 类型检查与 Vite 生产打包
 
-- [ ] **Step 1: 移除 ant-design-vue 依赖**
+- [x] **Step 1: 移除 ant-design-vue 依赖**
 
 从 `maidc-portal/package.json` 中彻底移除 `ant-design-vue` 与 `@ant-design/icons-vue`。
 
-- [ ] **Step 2: 全量执行类型校验**
+- [x] **Step 2: 全量执行类型校验**
 
 运行：`cd maidc-portal && npm run type-check`
 预期：零 TS 类型错误。
 
-- [ ] **Step 3: 全量执行生产构建**
+- [x] **Step 3: 全量执行生产构建**
 
 运行：`cd maidc-portal && npm run build`
 预期：成功生成 `dist/` 生产静态资源，无资源丢失或损坏。
 
-- [ ] **Step 4: 提交依赖卸载与最终构建验证**
+- [x] **Step 4: 提交依赖卸载与最终构建验证**
 
 ```bash
 git add maidc-portal/package.json maidc-portal/package-lock.json
