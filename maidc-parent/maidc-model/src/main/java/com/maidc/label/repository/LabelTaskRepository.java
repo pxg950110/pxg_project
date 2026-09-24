@@ -11,7 +11,5 @@ import java.util.List;
 public interface LabelTaskRepository extends JpaRepository<LabelTaskEntity, Long>,
         JpaSpecificationExecutor<LabelTaskEntity> {
 
-    long countByStatusAndIsDeletedFalse(String status);
-
     List<LabelTaskEntity> findByIsDeletedFalse();
 }

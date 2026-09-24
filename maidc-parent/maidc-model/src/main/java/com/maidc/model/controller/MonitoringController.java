@@ -33,6 +33,13 @@ public class MonitoringController {
         ));
     }
 
+    /** 前端 model.ts 契约路径 /monitoring/metrics（与 /metrics/overview 同义） */
+    @PreAuthorize("hasPermission('model:read')")
+    @GetMapping("/metrics")
+    public R<Map<String, Object>> getMetrics() {
+        return getMetricsOverview();
+    }
+
     @PreAuthorize("hasPermission('model:read')")
     @GetMapping("/deployments/{id}/logs")
     public R<PageResult<Map<String, Object>>> getInferenceLogs(

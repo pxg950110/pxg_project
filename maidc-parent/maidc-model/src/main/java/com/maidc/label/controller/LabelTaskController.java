@@ -1,13 +1,10 @@
 package com.maidc.label.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.maidc.common.core.result.PageResult;
 import com.maidc.common.core.result.R;
 import com.maidc.label.dto.LabelTaskCreateDTO;
 import com.maidc.label.dto.LabelTaskUpdateDTO;
-import com.maidc.label.entity.LabelRecordEntity;
 import com.maidc.label.repository.LabelTaskRepository;
-import com.maidc.label.service.LabelItemService;
 import com.maidc.label.service.LabelTaskService;
 import com.maidc.label.vo.LabelStatsVO;
 import com.maidc.label.vo.LabelTaskDetailVO;
@@ -27,7 +24,6 @@ public class LabelTaskController {
 
     private final LabelTaskService labelTaskService;
     private final LabelTaskRepository labelTaskRepository;
-    private final LabelItemService labelItemService;
 
     /**
      * List label tasks with optional filters
@@ -120,48 +116,5 @@ public class LabelTaskController {
     public R<Void> triggerAiPreAnnotate(@PathVariable Long id) {
         labelTaskService.triggerAiPreAnnotate(id);
         return R.ok();
-    }
-
-    // ==================== 标注条目四件套（前端 LabelWorkspace） ====================
-
-    /** 条目分页列表；r_label_record 一行即一个待标数据项 */
-    @PreAuthorize("hasPermission('label:read')")
-    @GetMapping("/{id}/items")
-    public R<PageResult<LabelRecordEntity>> listItems(
-            @PathVariable Long id,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
-        return R.ok(labelItemService.listItems(id, status, page, pageSize));
-    }
-
-    /** 读取条目标注数组（annotation jsonb，空则 []） */
-    @PreAuthorize("hasPermission('label:read')")
-    @GetMapping("/{id}/items/{itemId}/annotations")
-    public R<Object> getItemAnnotations(@PathVariable Long id, @PathVariable Long itemId) {
-        return R.ok(labelItemService.getAnnotations(id, itemId));
-    }
-
-    /** 保存条目标注（body: {annotations: [...]}） */
-    @PreAuthorize("hasPermission('label:write')")
-    @PutMapping("/{id}/items/{itemId}/annotations")
-    public R<LabelRecordEntity> saveItemAnnotations(
-            @PathVariable Long id, @PathVariable Long itemId,
-            @RequestBody Map<String, JsonNode> body) {
-        return R.ok(labelItemService.saveAnnotations(id, itemId, body.get("annotations")));
-    }
-
-    /** 提交条目（SUBMITTED，推进任务 labeledCount） */
-    @PreAuthorize("hasPermission('label:write')")
-    @PostMapping("/{id}/items/{itemId}/submit")
-    public R<LabelRecordEntity> submitItem(@PathVariable Long id, @PathVariable Long itemId) {
-        return R.ok(labelItemService.submit(id, itemId));
-    }
-
-    /** 跳过条目（SKIPPED） */
-    @PreAuthorize("hasPermission('label:write')")
-    @PostMapping("/{id}/items/{itemId}/skip")
-    public R<LabelRecordEntity> skipItem(@PathVariable Long id, @PathVariable Long itemId) {
-        return R.ok(labelItemService.skip(id, itemId));
     }
 }
