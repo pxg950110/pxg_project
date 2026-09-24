@@ -16,7 +16,7 @@
             <el-icon :size="18" class="channel-icon"><component :is="item.icon" /></el-icon>
             <span class="channel-label">{{ item.label }}</span>
           </div>
-          <el-switch :model-value="channels[item.key]" @change="(v) => (channels[item.key] = Boolean(v))" />
+          <el-switch :model-value="channels[item.key]" @change="(v: string | number | boolean) => (channels[item.key] = Boolean(v))" />
         </div>
       </div>
     </el-card>
@@ -42,13 +42,13 @@
             <span class="row-label">{{ row.label }}</span>
           </div>
           <div class="matrix-cell matrix-cell--check">
-            <el-checkbox :model-value="row.inApp" @change="(v) => (row.inApp = Boolean(v))" />
+            <el-checkbox :model-value="row.inApp" @change="(v: string | number | boolean) => (row.inApp = Boolean(v))" />
           </div>
           <div class="matrix-cell matrix-cell--check">
-            <el-checkbox :model-value="row.email" @change="(v) => (row.email = Boolean(v))" />
+            <el-checkbox :model-value="row.email" @change="(v: string | number | boolean) => (row.email = Boolean(v))" />
           </div>
           <div class="matrix-cell matrix-cell--check">
-            <el-checkbox :model-value="row.sms" @change="(v) => (row.sms = Boolean(v))" />
+            <el-checkbox :model-value="row.sms" @change="(v: string | number | boolean) => (row.sms = Boolean(v))" />
           </div>
         </div>
       </div>

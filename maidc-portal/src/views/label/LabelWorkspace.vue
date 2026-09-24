@@ -135,7 +135,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Pointer, Crop, Connection, Aim, EditPen, Document,
-  ZoomIn, ZoomOut, Undo, Redo,
+  ZoomIn, ZoomOut, RefreshLeft, RefreshRight,
   Plus, Delete, Check, DArrowRight,
 } from '@element-plus/icons-vue'
 import { getLabelTask, getLabelItems, getLabelItemAnnotations, saveLabelAnnotations, submitLabelItem, skipLabelItem } from '@/api/label'
@@ -156,8 +156,8 @@ const drawingTools = [
 const utilityTools = [
   { key: 'zoom-in', icon: ZoomIn, tooltip: '放大' },
   { key: 'zoom-out', icon: ZoomOut, tooltip: '缩小' },
-  { key: 'undo', icon: Undo, tooltip: '撤销' },
-  { key: 'redo', icon: Redo, tooltip: '重做' },
+  { key: 'undo', icon: RefreshLeft, tooltip: '撤销' },
+  { key: 'redo', icon: RefreshRight, tooltip: '重做' },
 ]
 
 // Tool state

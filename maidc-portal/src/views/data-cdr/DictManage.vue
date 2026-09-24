@@ -31,7 +31,7 @@
                 <div class="type-name">{{ item.name }}</div>
                 <div class="type-code">{{ item.code }}</div>
               </div>
-              <el-dropdown trigger="click" @command="(cmd) => cmd === 'edit' ? handleEditType(item) : handleDeleteType(item)">
+              <el-dropdown trigger="click" @command="(cmd: string | number | object) => cmd === 'edit' ? handleEditType(item) : handleDeleteType(item)">
                 <span class="type-more" @click.stop>
                   <el-icon><More /></el-icon>
                 </span>

@@ -24,7 +24,7 @@
                 </el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="自动同步">
-                <el-switch :model-value="cohort.autoSync" @change="(v) => toggleAutoSync(Boolean(v))" />
+                <el-switch :model-value="cohort.autoSync" @change="(v: string | number | boolean) => toggleAutoSync(Boolean(v))" />
               </el-descriptions-item>
               <el-descriptions-item label="最后同步">{{ cohort.lastSyncAt || '-' }}</el-descriptions-item>
               <el-descriptions-item label="创建时间">{{ cohort.createdAt }}</el-descriptions-item>

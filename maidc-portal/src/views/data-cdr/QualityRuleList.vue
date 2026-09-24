@@ -36,7 +36,7 @@
             inline-prompt
             active-text="启用"
             inactive-text="禁用"
-            @change="(v) => handleToggle(row, Boolean(v))"
+            @change="(v: string | number | boolean) => handleToggle(row, Boolean(v))"
           />
         </template>
       </el-table-column>

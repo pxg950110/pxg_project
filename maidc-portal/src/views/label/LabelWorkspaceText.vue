@@ -3,10 +3,10 @@
     <template #extra>
       <div class="flex items-center gap-2">
         <el-button :disabled="!canUndo" size="small" @click="handleUndo">
-          <el-icon class="mr-1"><Undo /></el-icon> 撤销
+          <el-icon class="mr-1"><RefreshLeft /></el-icon> 撤销
         </el-button>
         <el-button :disabled="!canRedo" size="small" @click="handleRedo">
-          <el-icon class="mr-1"><Redo /></el-icon> 重做
+          <el-icon class="mr-1"><RefreshRight /></el-icon> 重做
         </el-button>
         <el-button @click="aiModal.open()" size="small">
           <el-icon class="mr-1"><MagicStick /></el-icon> AI 预标注
@@ -200,7 +200,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  Undo, Redo, MagicStick, DocumentChecked, Delete, Check, Close,
+  RefreshLeft, RefreshRight, MagicStick, DocumentChecked, Delete, Check, Close,
 } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { useModal } from '@/hooks/useModal'

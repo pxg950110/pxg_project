@@ -101,7 +101,7 @@
                     <span v-if="!canUpdate && !canDelete">-</span>
                   </div>
                 </template>
-                <template v-else>{{ row[col.dataIndex ?? col.key] ?? '-' }}</template>
+                <template v-else>{{ row[col.dataIndex ?? col.key ?? ''] ?? '-' }}</template>
               </template>
             </el-table-column>
           </el-table>

@@ -17,7 +17,7 @@
       <el-table-column label="指标" prop="metric_name" width="140" />
       <el-table-column label="启用" width="90">
         <template #default="{ row }">
-          <el-switch :model-value="row.enabled" @change="(v) => handleToggle(row, Boolean(v))" />
+          <el-switch :model-value="row.enabled" @change="(v: string | number | boolean) => handleToggle(row, Boolean(v))" />
         </template>
       </el-table-column>
       <el-table-column label="操作" width="140">

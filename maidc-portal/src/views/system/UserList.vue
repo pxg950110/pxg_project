@@ -167,7 +167,7 @@
       <el-form-item label="状态">
         <el-switch
           :model-value="editForm.status === '启用'"
-          @change="(v) => editForm.status = v ? '启用' : '禁用'"
+          @change="(v: string | number | boolean) => editForm.status = v ? '启用' : '禁用'"
         />
       </el-form-item>
     </el-form>

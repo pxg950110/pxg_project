@@ -299,11 +299,12 @@ const formRules: Record<string, FormItemRule[]> = {
   engineType: [{ required: true, message: '请选择引擎类型' }],
   syncMode: [{ required: true, message: '请选择同步模式' }],
   cronExpression: [{
-    validator: (_rule: FormItemRule, value: string) => {
+    validator: (_rule, value: string, callback) => {
       if (formState.syncMode === 'INCREMENTAL' && !value) {
-        return Promise.reject('增量模式下请填写Cron表达式')
+        callback(new Error('增量模式下请填写Cron表达式'))
+      } else {
+        callback()
       }
-      return Promise.resolve()
     },
   }],
 }

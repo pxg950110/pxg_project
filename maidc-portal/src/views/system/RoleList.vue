@@ -88,7 +88,7 @@
                   v-for="item in permissionGroups.dashboard"
                   :key="item.value"
                   :model-value="selectedPermissions.includes(item.value)"
-                  @change="(v) => togglePermission(item.value, Boolean(v))"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
                 </el-checkbox>
@@ -102,7 +102,7 @@
                   v-for="item in permissionGroups.model"
                   :key="item.value"
                   :model-value="selectedPermissions.includes(item.value)"
-                  @change="(v) => togglePermission(item.value, Boolean(v))"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
                 </el-checkbox>
@@ -118,7 +118,7 @@
                   v-for="item in permissionGroups.data"
                   :key="item.value"
                   :model-value="selectedPermissions.includes(item.value)"
-                  @change="(v) => togglePermission(item.value, Boolean(v))"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
                 </el-checkbox>
@@ -132,7 +132,7 @@
                   v-for="item in permissionGroups.annotation"
                   :key="item.value"
                   :model-value="selectedPermissions.includes(item.value)"
-                  @change="(v) => togglePermission(item.value, Boolean(v))"
+                  @change="(v: string | number | boolean) => togglePermission(item.value, Boolean(v))"
                 >
                   {{ item.label }}
                 </el-checkbox>
