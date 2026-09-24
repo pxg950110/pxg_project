@@ -18,7 +18,7 @@
 
 将 `maidc-portal/` 全部视图从 Ant Design Vue 迁移至 Element Plus + Tailwind CSS，统一医疗科技风设计系统，并彻底卸载 AntD 依赖。
 
-**总体规模**: 23 个提交，189 个文件变更，+24,885 / −13,286 行。
+**总体规模**: 24 个提交，189 个文件变更，+24,885 / −13,286 行。
 
 ## 提交清单（按阶段）
 
@@ -59,6 +59,7 @@
 | 提交 | 说明 |
 |------|------|
 | `0a8f8df` | 彻底卸载 ant-design-vue，生产构建验收通过 |
+| `d045cc0` | 运行时 QA 修复：RadarChart 注册、radio/checkbox label→value、死链路由、空状态、单根模板 |
 
 ## 技术要点
 
@@ -83,9 +84,34 @@
 - [x] 全量 antd 残留扫描（`ant-design-vue` / `@ant-design` / `<a-[a-z]`）: **0 匹配**
 - [x] `package-lock.json` 重新生成，antd 引用数为 0
 
+## 运行时 QA 走查（2026-09-24）
+
+以 `VITE_MOCK_AUTH=true npm run dev`（守卫自动注入管理员令牌，无后端）+ chrome-devtools 完成全部 **45 条路由** 的运行时走查，另对 6 个重点页面做了逐页硬导航视觉核对（工作台、专病详情、患者360、ETL 设计器、随访工作台、主数据标准）。
+
+**修复的真实问题（提交 `d045cc0`，14 文件）**:
+
+| 问题 | 修复 |
+|------|------|
+| MetricChart 未注册 `RadarChart`，仪表盘雷达图空白 | 补入 echarts `use([...])` |
+| 37 处 el-radio/el-checkbox 仍用已废弃的 `label` 传值 | 迁移为 `value` prop |
+| DataDashboard「查看执行历史」指向不存在的 `/data/etl/executions` | 改为 `/etl/executions` |
+| PatientDetail 接口失败时页面空白、无任何反馈 | 增加 `el-empty` 空状态 |
+| UserList / EtlPipelineConfig 模板多根节点，路由 Transition 警告 | 弹窗移入默认插槽，单根化 |
+
+**判定为良性、不修复的控制台输出**:
+
+- 硬导航时 `[Vue Router warn]: No match found` — 守卫 `next({...to, replace:true})` 双跳转的已知行为（重构前即存在）。
+- 隐藏标签页内 `[ECharts] Can't get DOM width or height` — autoresize 在容器显示后会自适应。
+- `500` 资源加载失败 — 后端服务（8081/8082/8083）本就未启动，vite 代理预期行为。
+- 质量结果页一次 unhandled 500 rejection — axios 拦截器已弹 `ElMessage.error`，reject 给调用方的正常路径。
+
+**两个非缺陷排除**: 走查中 `/etl/pipelines/1` 出现的 "Cannot convert object to primitive value" 在硬导航下不可复现（vue-flow 在 550ms 快速巡检时的卸载竞态，仅开发态）；首日走查三轮 "Execution context was destroyed" 为 Vite 依赖预构建发现新 EP 样式导入后整页 reload 所致（`node_modules/.vite` 预热后收敛），非页面缺陷。
+
+**走查说明**: `src/views/model/`（9 文件）与 `src/views/label/`（4 文件）按 2026-09-11 专病库聚焦的菜单重组**有意未挂路由**，类型检查已通过，保留备用。
+
 ## 待处理事项
 
-- [ ] 代码评审（23 个提交可按模块分批评审）
+- [ ] 代码评审（24 个提交可按模块分批评审）
 - [ ] 合并到 `master`
 - [ ] 部署到测试环境验证（`maidc-portal/Dockerfile` + `nginx.conf` 已就绪，待纳入部署流程）
 - [ ] `echarts` vendor chunk 1.03MB 偏大，可后续按需引入图表组件进一步瘦身
