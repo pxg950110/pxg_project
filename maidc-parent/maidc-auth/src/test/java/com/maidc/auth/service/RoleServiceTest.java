@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -112,5 +113,21 @@ class RoleServiceTest {
 
         verify(permissionCacheService, never()).evictByRoleAfterCommit(any());
         verify(rolePermissionRepository, never()).deleteByRoleId(1L);
+    }
+
+    // ==================== createPermission：s_permission.org_id NOT NULL，必须落系统级 orgId ====================
+
+    @Test
+    void createPermission_setsSystemOrgIdBeforeSave() {
+        when(permissionRepository.save(any(com.maidc.auth.entity.PermissionEntity.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        roleService.createPermission("患者视图", "cdr:patient-view", "API", null);
+
+        org.mockito.ArgumentCaptor<com.maidc.auth.entity.PermissionEntity> captor =
+                org.mockito.ArgumentCaptor.forClass(com.maidc.auth.entity.PermissionEntity.class);
+        verify(permissionRepository).save(captor.capture());
+        assertEquals(0L, captor.getValue().getOrgId(),
+                "org_id 为 DDL NOT NULL 列，未设置将导致插入 500");
     }
 }

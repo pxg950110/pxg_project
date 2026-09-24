@@ -23,10 +23,14 @@ public class PatientCreateDTO {
     @Size(max = 64, message = "患者号最长64个字符")
     private String patientNo;
 
+    /** DDL NOT NULL（CHECK M/F/O），缺失走 400 校验而非库约束 500 */
+    @NotBlank(message = "性别不能为空")
     private String gender;
 
     private LocalDate birthDate;
 
+    /** DDL NOT NULL，缺失走 400 校验而非库约束 500 */
+    @NotBlank(message = "身份证号不能为空")
     @Size(max = 32, message = "身份证号最长32个字符")
     private String idCardNo;
 

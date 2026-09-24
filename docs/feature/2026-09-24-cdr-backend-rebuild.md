@@ -34,9 +34,23 @@
 
 10-cdr-patch 18 张 MIMIC 表的后端覆盖（前端无对应页面）；r_etl_step 种子数据；ddl-auto 改 validate（需先全量审计漂移，风险大）；DiseaseAiService 接真 AI。
 
+## 最终评审与修复轮（同日）
+
+fresh reviewer 整体评审结论 FAIL（2 Critical + 4 Important），已完成单一修复轮（每项 RED→GREEN）：
+
+1. **[Critical] 统计 join 扇出**：data-growth-trend 月轴同时 LEFT JOIN 四张一对多表，月内跨表相乘导致各系列计数为交叉积 → 改 `COUNT(DISTINCT <pk>)`（DataStatisticsServiceTest 锚定 SQL 语义）
+2. **[Critical] createPermission 缺 orgId**：`s_permission.org_id` NOT NULL，插入必 500 → 落系统级 `orgId=0L`（RoleServiceTest）
+3. **[Important] 患者列表/详情 PII 明文**：PatientService 出口 idCardNo/phone 未脱敏 → 三个 VO 出口统一脱敏，对齐就诊流（PatientServiceTest 2）
+4. **[Important] SmartSearch 误弃 fts 列**：Task 1 前提"DDL 无 fts 列"有误——`14-smart-search-fts.sql` 已建 zhparser 生成列+GIN；内联 to_tsvector('simple') 丢中文分词且全表扫 → 13 域全部切回存储 `fts` 列 + `plainto_tsquery('zh')`；RDR 标题列同步 coalesce DDL 词汇（project_name/dataset_name）
+5. **[Important] 文档虚报测试交付**：计划 Task 8 曾称统计/refresh 单测"已随 Task 3/4 交付"不实 → 已更正并补齐测试（DataStatisticsServiceTest 3、RefreshContractNamingTest 2）
+6. **[Important] 患者创建缺 400 校验**：gender/id_card_no 为 NOT NULL 列但无 @NotBlank → 补注解（CdrController 已有 @Valid），缺失返回 400 而非库约束 500（PatientCreateDTOValidationTest 2）
+
+评审 Minor 项（延后不修）：实体长度与 DDL 漂移（encounter_no 64 vs 32 等 7 处）、RDR 实体 name 幽灵列、标注 items page_size 绑定（前端发 page_size 后端只绑 pageSize）、全 CONSTANT 映射产生空 SELECT、RoleController 裸 Map 强转、标注控制器双副本同 FQCN 依赖类路径顺序、Embulk YAML query 引号未转义、RepresentationClassServiceTest 仅验证委托。
+
 ## 验证
 
 - `mvn -q compile` 全模块 exit 0
 - `mvn test`（maidc-data, maidc-model, maidc-auth）：206/206 通过
-- 新增单测：RepresentationClassServiceTest 1、EtlConfigGeneratorTest 8、EtlExecutionServiceTest 5（均 RED→GREEN）
+- 新增单测：RepresentationClassServiceTest 1、EtlConfigGeneratorTest 8、EtlExecutionServiceTest 5、DataStatisticsServiceTest 3、RefreshContractNamingTest 2、PatientServiceTest 脱敏 2、PatientCreateDTOValidationTest 2、RoleServiceTest orgId 1（合计 24，均 RED→GREEN 或契约锚定）
+- `mvn test`（maidc-data, maidc-auth）修复轮回归：全绿
 - 部署验证入口：`http://localhost:3000`（docker-compose-full）

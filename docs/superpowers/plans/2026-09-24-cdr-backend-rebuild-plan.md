@@ -64,7 +64,7 @@
 
 ### Task 8: 验证与收尾 ✅ 2026-09-24
 - [x] `mvn -q compile` 全模块通过（exit 0）
-- [x] 相关模块 `mvn test`：maidc-data 134/134、maidc-model 36/36、maidc-auth 36/36 全绿；新增最小单测见 Task 6/7（统计 SQL 与 refresh 命名的单测已随 Task 3/4 交付）
+- [x] 相关模块 `mvn test`：maidc-data 134/134、maidc-model 36/36、maidc-auth 36/36 全绿；统计 SQL 与 refresh 命名的单测于最终评审修复轮补齐（此前本行声称"已随 Task 3/4 交付"有误，已更正）——DataStatisticsServiceTest 3、RefreshContractNamingTest 2、PatientServiceTest 脱敏 2、PatientCreateDTOValidationTest 2、RoleServiceTest orgId 1；transform 生成单测见 Task 7（EtlConfigGeneratorTest 8 + EtlExecutionServiceTest 5）
 - [x] 提交：按任务分批 conventional commit（只 add 本次触碰文件；23-masterdata-standard.sql / EtlProperties / EmbulkProcessRunner 等整合期既有改动已在提交信息注明）
 - [x] 前端 `patientEncounter.ts` 路径修改已随 Task 1 提交（portal 侧 ae0a37b）
 - [x] 更新本计划勾选状态；新增 `docs/feature/2026-09-24-cdr-backend-rebuild.md` 功能记录

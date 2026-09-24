@@ -152,6 +152,8 @@ public class RoleService {
         p.setResourceType(type != null ? type : "API");
         applyDerivedParts(p, code);
         p.setParentId(parentId);
+        // s_permission.org_id NOT NULL：权限为系统级资源，落 0（与 DDL 种子、createRole 同约定）
+        p.setOrgId(0L);
         p = permissionRepository.save(p);
         return toTreeVO(p);
     }

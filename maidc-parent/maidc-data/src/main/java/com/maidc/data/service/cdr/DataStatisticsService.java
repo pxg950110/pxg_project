@@ -30,10 +30,10 @@ public class DataStatisticsService {
         int n = Math.min(Math.max(months, 1), 24);
         String sql = """
                 SELECT to_char(m, 'YYYY-MM') AS month,
-                       COUNT(lt.id)  AS clinical,
-                       COUNT(cn.id)  AS research,
-                       COUNT(ie.id)  AS imaging,
-                       COUNT(pa.id)  AS pathology
+                       COUNT(DISTINCT lt.id)  AS clinical,
+                       COUNT(DISTINCT cn.id)  AS research,
+                       COUNT(DISTINCT ie.id)  AS imaging,
+                       COUNT(DISTINCT pa.id)  AS pathology
                 FROM generate_series(
                              date_trunc('month', CURRENT_DATE) - make_interval(months => ? - 1),
                              date_trunc('month', CURRENT_DATE),
