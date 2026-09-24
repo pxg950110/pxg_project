@@ -11,7 +11,11 @@ public class DataAccessQueryDTO {
 
     private String dataDomain;
 
+    private String accessType;
+
     private Long patientId;
+
+    private String traceId;
 
     private LocalDateTime startTime;
 

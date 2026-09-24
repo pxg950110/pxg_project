@@ -4,7 +4,7 @@ import com.maidc.common.core.result.R;
 import com.maidc.data.entity.InstitutionEntity;
 import com.maidc.data.service.InstitutionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,13 +16,13 @@ public class InstitutionController {
 
     private final InstitutionService service;
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping
     public R<List<InstitutionEntity>> list() {
         return R.ok(service.list());
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping
     public R<InstitutionEntity> create(@RequestBody InstitutionEntity entity) {
         if (entity.getInstCode() == null || entity.getInstCode().isBlank()) {
@@ -34,7 +34,7 @@ public class InstitutionController {
         return R.ok(service.create(entity));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:update")
     @PutMapping("/{id}")
     public R<InstitutionEntity> update(@PathVariable Long id, @RequestBody InstitutionEntity entity) {
         return R.ok(service.update(id, entity));

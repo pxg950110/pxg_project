@@ -1,6 +1,7 @@
 """Celery application configuration"""
 from celery import Celery
 from app.core.config import settings
+import app.core.celery_trace  # noqa: F401  # 注册 task_prerun/postrun 的 traceId 继承信号
 
 celery_app = Celery(
     "maidc-aiworker",

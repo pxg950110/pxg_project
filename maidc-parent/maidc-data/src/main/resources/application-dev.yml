@@ -23,21 +23,25 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   data:
     redis:
-      host: localhost
+      host: ${REDIS_HOST:localhost}
       port: 6379
-      password: maidc_redis
+      password: maidc123
   rabbitmq:
-    host: localhost
+    host: ${RABBITMQ_HOST:localhost}
     port: 5672
     username: maidc
     password: maidc123
+    listener:
+      simple:
+        # 队列缺失时监听容器持续重试而非启动失败（队列由各服务 RabbitAdmin 声明，存在时序窗口）
+        missing-queues-fatal: false
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_ADDR:localhost:8848}
         username: nacos
         password: nacos
       config:
@@ -59,3 +63,8 @@ maidc:
 logging:
   level:
     com.maidc: INFO
+
+# 专病知识库 AI 编排（maidc-aiworker 服务地址；LLM 在 ai-worker 侧配置）
+diseasekb:
+  ai-worker:
+    base-url: http://localhost:8090

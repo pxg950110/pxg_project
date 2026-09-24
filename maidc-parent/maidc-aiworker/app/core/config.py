@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "maidc"
     rabbitmq_password: str = "maidc123"
-    rabbitmq_vhost: str = "maidc"
+    rabbitmq_vhost: str = "%2F"  # URL 编码；"/" 是 broker 实际存在的默认 vhost（未创建过 maidc vhost）
 
     # MinIO
     minio_endpoint: str = "localhost:9000"
@@ -27,6 +27,23 @@ class Settings(BaseSettings):
 
     # Worker
     worker_concurrency: int = 4
+
+    # LLM（OpenAI 兼容协议；未配置时 /llm/* 返回 503，调用方降级）
+    llm_base_url: str = ""          # 如 https://api.openai.com/v1 或本地 vLLM/Ollama 地址
+    llm_api_key: str = ""
+    llm_model: str = "gpt-4o-mini"
+    llm_timeout_seconds: int = 120
+    embedding_model: str = "text-embedding-3-large"
+    embedding_dim: int = 1024       # 必须与 c_disease_kb_item_chunk.embedding 维度一致
+
+    # 专病知识库 RAG 检索（pgvector，只读）
+    kb_pg_dsn: str = ""             # 如 postgresql://maidc:maidc123@localhost:5432/maidc
+    kb_rag_top_k: int = 6
+    kb_chunk_chars: int = 800       # 与 Java 侧分块保持一致
+
+    @property
+    def llm_enabled(self) -> bool:
+        return bool(self.llm_base_url and self.llm_api_key)
 
     @property
     def rabbitmq_url(self) -> str:

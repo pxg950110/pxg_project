@@ -13,8 +13,8 @@ CREATE TABLE audit.a_audit_log (
     user_id             BIGINT,
     username            VARCHAR(64),
     service_name        VARCHAR(64)     NOT NULL,
-    operation           VARCHAR(32)     NOT NULL
-                                            CHECK (operation IN ('CREATE','READ','UPDATE','DELETE','LOGIN','LOGOUT')),
+    -- operation 为 @OperLog 注解的自由文本（如 login/refresh/upload），不设枚举 CHECK
+    operation           VARCHAR(32)     NOT NULL,
     resource_type       VARCHAR(32)     NOT NULL,
     resource_id         VARCHAR(64),
     resource_name       VARCHAR(128),

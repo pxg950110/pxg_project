@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  P1 可选模板（默认不启用）：ELK 日志采集 logback-spring.xml
+
+  启用步骤（未来接入 ELK 时执行，不属于本次变更范围）：
+  1. 各服务 pom 增加 net.logstash.logback:logstash-logback-encoder 依赖；
+  2. 将本文件内容合并/复制为该服务 src/main/resources/logback-spring.xml
+     （Spring Boot 自动识别 <springProfile>，仅当激活 logstash profile 时生效）；
+  3. 启动参数激活：--spring.profiles.active=dev,logstash
+     （destination 指向 monitoring 栈的 logstash：docker-compose-monitoring.yml 暴露 5044）；
+  4. 字段映射已对齐 monitoring/elk/logstash.conf：traceId（MDC 自动携带）→ trace_id，
+     timestamp（ISO8601）→ @timestamp，服务名经 customFields.service 注入。
+-->
+<configuration>
+    <springProfile name="logstash">
+        <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+            <destination>${LOGSTASH_DEST:-localhost:5044}</destination>
+            <reconnectionDelay>10 second</reconnectionDelay>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <timestampFieldName>timestamp</timestampFieldName>
+                <customFields>{"service":"${spring.application.name:-unknown}"}</customFields>
+            </encoder>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>INFO</level>
+            </filter>
+        </appender>
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [traceId:%X{traceId}] [userId:%X{userId}] [orgId:%X{orgId}] %-5level %logger{36} - %msg%n</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="LOGSTASH"/>
+        </root>
+    </springProfile>
+</configuration>

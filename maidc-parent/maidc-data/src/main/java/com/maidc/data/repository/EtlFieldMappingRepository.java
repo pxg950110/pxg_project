@@ -9,5 +9,7 @@ public interface EtlFieldMappingRepository extends JpaRepository<EtlFieldMapping
 
     List<EtlFieldMappingEntity> findByStepIdAndIsDeletedFalseOrderBySortOrder(Long stepId);
 
+    List<EtlFieldMappingEntity> findByStepIdInAndIsDeletedFalseOrderByStepIdAscSortOrderAsc(List<Long> stepIds);
+
     void deleteByStepId(Long stepId);
 }

@@ -43,8 +43,50 @@
 
 ## 待处理事项
 
-- [ ] AI 切片：ai-worker /llm/summary /rag/chat /embedding + DiseaseKnowledgeAiService（SSE 透传契约已定）
 - [ ] 代码提交（git-merge）与 PR
+
+---
+
+# AI 切片实现记录（同分支 feature/disease-kb）
+
+## 实现内容
+
+**ai-worker（maidc-aiworker，Python FastAPI :8090）**
+
+| 文件 | 说明 |
+|------|------|
+| app/api/llm.py（新增） | 三端点：POST /llm/summary（按条目类型差异化抽取提示词，JSON 模式，非 JSON 输出降级为纯摘要）、POST /embedding（批量向量化）、POST /rag/chat（pgvector 召回 → LLM 流式 → SSE：delta/citations/done/error 帧；无命中明确回答"未找到依据"） |
+| app/services/llm_client.py（新增） | OpenAI 兼容客户端（httpx）：chat / chat_stream / embed；未配置即 LlmNotConfiguredError |
+| app/services/kb_store.py（新增） | RAG 检索：余弦相似度 TopK（psycopg + asyncio.to_thread），仅召回已发布条目分块 |
+| app/core/config.py（修改） | MAIDC_LLM_*（base_url/api_key/model/embedding_model/embedding_dim=1024）、MAIDC_KB_PG_DSN、llm_enabled 探测 |
+| app/main.py（修改） | 注册 llm 路由；启动日志输出 LLM/检索配置状态 |
+| pyproject.toml（修改） | 新增 psycopg[binary] ^3.1（无 lock 文件，构建时现解析） |
+
+**Java（maidc-data）**
+
+| 文件 | 说明 |
+|------|------|
+| service/DiseaseKnowledgeAiService.java（新增） | ai-worker 编排：summarizeBestEffort（摘要回写 DONE/FAILED + 分块向量化入库——800 字/100 重叠，/embedding 后 INSERT ?::vector，派生数据硬删重建）；streamAnswer（SSE 透传 AnswerCollector：delta 累积、citations 透传、done 落 ASSISTANT 消息、error/连接失败只发错误帧不落库） |
+| service/DiseaseKnowledgeService.java（修改） | 重新接线：创建/内容变更/发布/重算触发 summarizeBestEffort；ask() 落 USER 消息+首问生成标题后委托 streamAnswer（移除降级抛错） |
+| controller/DiseaseKnowledgeController.java（修改） | /qa/ask 注释更新为 SSE 流式语义 |
+| resources/application-dev.yml（修改） | diseasekb.ai-worker.base-url=http://localhost:8090 |
+| test/DiseaseKnowledgeAiServiceTest.java（新增） | 6 测试：JDK HttpServer 桩模拟 ai-worker——摘要回写、服务宕机标 FAILED、分块入库、SSE 收集落库（含 citations）、error 帧不落库、连接拒绝不落库 |
+| test/DiseaseKnowledgeServiceTest.java（修改） | 21 测试：ask 双向验证（消息落库/标题截断/委托 SSE）、发布/编辑触发 AI 编排 |
+
+**部署配置**：docker-compose-full.yml aiworker 服务增加 MAIDC_LLM_* 环境变量（从宿主机 env 注入，留空降级）+ MAIDC_KB_PG_DSN + postgres 启动依赖。
+
+## 验证结果
+
+- [x] DiseaseKnowledgeAiServiceTest 6/6、DiseaseKnowledgeServiceTest 21/21
+- [x] maidc-data 全量回归 82/82（较上切片 +7）
+- [x] Python 语法检查通过（py_compile）
+- [ ] 真实 LLM 联调（需配置 MAIDC_LLM_BASE_URL/KEY + pgvector 扩展安装）
+
+## 运行前提
+
+1. PostgreSQL 需启用 pgvector 扩展（`CREATE EXTENSION vector;`，建议用 docker/postgres-zhparser 基础上加 pgvector 镜像）
+2. ai-worker 配置 OpenAI 兼容 LLM（MAIDC_LLM_BASE_URL/MAIDC_LLM_API_KEY；embedding 模型维度须为 1024 或同步调整表定义与 MAIDC_EMBEDDING_DIM）
+3. LLM 未配置时：摘要标 FAILED、问答流内 error 帧、内容管理不受影响（降级设计）
 
 ---
 

@@ -11,6 +11,8 @@ public class EventQueryDTO {
 
     private String eventLevel;
 
+    private String traceId;
+
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;

@@ -6,7 +6,8 @@ spring:
     redis:
       host: ${REDIS_HOST:maidc-redis}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:maidc_redis}
+      # 默认密码须与 docker-compose 中 redis 的 --requirepass (maidc123) 一致
+      password: ${REDIS_PASSWORD:maidc123}
       timeout: 5000ms
       lettuce:
         pool:
@@ -20,12 +21,14 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:maidc}
     password: ${RABBITMQ_PASSWORD:maidc123}
-    virtual-host: ${RABBITMQ_VHOST:maidc}
+    # 默认 vhost 必须为 "/"（RabbitMQ 实际队列所在 vhost，compose 未创建 maidc vhost）
+    virtual-host: ${RABBITMQ_VHOST:/}
     publisher-confirm-type: correlated
     publisher-returns: true
     listener:
       simple:
-        acknowledge-mode: manual
+        # 消费端未实现手动 basicAck，必须保持 auto（manual 会导致消息永不确认、消费者挂起）
+        acknowledge-mode: auto
         retry:
           enabled: true
           max-attempts: 3

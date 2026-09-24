@@ -5,6 +5,7 @@ import com.maidc.common.core.exception.BusinessException;
 import com.maidc.common.minio.service.MinioService;
 import com.maidc.data.entity.DiseaseCohortEntity;
 import com.maidc.data.entity.DiseaseKbItemEntity;
+import com.maidc.data.entity.DiseaseKbQaMessageEntity;
 import com.maidc.data.entity.DiseaseKbQaSessionEntity;
 import com.maidc.data.entity.DiseaseKbSpaceEntity;
 import com.maidc.data.repository.DiseaseCohortRepository;
@@ -14,6 +15,7 @@ import com.maidc.data.repository.DiseaseKbQaSessionRepository;
 import com.maidc.data.repository.DiseaseKbSpaceRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -54,6 +57,10 @@ class DiseaseKnowledgeServiceTest {
     private NamedParameterJdbcTemplate jdbcTemplate;
     @Mock
     private MinioService minioService;
+    @Mock
+    private DiseaseKnowledgeAiService aiService;
+    @Mock
+    private com.maidc.data.service.DiseaseCohortEventService cohortEventService;
 
     @InjectMocks
     private DiseaseKnowledgeService service;
@@ -143,7 +150,7 @@ class DiseaseKnowledgeServiceTest {
     }
 
     @Test
-    void createItem_ok_draftAndPending() {
+    void createItem_ok_draftAndPending_aiTriggered() {
         when(spaceRepository.findById(5L)).thenReturn(Optional.of(space("s", null)));
         when(itemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         DiseaseKbItemEntity item = item("中国2型糖尿病防治指南", "GUIDELINE");
@@ -153,10 +160,11 @@ class DiseaseKnowledgeServiceTest {
         assertEquals("DRAFT", saved.getStatus());
         assertEquals("PENDING", saved.getAiStatus());
         assertEquals(5L, saved.getSpaceId());
+        verify(aiService).summarizeBestEffort(null); // mock save 未生成 id
     }
 
     @Test
-    void publishItem_publish_setsPublishedAndAiPending() {
+    void publishItem_publish_setsPublishedAndTriggersAi() {
         DiseaseKbItemEntity item = item("指南A", "GUIDELINE");
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(itemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -164,7 +172,7 @@ class DiseaseKnowledgeServiceTest {
         DiseaseKbItemEntity saved = service.publishItem(1L, "PUBLISH");
 
         assertEquals("PUBLISHED", saved.getStatus());
-        assertEquals("PENDING", saved.getAiStatus());
+        verify(aiService).summarizeBestEffort(1L);
     }
 
     @Test
@@ -175,6 +183,7 @@ class DiseaseKnowledgeServiceTest {
         when(itemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         assertEquals("ARCHIVED", service.publishItem(1L, "ARCHIVE").getStatus());
+        verify(aiService, never()).summarizeBestEffort(anyLong());
     }
 
     @Test
@@ -186,7 +195,7 @@ class DiseaseKnowledgeServiceTest {
     }
 
     @Test
-    void updateItem_contentChanged_resetsAiFields() {
+    void updateItem_contentChanged_resetsAiFieldsAndRetriggers() {
         DiseaseKbItemEntity existing = item("旧标题", "GUIDELINE");
         existing.setAiStatus("DONE");
         existing.setAiSummary("旧摘要");
@@ -199,6 +208,7 @@ class DiseaseKnowledgeServiceTest {
         assertEquals("新标题", saved.getTitle());
         assertEquals("PENDING", saved.getAiStatus());
         assertNull(saved.getAiSummary());
+        verify(aiService).summarizeBestEffort(null);
     }
 
     @Test
@@ -216,6 +226,7 @@ class DiseaseKnowledgeServiceTest {
         DiseaseKbItemEntity saved = service.updateItem(1L, input);
 
         assertEquals("DONE", saved.getAiStatus());
+        verify(aiService, never()).summarizeBestEffort(anyLong());
     }
 
     // ==================== 附件 ====================
@@ -266,17 +277,43 @@ class DiseaseKnowledgeServiceTest {
     }
 
     @Test
-    void ask_aiSliceNotWired_throws5034_degraded() {
+    void ask_savesUserMessage_setsTitle_delegatesSse() {
         DiseaseKbQaSessionEntity session = new DiseaseKbQaSessionEntity();
         session.setSpaceId(5L);
+        DiseaseKbSpaceEntity sp = space("s", null);
+        sp.setId(5L);
         when(qaSessionRepository.findById(2L)).thenReturn(Optional.of(session));
-        when(spaceRepository.findById(5L)).thenReturn(Optional.of(space("s", null)));
+        when(spaceRepository.findById(5L)).thenReturn(Optional.of(sp));
+        when(qaMessageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        SseEmitter emitter = mock(SseEmitter.class);
+        when(aiService.streamAnswer(5L, 2L, "一线用药原则是什么？")).thenReturn(emitter);
+        ArgumentCaptor<DiseaseKbQaMessageEntity> msgCaptor = ArgumentCaptor.forClass(DiseaseKbQaMessageEntity.class);
 
-        BusinessException ex = assertThrows(BusinessException.class,
-                () -> service.ask(2L, "一线用药原则是什么？"));
-        assertEquals(ErrorCode.KB_AI_UNAVAILABLE.getCode(), ex.getCode());
-        // 降级语义：不落任何消息
-        verifyNoInteractions(qaMessageRepository);
+        SseEmitter result = service.ask(2L, "一线用药原则是什么？");
+
+        assertSame(emitter, result);
+        verify(qaMessageRepository).save(msgCaptor.capture());
+        assertEquals("USER", msgCaptor.getValue().getRole());
+        assertEquals("一线用药原则是什么？", msgCaptor.getValue().getContent());
+        assertEquals("一线用药原则是什么？", session.getTitle());
+        verify(qaSessionRepository).save(session);
+    }
+
+    @Test
+    void ask_longQuestion_truncatesTitle() {
+        DiseaseKbQaSessionEntity session = new DiseaseKbQaSessionEntity();
+        session.setSpaceId(5L);
+        DiseaseKbSpaceEntity sp = space("s", null);
+        sp.setId(5L);
+        when(qaSessionRepository.findById(2L)).thenReturn(Optional.of(session));
+        when(spaceRepository.findById(5L)).thenReturn(Optional.of(sp));
+        when(qaMessageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(aiService.streamAnswer(eq(5L), eq(2L), anyString())).thenReturn(mock(SseEmitter.class));
+        String longQuestion = "很".repeat(80);
+
+        service.ask(2L, longQuestion);
+
+        assertEquals(50, session.getTitle().length());
     }
 
     @Test

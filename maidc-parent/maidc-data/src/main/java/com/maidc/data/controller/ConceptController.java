@@ -5,7 +5,7 @@ import com.maidc.data.entity.ConceptEntity;
 import com.maidc.data.service.ConceptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,7 +15,7 @@ public class ConceptController {
 
     private final ConceptService service;
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping
     public R<Page<ConceptEntity>> list(
             @RequestParam(required = false) Long codeSystemId,
@@ -26,13 +26,13 @@ public class ConceptController {
         return R.ok(service.list(codeSystemId, domain, keyword, page, pageSize));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/{id}")
     public R<ConceptEntity> get(@PathVariable Long id) {
         return R.ok(service.getById(id));
     }
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping("/search")
     public R<Page<ConceptEntity>> search(
             @RequestParam String keyword,
@@ -42,7 +42,7 @@ public class ConceptController {
         return R.ok(service.search(keyword, codeSystemId, page, pageSize));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping
     public R<ConceptEntity> create(@RequestBody ConceptEntity entity) {
         if (entity.getConceptCode() == null || entity.getConceptCode().isBlank()) {
@@ -57,13 +57,13 @@ public class ConceptController {
         return R.ok(service.create(entity));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:update")
     @PutMapping("/{id}")
     public R<ConceptEntity> update(@PathVariable Long id, @RequestBody ConceptEntity entity) {
         return R.ok(service.update(id, entity));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         service.delete(id);

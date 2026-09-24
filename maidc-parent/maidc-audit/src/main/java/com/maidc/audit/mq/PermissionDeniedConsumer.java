@@ -56,6 +56,7 @@ public class PermissionDeniedConsumer extends BaseMessageConsumer {
         entity.setEventDetail(String.format("用户[%s]尝试访问无权限资源 permission=%s uri=%s",
                 userId, permissionCode, uri));
         entity.setEventData(toJson(message));
+        entity.setTraceId(message.getTraceId());
         entity.setResolved(false);
         Long orgId = extractLong(payload, "orgId");
         entity.setOrgId(orgId != null ? orgId : DEFAULT_ORG_ID);

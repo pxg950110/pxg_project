@@ -16,7 +16,8 @@ public class DataAccessLogSpecification {
 
     public static Specification<DataAccessLogEntity> buildSearchSpec(Long userId, String dataDomain,
                                                                       Long patientId, LocalDateTime startTime,
-                                                                      LocalDateTime endTime) {
+                                                                      LocalDateTime endTime, String traceId,
+                                                                      String accessType) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -26,8 +27,14 @@ public class DataAccessLogSpecification {
             if (dataDomain != null && !dataDomain.isBlank()) {
                 predicates.add(cb.equal(root.get("dataDomain"), dataDomain));
             }
+            if (accessType != null && !accessType.isBlank()) {
+                predicates.add(cb.equal(root.get("accessType"), accessType));
+            }
             if (patientId != null) {
                 predicates.add(cb.equal(root.get("patientId"), patientId));
+            }
+            if (traceId != null && !traceId.isBlank()) {
+                predicates.add(cb.equal(root.get("traceId"), traceId));
             }
             if (startTime != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startTime));

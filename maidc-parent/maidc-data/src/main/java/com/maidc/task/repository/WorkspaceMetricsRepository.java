@@ -28,6 +28,28 @@ public class WorkspaceMetricsRepository {
         return safeQuery("SELECT COUNT(*) FROM model.m_approval WHERE org_id = :orgId AND status = 'PENDING' AND is_deleted = false", orgId);
     }
 
+    // ==================== GOVERNANCE / DATA 组专属指标（跨 schema 直查，失败降级 0） ====================
+
+    public long countUsersByOrgId(long orgId) {
+        return safeQuery("SELECT COUNT(*) FROM system.s_user WHERE org_id = :orgId AND is_deleted = false", orgId);
+    }
+
+    public long countTodayAuditEventsByOrgId(long orgId) {
+        return safeQuery("SELECT COUNT(*) FROM audit.a_audit_log WHERE org_id = :orgId AND created_at >= CURRENT_DATE", orgId);
+    }
+
+    public long countTodayPermissionDeniedByOrgId(long orgId) {
+        return safeQuery("SELECT COUNT(*) FROM audit.a_system_event WHERE org_id = :orgId AND event_type = 'PERMISSION_DENIED' AND created_at >= CURRENT_DATE", orgId);
+    }
+
+    public long countActiveAlertsByOrgId(long orgId) {
+        return safeQuery("SELECT COUNT(*) FROM model.m_alert_record WHERE org_id = :orgId AND status IN ('PENDING','ACKNOWLEDGED')", orgId);
+    }
+
+    public long countPendingQuarantineByOrgId(long orgId) {
+        return safeQuery("SELECT COUNT(*) FROM cdr.cdr_quarantine_data WHERE org_id = :orgId AND status = 'PENDING' AND is_deleted = false", orgId);
+    }
+
     @SuppressWarnings("unchecked")
     public List<Object[]> findRecentMessagesByUserId(Long userId, int limit) {
         try {

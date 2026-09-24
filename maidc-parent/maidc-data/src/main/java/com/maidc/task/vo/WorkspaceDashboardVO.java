@@ -15,6 +15,8 @@ public class WorkspaceDashboardVO {
     private TodoStats todoStats;
     private List<NotificationItem> notifications;
     private List<QuickAction> quickActions;
+    /** 专病队列动态（FR6）：仅 CLINICAL/RESEARCH 组返回，其余组为 null */
+    private List<CohortDigestItem> cohortDigest;
 
     @Data
     @Builder
@@ -24,6 +26,10 @@ public class WorkspaceDashboardVO {
         private String role;
         /** CLINICAL / RESEARCH / DATA / GOVERNANCE */
         private String roleGroup;
+        /** 机构名（按 orgId 查 m_institution，查不到为 null，前端不展示） */
+        private String orgName;
+        /** 科室名（用户 dept_id → m_institution，无 DEPT 范围/查不到为 null） */
+        private String deptName;
     }
 
     @Data
@@ -100,5 +106,17 @@ public class WorkspaceDashboardVO {
         private String route;
         /** 前端 hasPermission 兜底过滤用，可空 */
         private String permission;
+    }
+
+    /** 专病队列动态条目（FR6）：SYNC_DONE / KB_ITEM_PUBLISHED / AI_SUGGEST_PENDING */
+    @Data
+    @Builder
+    public static class CohortDigestItem {
+        private String type;
+        private String title;
+        /** 展示时间 MM-dd HH:mm */
+        private String time;
+        /** 关联队列，无关联为空 */
+        private Long cohortId;
     }
 }

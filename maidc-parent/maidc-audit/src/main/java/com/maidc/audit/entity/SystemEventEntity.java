@@ -42,6 +42,9 @@ public class SystemEventEntity {
     @Column(name = "event_data", columnDefinition = "JSONB")
     private String eventData;
 
+    @Column(name = "trace_id", length = 64)
+    private String traceId;
+
     @Column(name = "resolved")
     private Boolean resolved = false;
 

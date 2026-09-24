@@ -21,6 +21,8 @@ public class SystemEventVO {
 
     private String eventData;
 
+    private String traceId;
+
     private Boolean resolved;
 
     private String resolvedBy;

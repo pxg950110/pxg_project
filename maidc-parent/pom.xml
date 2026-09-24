@@ -46,6 +46,7 @@
         <module>maidc-task</module>
         <module>maidc-label</module>
         <module>maidc-msg</module>
+        <module>maidc-app</module>
     </modules>
 
     <dependencyManagement>

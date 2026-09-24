@@ -1,0 +1,13 @@
+package com.maidc.data.repository;
+
+import com.maidc.data.entity.KnowledgeCategoryEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface KnowledgeCategoryRepository extends JpaRepository<KnowledgeCategoryEntity, Long> {
+    List<KnowledgeCategoryEntity> findByIsDeletedFalseOrderBySortOrder();
+    List<KnowledgeCategoryEntity> findByParentIdAndIsDeletedFalseOrderBySortOrder(Long parentId);
+}

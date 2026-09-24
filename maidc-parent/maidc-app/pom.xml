@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.maidc</groupId>
+        <artifactId>maidc-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>maidc-app</artifactId>
+    <packaging>jar</packaging>
+    <description>MAIDC 合并单体应用 - auth/task/label/audit/msg/data/model 七个服务的统一部署单元</description>
+
+    <dependencies>
+        <!-- 依赖声明顺序即 fat jar 类路径顺序：task/label 模块版本须先于 data/model，
+             使 com.maidc.task / com.maidc.label 包的分叉副本以独立模块（网关路由的活跃版本）为准 -->
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>maidc-auth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>maidc-task</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>maidc-label</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>maidc-audit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>maidc-msg</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>maidc-data</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.maidc</groupId>
+            <artifactId>maidc-model</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

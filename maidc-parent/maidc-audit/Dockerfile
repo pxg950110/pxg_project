@@ -1,22 +1,11 @@
-# ---- Build Stage ----
-FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /build
-
-# Cache dependencies
-COPY pom.xml .
-COPY common/ common/
-COPY maidc-audit/pom.xml maidc-audit/
-
-RUN mvn -B dependency:go-offline -pl maidc-audit -am
-
-COPY maidc-audit/src maidc-audit/src
-RUN mvn -B -pl maidc-audit -am package -DskipTests
-
+# 使用本地 Maven 预构建产物（提交前在 maidc-parent 执行：
+#   mvn -B -pl maidc-audit -am package -DskipTests
+# 或统一构建全部服务），镜像仅打包 jar，不在容器内联网构建。
 # ---- Runtime Stage ----
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-COPY --from=build /build/maidc-audit/target/*.jar app.jar
+COPY maidc-audit/target/maidc-audit-*.jar app.jar
 
 EXPOSE 8086
 ENTRYPOINT ["java", "-jar", "app.jar"]

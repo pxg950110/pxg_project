@@ -114,15 +114,18 @@ public class OperationLogAspect {
             if (args == null || args.length == 0) {
                 return null;
             }
-            StringBuilder sb = new StringBuilder();
+            // request_params 落库到 JSONB 列，必须输出合法 JSON；
+            // 出于脱敏考虑仅记录参数类型名（不序列化参数内容，避免密码等敏感字段入库）
+            StringBuilder sb = new StringBuilder("[");
             for (Object arg : args) {
                 if (arg instanceof HttpServletRequest || arg instanceof String) {
                     continue;
                 }
-                if (sb.length() > 0) sb.append(", ");
-                sb.append(arg != null ? arg.getClass().getSimpleName() : "null");
+                if (sb.length() > 1) sb.append(", ");
+                sb.append('"').append(arg != null ? arg.getClass().getSimpleName() : "null").append('"');
             }
-            return sb.length() > 0 ? sb.toString() : null;
+            sb.append(']');
+            return sb.length() > 2 ? sb.toString() : null;
         } catch (Exception e) {
             return null;
         }

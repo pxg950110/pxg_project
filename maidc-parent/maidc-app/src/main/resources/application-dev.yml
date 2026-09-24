@@ -1,0 +1,91 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: maidc-app
+  main:
+    # 合并单体：多个模块的 Rabbit 配置声明同名 broker 实体（如 dlxExchange），
+    # 定义一致，允许后者覆盖前者
+    allow-bean-definition-overriding: true
+  datasource:
+    # 多 schema 搜索路径：各模块实体大多显式标注 schema，未标注的（如 masterdata）按此顺序解析
+    url: jdbc:postgresql://${PG_HOST:localhost}:${PG_PORT:5432}/maidc?currentSchema=system,cdr,model,rdr,masterdata,audit,ods,public&stringtype=unspecified
+    username: maidc
+    password: maidc123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: maidc123
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: maidc
+    password: maidc123
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        # 队列缺失时监听容器持续重试而非启动失败（队列由各模块 RabbitAdmin 声明，存在时序窗口）
+        missing-queues-fatal: false
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
+      config:
+        import-check:
+          enabled: false
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  accessKey: maidc
+  secretKey: maidc12345
+  secure: false
+
+maidc:
+  auth:
+    max-login-attempts: 5
+    lock-duration-ms: 1800000
+    password-min-length: 8
+  jwt:
+    secret: maidc-jwt-secret-key-2026-change-in-production
+    access-expiration: 7200000
+    refresh-expiration: 604800000
+  etl:
+    csv-base-dir: E:/pxg_project/data/icu-datasets
+    parallel: 3
+    db-url: jdbc:postgresql://localhost:5432/maidc
+    db-schema: ods
+    db-user: maidc
+    db-password: maidc123
+    ddl-path: E:/pxg_project/docker/init-db
+
+# 专病知识库 AI 编排（maidc-aiworker 服务地址；LLM 在 ai-worker 侧配置）
+diseasekb:
+  ai-worker:
+    base-url: http://localhost:8090
+
+logging:
+  level:
+    com.maidc: INFO

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MAIDC 登录页设计方案对比</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ink-1: #0f172a;
+    --ink-2: #475569;
+    --ink-3: #94a3b8;
+    --line: #e2e8f0;
+    --primary: #0891b2;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(8, 145, 178, 0.06), transparent 60%),
+      #f6f8fb;
+    color: var(--ink-1);
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 56px 32px 64px; }
+
+  .head { margin-bottom: 40px; }
+  .head .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; letter-spacing: 2px;
+    color: var(--primary);
+    background: rgba(8, 145, 178, 0.08);
+    border: 1px solid rgba(8, 145, 178, 0.2);
+    padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  .head h1 { font-size: 30px; font-weight: 700; }
+  .head p { margin-top: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.8; max-width: 760px; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 18px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    transition: transform 0.2s, box-shadow 0.25s;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1); }
+
+  /* mini 布局示意 */
+  .thumb { height: 190px; position: relative; overflow: hidden; padding: 20px; }
+  .thumb .mini {
+    position: absolute; inset: 20px; border-radius: 10px;
+    display: flex; overflow: hidden; font-size: 6px;
+  }
+
+  /* A 深色 */
+  .thumb-a { background: linear-gradient(150deg, #060b16, #0d1830); }
+  .thumb-a .mini { background: #0a1220; border: 1px solid rgba(34, 211, 238, 0.25); }
+  .thumb-a .mini .m-left { flex: 1.2; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .thumb-a .mini .m-right { width: 42%; margin: 8px; border-radius: 6px; background: rgba(15, 26, 46, 0.9); border: 1px solid rgba(94, 234, 212, 0.25); padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .thumb-a .bar { height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.3); }
+  .thumb-a .bar.hl { background: linear-gradient(90deg, #22d3ee, #818cf8); width: 60%; }
+  .thumb-a .ring {
+    width: 44px; height: 44px; border-radius: 50%; margin: 4px auto 0;
+    border: 1px dashed rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+  }
+  .thumb-a .fld { height: 8px; border-radius: 3px; background: rgba(8, 15, 30, 0.9); border: 1px solid rgba(148, 163, 184, 0.25); }
+  .thumb-a .btn { height: 9px; border-radius: 3px; background: linear-gradient(135deg, #22d3ee, #818cf8); }
+
+  /* B 浅色 */
+  .thumb-b { background: #fbfcfe; }
+  .thumb-b .mini {
+    background: #fff; border: 1px solid var(--line);
+    flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  }
+  .thumb-b .panel { width: 64%; border-radius: 6px; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08); padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .thumb-b .bar { height: 4px; border-radius: 2px; background: #e2e8f0; }
+  .thumb-b .bar.title { width: 45%; background: #0f172a; margin: 0 auto; }
+  .thumb-b .fld { height: 9px; border-radius: 3px; background: #f8fafc; border: 1px solid var(--line); }
+  .thumb-b .btn { height: 10px; border-radius: 3px; background: var(--primary); }
+
+  /* C 基线 */
+  .thumb-c { background: #f8fafc; }
+  .thumb-c .mini { background: #f8fafc; border: 1px solid var(--line); }
+  .thumb-c .m-left { flex: 1; background: linear-gradient(158deg, #04293a, #0a6e8a); padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .thumb-c .m-right { flex: 1; padding: 10px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .thumb-c .ecg { height: 10px; }
+  .thumb-c .ecg svg { width: 100%; height: 100%; }
+  .thumb-c .bar { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.3); }
+  .thumb-c .bar.w6 { width: 65%; }
+  .thumb-c .cards3 { display: flex; gap: 4px; }
+  .thumb-c .cards3 i { flex: 1; height: 16px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.2); }
+  .thumb-c .fld { height: 8px; border-radius: 3px; background: #fff; border: 1px solid var(--line); }
+  .thumb-c .btn { height: 9px; border-radius: 3px; background: linear-gradient(135deg, #0891b2, #2563eb); }
+
+  .body { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .tag {
+    align-self: flex-start; font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    padding: 3px 10px; border-radius: 999px;
+  }
+  .tag-a { color: #22d3ee; background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); }
+  .tag-b { color: var(--primary); background: rgba(8, 145, 178, 0.08); border: 1px solid rgba(8, 145, 178, 0.25); }
+  .tag-c { color: #64748b; background: #f1f5f9; border: 1px solid var(--line); }
+
+  .card h3 { font-size: 17px; font-weight: 700; }
+  .card .desc { font-size: 13px; color: var(--ink-2); line-height: 1.75; flex: 1; }
+  .pros { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .pros li { display: flex; gap: 7px; font-size: 12.5px; color: var(--ink-2); line-height: 1.6; }
+  .pros li::before { content: '✓'; color: #10b981; font-weight: 700; }
+  .cons li::before { content: '!'; color: #f59e0b; }
+
+  .open-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 42px; border-radius: 10px; text-decoration: none;
+    font-size: 14px; font-weight: 600;
+    background: var(--ink-1); color: #fff;
+    transition: 0.2s;
+  }
+  .open-btn:hover { background: var(--primary); }
+
+  /* 评审要点 */
+  .review {
+    margin-top: 44px;
+    background: #fff; border: 1px solid var(--line); border-radius: 18px;
+    padding: 28px 30px;
+  }
+  .review h2 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+  .review ol { padding-left: 20px; display: flex; flex-direction: column; gap: 9px; }
+  .review li { font-size: 13.5px; color: var(--ink-2); line-height: 1.8; }
+  .review b { color: var(--ink-1); }
+
+  .foot { margin-top: 30px; text-align: center; font-size: 12px; color: var(--ink-3); }
+
+  @media (max-width: 960px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="head">
+      <span class="kicker">MAIDC · 设计评审</span>
+      <h1>前端登录页设计方案对比</h1>
+      <p>
+        针对 <code>maidc-portal</code> 登录页产出 3 套风格方案。每套均为可交互静态稿（含密码显隐、hover/focus 态、动效），
+        点击卡片下方按钮打开完整预览。评审定稿后将方案落地到
+        <code>src/views/login/LoginPage.vue</code>。
+      </p>
+    </header>
+
+    <section class="cards">
+      <!-- 方案A -->
+      <article class="card">
+        <div class="thumb thumb-a">
+          <div class="mini" aria-hidden="true">
+            <div class="m-left">
+              <div class="bar hl"></div>
+              <div class="bar" style="width:80%"></div>
+              <div class="bar" style="width:55%"></div>
+              <div class="ring"></div>
+              <div class="bar" style="width:70%"></div>
+            </div>
+            <div class="m-right">
+              <div class="bar hl" style="width:50%"></div>
+              <div class="fld"></div>
+              <div class="fld"></div>
+              <div class="btn"></div>
+              <div class="bar" style="width:60%; margin:0 auto;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <span class="tag tag-a">方案A</span>
+          <h3>深色科技风</h3>
+          <p class="desc">暗夜蓝黑底 + 霓虹青点缀，左侧旋转数据环与平台指标大屏，右侧深色玻璃拟态登录卡。</p>
+          <ul class="pros">
+            <li>科技感强，契合医疗AI平台定位</li>
+            <li>数据环 / 指标可承载真实运营数据</li>
+            <li>暗色环境下视觉冲击力最佳</li>
+            <li class="cons">深色运维大屏风格，评审需确认院内接受度</li>
+          </ul>
+          <a class="open-btn" href="dark-tech.html">预览方案A →</a>
+        </div>
+      </article>
+
+      <!-- 方案B -->
+      <article class="card">
+        <div class="thumb thumb-b">
+          <div class="mini" aria-hidden="true">
+            <div class="panel">
+              <div class="bar title"></div>
+              <div class="fld"></div>
+              <div class="fld"></div>
+              <div class="btn"></div>
+              <div class="bar" style="width:55%; margin:0 auto;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <span class="tag tag-b">方案B</span>
+          <h3>简洁浅色风</h3>
+          <p class="desc">白底大留白的 SaaS 专业风：顶部品牌栏 + 居中登录卡片，克制的品牌色点缀与合规徽标。</p>
+          <ul class="pros">
+            <li>清爽专业，最贴近主流 B 端产品</li>
+            <li>信息密度低，登录路径零干扰</li>
+            <li>实现与维护成本最低</li>
+            <li class="cons">品牌记忆点相对弱，依赖落地页叙事</li>
+          </ul>
+          <a class="open-btn" href="light-minimal.html">预览方案B →</a>
+        </div>
+      </article>
+
+      <!-- 方案C -->
+      <article class="card">
+        <div class="thumb thumb-c">
+          <div class="mini" aria-hidden="true">
+            <div class="m-left">
+              <div class="bar w6"></div>
+              <div class="ecg">
+                <svg viewBox="0 0 180 20" preserveAspectRatio="none"><path d="M0 10 H30 L36 10 40 4 44 16 48 3 52 13 56 10 H90 L96 10 100 4 104 16 108 3 112 13 116 10 H180" fill="none" stroke="#2dd4bf" stroke-width="1.6"/></svg>
+              </div>
+              <div class="cards3"><i></i><i></i><i></i></div>
+            </div>
+            <div class="m-right">
+              <div class="bar w6" style="background:#cbd5e1;"></div>
+              <div class="fld"></div>
+              <div class="fld"></div>
+              <div class="btn"></div>
+              <div class="bar" style="width:55%; background:#e2e8f0; margin:0 auto;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <span class="tag tag-c">方案C</span>
+          <h3>现有风格基线</h3>
+          <p class="desc">复刻当前 LoginPage.vue 视觉：左侧深青品牌墙（心电图动效 + 特性卡片），右侧浅色表单，作为对比参照。</p>
+          <ul class="pros">
+            <li>医疗行业语境强（心电、合规提示）</li>
+            <li>已上线验证，团队认知零成本</li>
+            <li>评审时用于对比其他方案差异</li>
+            <li class="cons">深浅两区色彩对比较强，风格偏传统</li>
+          </ul>
+          <a class="open-btn" href="current-baseline.html">预览方案C →</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="review">
+      <h2>评审要点建议</h2>
+      <ol>
+        <li><b>风格取向</b>：三套方案代表了「科技感（A）→ 专业感（B）→ 行业感（C）」三种取向，建议先定大方向再抠细节。</li>
+        <li><b>品牌叙事</b>：是否需要在登录页承载平台数据/特性介绍（A/C 有品牌区，B 无）。</li>
+        <li><b>合规呈现</b>：审计提示、等保三级、锁定策略等合规信息的呈现位置与强度。</li>
+        <li><b>功能增强</b>（定稿后统一落地）：字段级校验、失败次数/锁定倒计时、图形验证码位、Caps Lock 提醒、记住用户名回填。</li>
+        <li><b>响应式</b>：三套均已处理 ≤960px 断点（隐藏品牌区/卡片自适应），建议同时用手机宽度过一遍。</li>
+      </ol>
+    </section>
+
+    <footer class="foot">
+      设计稿位置：<code>maidc-portal/design/login/</code> · 纯静态 HTML，双击即可打开 · 定稿前不影响任何现有构建
+    </footer>
+  </div>
+</body>
+</html>

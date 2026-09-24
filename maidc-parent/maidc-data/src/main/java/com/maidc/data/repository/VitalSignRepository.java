@@ -10,4 +10,6 @@ import java.util.List;
 @Repository
 public interface VitalSignRepository extends JpaRepository<VitalSignEntity, Long>, JpaSpecificationExecutor<VitalSignEntity> {
     List<VitalSignEntity> findByPatientIdAndIsDeletedFalse(Long patientId);
+
+    List<VitalSignEntity> findByEncounterIdAndIsDeletedFalse(Long encounterId);
 }

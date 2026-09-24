@@ -1,6 +1,7 @@
 package com.maidc.task.consumer;
 
 import com.maidc.common.mq.model.MaidcMessage;
+import com.maidc.common.mq.trace.TraceMessageHelper;
 import com.maidc.task.dto.PersonalTaskCreateDTO;
 import com.maidc.task.service.PersonalTaskService;
 import lombok.RequiredArgsConstructor;
@@ -19,14 +20,24 @@ public class PersonalTaskConsumer {
 
     @RabbitListener(queues = "approval.notify")
     public void onApprovalNotify(MaidcMessage message) {
-        log.info("Received approval notify: eventType={}", message.getEventType());
-        handleNotify(message, "APPROVAL");
+        String traceId = TraceMessageHelper.restore(message);
+        try {
+            log.info("Received approval notify: traceId={}, eventType={}", traceId, message.getEventType());
+            handleNotify(message, "APPROVAL");
+        } finally {
+            TraceMessageHelper.clear(traceId);
+        }
     }
 
     @RabbitListener(queues = "label.notify")
     public void onLabelNotify(MaidcMessage message) {
-        log.info("Received label notify: eventType={}", message.getEventType());
-        handleNotify(message, "LABELING");
+        String traceId = TraceMessageHelper.restore(message);
+        try {
+            log.info("Received label notify: traceId={}, eventType={}", traceId, message.getEventType());
+            handleNotify(message, "LABELING");
+        } finally {
+            TraceMessageHelper.clear(traceId);
+        }
     }
 
     private void handleNotify(MaidcMessage message, String taskType) {

@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * 专病知识库 REST 接口。
  * <p>权限三权限点：cdr:diseasekb:read（浏览/检索）、cdr:diseasekb:manage（空间与条目维护）、cdr:diseasekb:ai（AI 问答）。
- * <p>/qa/ask 当前按降级语义抛 KB_AI_UNAVAILABLE（5034），AI 切片接入后返回 SSE 流。
+ * <p>/qa/ask 为 SSE 流式返回（透传 ai-worker /rag/chat）；ai-worker 或 LLM 不可用时流内发 error 帧。
  */
 @RestController
 @RequestMapping("/api/v1/cdr/disease-kb")
@@ -172,7 +172,7 @@ public class DiseaseKnowledgeController {
         return R.ok();
     }
 
-    /** AI 切片未接入：当前抛 KB_AI_UNAVAILABLE（5034），接入后为 SSE 流式返回 */
+    /** SSE 流式问答：透传 ai-worker /rag/chat（引用随流下发） */
     @PostMapping(value = "/qa/ask", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RequirePermission("cdr:diseasekb:ai")
     public SseEmitter ask(@RequestBody Map<String, Object> body) {

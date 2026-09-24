@@ -34,13 +34,14 @@ services:
   redis:
     image: redis:7-alpine
     container_name: maidc-redis
-    command: redis-server --appendonly yes
+    # 密码与各服务 application-dev.yml 的 spring.data.redis.password 一致（maidc123）
+    command: redis-server --appendonly yes --requirepass maidc123
     ports:
       - "6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a maidc123 ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5

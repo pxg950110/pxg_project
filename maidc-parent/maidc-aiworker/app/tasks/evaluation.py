@@ -1,8 +1,12 @@
 """Celery task: Model evaluation"""
 import json
+import logging
 import time
 from celery import Task
 from app.core.celery_app import celery_app
+from app.core.trace import get_trace_id
+
+logger = logging.getLogger(__name__)
 
 
 class EvaluationTask(Task):
@@ -10,7 +14,7 @@ class EvaluationTask(Task):
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         # Send result back to model service via RabbitMQ
-        print(f"Evaluation task {task_id} failed: {exc}")
+        logger.error("Evaluation task %s failed: %s", task_id, exc)
 
 
 @celery_app.task(name="app.tasks.evaluation.run_evaluation", base=EvaluationTask)
@@ -25,7 +29,8 @@ def run_evaluation(evaluation_id: int, version_id: int, dataset_id: int,
     5. Generate PDF report
     6. Send results back via MQ
     """
-    print(f"Starting evaluation: id={evaluation_id}, version={version_id}, dataset={dataset_id}")
+    logger.info("Starting evaluation: id=%s, version=%s, dataset=%s",
+                evaluation_id, version_id, dataset_id)
 
     # TODO: Implement actual evaluation pipeline
     # For now, simulate the process
@@ -46,14 +51,15 @@ def run_evaluation(evaluation_id: int, version_id: int, dataset_id: int,
         "reportUrl": f"/evaluations/{evaluation_id}/report",
     }
 
-    # Send result to model.evaluation.result queue
+    # Send result to model.evaluation.result queue；
+    # traceId 继承自触发消息（task_prerun 信号恢复），而非伪造 eval-{id}
     from app.core.celery_app import celery_app
     with celery_app.connection_or_acquire() as conn:
         conn.default_channel.basic_publish(
             exchange="maidc.model",
             routing_key="evaluation.result",
             body=json.dumps({
-                "traceId": f"eval-{evaluation_id}",
+                "traceId": get_trace_id(),
                 "eventType": "EVALUATION_RESULT",
                 "payload": result,
                 "source": "maidc-aiworker",

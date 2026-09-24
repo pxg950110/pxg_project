@@ -16,7 +16,8 @@ public class AuditLogSpecification {
 
     public static Specification<AuditLogEntity> buildSearchSpec(String serviceName, String operation,
                                                                  String username, LocalDateTime startTime,
-                                                                 LocalDateTime endTime, String status) {
+                                                                 LocalDateTime endTime, String status,
+                                                                 String traceId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -28,6 +29,9 @@ public class AuditLogSpecification {
             }
             if (username != null && !username.isBlank()) {
                 predicates.add(cb.like(root.get("username"), "%" + username + "%"));
+            }
+            if (traceId != null && !traceId.isBlank()) {
+                predicates.add(cb.equal(root.get("traceId"), traceId));
             }
             if (startTime != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startTime));

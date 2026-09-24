@@ -1,8 +1,15 @@
 package com.maidc.task.service;
 
+import com.maidc.common.security.context.PermissionContext;
+import com.maidc.common.security.scope.DataScope;
+import com.maidc.common.security.store.PermissionStore;
+import com.maidc.data.entity.DiseaseCohortEventEntity;
+import com.maidc.data.entity.InstitutionEntity;
 import com.maidc.data.repository.DatasetRepository;
 import com.maidc.data.repository.DiseaseCohortPatientRepository;
 import com.maidc.data.repository.DiseaseCohortRepository;
+import com.maidc.data.repository.InstitutionRepository;
+import com.maidc.data.service.DiseaseCohortEventService;
 import com.maidc.data.service.followup.FollowupTaskService;
 import com.maidc.task.repository.WorkspaceMetricsRepository;
 import com.maidc.task.vo.WorkspaceDashboardVO;
@@ -16,6 +23,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +52,15 @@ class WorkspaceServiceTest {
     @Mock
     private DatasetRepository datasetRepository;
 
+    @Mock
+    private PermissionStore permissionStore;
+
+    @Mock
+    private InstitutionRepository institutionRepository;
+
+    @Mock
+    private DiseaseCohortEventService cohortEventService;
+
     @InjectMocks
     private WorkspaceService workspaceService;
 
@@ -53,6 +70,7 @@ class WorkspaceServiceTest {
         when(metricsRepository.countActiveDeploymentsByOrgId(anyLong())).thenReturn(8L);
         when(metricsRepository.countTodayInferencesByOrgId(anyLong())).thenReturn(12456L);
         when(metricsRepository.countPendingApprovalsByOrgId(anyLong())).thenReturn(5L);
+        when(metricsRepository.countPendingQuarantineByOrgId(anyLong())).thenReturn(17L);
         when(personalTaskService.getPendingTasks(anyLong())).thenReturn(List.of());
 
         WorkspaceDashboardVO result = workspaceService.getDashboard(1L, 1L, "data_admin", List.of("data_admin"));
@@ -63,6 +81,11 @@ class WorkspaceServiceTest {
         assertEquals(4, result.getCards().size());
         assertEquals("model_count", result.getCards().get(0).getKey());
         assertEquals(28L, result.getCards().get(0).getValue());
+        // PRD FR1：DATA 组第 4 卡 = 待处理质控（待审批数保留在 metrics 字段）
+        assertEquals("quality_pending", result.getCards().get(3).getKey());
+        assertEquals(17L, result.getCards().get(3).getValue());
+        assertEquals("warning", result.getCards().get(3).getTone());
+        assertEquals(5L, result.getMetrics().getPendingApprovals());
         assertTrue(result.getQuickActions().stream().anyMatch(a -> "etl_pipelines".equals(a.getKey())));
         assertEquals(0L, result.getTodoStats().getTotal());
     }
@@ -150,5 +173,103 @@ class WorkspaceServiceTest {
         assertTrue(result.getTodos().isEmpty());
         assertEquals(0L, result.getCards().get(0).getValue());
         assertNotNull(result.getTodoStats());
+    }
+
+    @Test
+    void getDashboard_governanceGroup_returnsExclusiveCards() {
+        when(metricsRepository.countUsersByOrgId(1L)).thenReturn(36L);
+        when(metricsRepository.countTodayAuditEventsByOrgId(1L)).thenReturn(1240L);
+        when(metricsRepository.countTodayPermissionDeniedByOrgId(1L)).thenReturn(3L);
+        when(metricsRepository.countActiveAlertsByOrgId(1L)).thenReturn(2L);
+        when(personalTaskService.getPendingTasks(anyLong())).thenReturn(List.of());
+
+        WorkspaceDashboardVO result = workspaceService.getDashboard(1L, 1L, "auditor1", List.of("auditor"));
+
+        assertEquals(WorkspaceService.GROUP_GOVERNANCE, result.getWelcome().getRoleGroup());
+        assertEquals("审计员", result.getWelcome().getRole());
+        assertEquals(4, result.getCards().size());
+        assertEquals("user_count", result.getCards().get(0).getKey());
+        assertEquals(36L, result.getCards().get(0).getValue());
+        assertEquals("audit_today", result.getCards().get(1).getKey());
+        assertEquals("perm_denied_today", result.getCards().get(2).getKey());
+        assertEquals("danger", result.getCards().get(2).getTone());
+        assertEquals("active_alerts", result.getCards().get(3).getKey());
+        assertEquals("warning", result.getCards().get(3).getTone());
+        assertTrue(result.getQuickActions().stream().anyMatch(a -> "audit_ops".equals(a.getKey())));
+    }
+
+    @Test
+    void getDashboard_welcome_resolvesDeptAndOrgNames() {
+        PermissionContext ctx = PermissionContext.builder().userId(1L).deptId(5L).dataScope(DataScope.DEPT).build();
+        when(permissionStore.load(1L)).thenReturn(ctx);
+        InstitutionEntity dept = new InstitutionEntity();
+        dept.setName("耳鼻喉科");
+        InstitutionEntity org = new InstitutionEntity();
+        org.setName("市一医院");
+        when(institutionRepository.findById(5L)).thenReturn(Optional.of(dept));
+        when(institutionRepository.findById(1L)).thenReturn(Optional.of(org));
+        when(personalTaskService.getPendingTasks(anyLong())).thenReturn(List.of());
+
+        WorkspaceDashboardVO result = workspaceService.getDashboard(1L, 1L, "doctor1", List.of("doctor"));
+
+        assertEquals("耳鼻喉科", result.getWelcome().getDeptName());
+        assertEquals("市一医院", result.getWelcome().getOrgName());
+    }
+
+    @Test
+    void getDashboard_welcome_withoutDeptContext_leavesNamesNull() {
+        when(permissionStore.load(1L)).thenReturn(null);
+        when(personalTaskService.getPendingTasks(anyLong())).thenReturn(List.of());
+
+        WorkspaceDashboardVO result = workspaceService.getDashboard(1L, 1L, "admin1", List.of("admin"));
+
+        assertNull(result.getWelcome().getDeptName());
+        assertNull(result.getWelcome().getOrgName());
+    }
+
+    @Test
+    void getDashboard_researchGroup_returnsCohortDigest() {
+        when(personalTaskService.getPendingTasks(anyLong())).thenReturn(List.of());
+        when(diseaseCohortRepository.countByOrgId(1L)).thenReturn(4L);
+        when(datasetRepository.count()).thenReturn(2L);
+        DiseaseCohortEventEntity sync = new DiseaseCohortEventEntity();
+        sync.setEventType("SYNC_DONE");
+        sync.setEventTitle("队列「CRS」同步完成：新增 3 人，在管 128 人");
+        sync.setCohortId(7L);
+        sync.setOrgId(1L);
+        DiseaseCohortEventEntity kb = new DiseaseCohortEventEntity();
+        kb.setEventType("KB_ITEM_PUBLISHED");
+        kb.setEventTitle("知识库《EPOS2020 解读》已发布");
+        kb.setCohortId(7L);
+        kb.setOrgId(1L);
+        when(cohortEventService.latest(1L)).thenReturn(List.of(sync, kb));
+
+        WorkspaceDashboardVO result = workspaceService.getDashboard(1L, 1L, "li_pi", List.of("researcher_pi"));
+
+        assertNotNull(result.getCohortDigest());
+        assertEquals(2, result.getCohortDigest().size());
+        assertEquals("SYNC_DONE", result.getCohortDigest().get(0).getType());
+        assertEquals(7L, result.getCohortDigest().get(0).getCohortId());
+        assertEquals("知识库《EPOS2020 解读》已发布", result.getCohortDigest().get(1).getTitle());
+    }
+
+    @Test
+    void getDashboard_dataGroup_cohortDigestIsNull_andClinicalDigestDegradesOnFailure() {
+        // DATA 组不返回队列动态
+        when(metricsRepository.countModelByOrgId(anyLong())).thenReturn(1L);
+        when(metricsRepository.countActiveDeploymentsByOrgId(anyLong())).thenReturn(0L);
+        when(metricsRepository.countTodayInferencesByOrgId(anyLong())).thenReturn(0L);
+        when(metricsRepository.countPendingApprovalsByOrgId(anyLong())).thenReturn(0L);
+        when(metricsRepository.countPendingQuarantineByOrgId(anyLong())).thenReturn(0L);
+        when(personalTaskService.getPendingTasks(anyLong())).thenReturn(List.of());
+        WorkspaceDashboardVO dataResult = workspaceService.getDashboard(1L, 1L, "data_admin", List.of("data_admin"));
+        assertNull(dataResult.getCohortDigest());
+
+        // CLINICAL 组动态源查询失败 → 降级为空列表（接口仍可用）
+        when(followupTaskService.workspaceDigest(anyLong(), any(LocalDate.class))).thenReturn(Map.of());
+        when(cohortEventService.latest(anyLong())).thenThrow(new RuntimeException("c_cohort_event unavailable"));
+        WorkspaceDashboardVO clinicalResult = workspaceService.getDashboard(1L, 1L, "nurse1", List.of("nurse"));
+        assertNotNull(clinicalResult.getCohortDigest());
+        assertTrue(clinicalResult.getCohortDigest().isEmpty());
     }
 }

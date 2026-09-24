@@ -33,6 +33,12 @@ public class MsgRabbitMqConfig {
         return new DirectExchange(DLX_EXCHANGE, true, false);
     }
 
+    /** 交换机必须是 Bean 才会被 RabbitAdmin 声明；内联 new 出来的只参与绑定、不会建出来 */
+    @Bean
+    public DirectExchange modelExchange() {
+        return new DirectExchange(MODEL_EXCHANGE, true, false);
+    }
+
     @Bean
     public Queue alertNotifyQueue() {
         return QueueBuilder.durable(ALERT_NOTIFY_QUEUE)
@@ -64,16 +70,16 @@ public class MsgRabbitMqConfig {
 
     // Bindings for model exchange -> msg queues
     @Bean
-    public Binding alertNotifyBinding() {
+    public Binding alertNotifyBinding(DirectExchange modelExchange) {
         return BindingBuilder.bind(alertNotifyQueue())
-                .to(new DirectExchange(MODEL_EXCHANGE, true, false))
+                .to(modelExchange)
                 .with(ALERT_NOTIFY_KEY);
     }
 
     @Bean
-    public Binding approvalNotifyBinding() {
+    public Binding approvalNotifyBinding(DirectExchange modelExchange) {
         return BindingBuilder.bind(approvalNotifyQueue())
-                .to(new DirectExchange(MODEL_EXCHANGE, true, false))
+                .to(modelExchange)
                 .with(APPROVAL_NOTIFY_KEY);
     }
 

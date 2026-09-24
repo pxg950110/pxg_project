@@ -27,6 +27,8 @@ public class DataAccessLogVO {
 
     private String ipAddress;
 
+    private String traceId;
+
     private LocalDateTime createdAt;
 
     private Long orgId;

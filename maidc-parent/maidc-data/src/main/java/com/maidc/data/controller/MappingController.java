@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.maidc.common.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class MappingController {
 
     private final ConceptMappingService service;
 
-    @PreAuthorize("hasPermission('masterdata:read')")
+    @RequirePermission("masterdata:read")
     @GetMapping
     public R<Page<ConceptRelationshipEntity>> listMappings(
             @RequestParam(required = false) Long conceptId,
@@ -46,7 +46,7 @@ public class MappingController {
         return R.ok(result);
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping
     public R<ConceptRelationshipEntity> createMapping(@RequestBody Map<String, Object> body) {
         Long sourceId = toLong(body.get("sourceId"));
@@ -55,13 +55,13 @@ public class MappingController {
         return R.ok(service.createMapping(sourceId, targetId, type));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:create")
     @PostMapping("/batch")
     public R<List<ConceptRelationshipEntity>> batchCreate(@RequestBody List<ConceptRelationshipEntity> entities) {
         return R.ok(service.batchCreateMappings(entities));
     }
 
-    @PreAuthorize("hasPermission('masterdata:create')")
+    @RequirePermission("masterdata:delete")
     @DeleteMapping("/{id}")
     public R<Void> deleteMapping(@PathVariable Long id) {
         service.deleteMapping(id);

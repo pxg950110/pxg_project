@@ -1,8 +1,14 @@
 package com.maidc.task.service;
 
+import com.maidc.common.security.context.PermissionContext;
+import com.maidc.common.security.store.PermissionStore;
+import com.maidc.data.entity.DiseaseCohortEventEntity;
+import com.maidc.data.entity.InstitutionEntity;
 import com.maidc.data.repository.DatasetRepository;
 import com.maidc.data.repository.DiseaseCohortPatientRepository;
 import com.maidc.data.repository.DiseaseCohortRepository;
+import com.maidc.data.repository.InstitutionRepository;
+import com.maidc.data.service.DiseaseCohortEventService;
 import com.maidc.data.service.followup.FollowupTaskService;
 import com.maidc.task.repository.WorkspaceMetricsRepository;
 import com.maidc.task.vo.PersonalTaskVO;
@@ -59,6 +65,9 @@ public class WorkspaceService {
     private final DiseaseCohortRepository diseaseCohortRepository;
     private final DiseaseCohortPatientRepository diseaseCohortPatientRepository;
     private final DatasetRepository datasetRepository;
+    private final PermissionStore permissionStore;
+    private final InstitutionRepository institutionRepository;
+    private final DiseaseCohortEventService cohortEventService;
 
     public WorkspaceDashboardVO getDashboard(Long userId, Long orgId, String username, List<String> roles) {
         String roleGroup = resolveRoleGroup(roles);
@@ -68,13 +77,14 @@ public class WorkspaceService {
         List<TodoItem> todos = buildTodos(userId, roleGroup, pending);
 
         return WorkspaceDashboardVO.builder()
-                .welcome(buildWelcome(username, primaryRole, roleGroup))
+                .welcome(buildWelcome(userId, orgId, username, primaryRole, roleGroup))
                 .metrics(metrics)
                 .cards(buildCards(roleGroup, orgId, pending, metrics, userId))
                 .todos(todos)
                 .todoStats(buildTodoStats(todos))
                 .notifications(buildNotifications(userId))
                 .quickActions(buildQuickActions(roleGroup))
+                .cohortDigest(buildCohortDigest(roleGroup, orgId))
                 .build();
     }
 
@@ -90,14 +100,45 @@ public class WorkspaceService {
         return GROUP_DATA;
     }
 
-    private WorkspaceDashboardVO.WelcomeInfo buildWelcome(String username, String primaryRole, String roleGroup) {
+    private WorkspaceDashboardVO.WelcomeInfo buildWelcome(Long userId, Long orgId, String username, String primaryRole, String roleGroup) {
         String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 EEEE", Locale.CHINA));
+        Map<String, String> orgDept = resolveOrgDeptNames(userId, orgId);
         return WorkspaceDashboardVO.WelcomeInfo.builder()
                 .userName(username == null ? "" : username)
                 .date(today)
                 .role(ROLE_NAMES.getOrDefault(primaryRole, ""))
                 .roleGroup(roleGroup)
+                .orgName(orgDept.get("orgName"))
+                .deptName(orgDept.get("deptName"))
                 .build();
+    }
+
+    /** 机构/科室名解析（FR4）：任一步不可得即置 null，欢迎区永不因此失败 */
+    private Map<String, String> resolveOrgDeptNames(Long userId, Long orgId) {
+        String orgName = safeInstitutionName(orgId);
+        String deptName = null;
+        try {
+            PermissionContext ctx = permissionStore.load(userId);
+            if (ctx != null && ctx.getDeptId() != null) {
+                deptName = safeInstitutionName(ctx.getDeptId());
+            }
+        } catch (Exception e) {
+            log.warn("Workspace dept name unavailable: {}", e.getMessage());
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        result.put("orgName", orgName);
+        result.put("deptName", deptName);
+        return result;
+    }
+
+    private String safeInstitutionName(Long id) {
+        if (id == null) return null;
+        try {
+            return institutionRepository.findById(id).map(InstitutionEntity::getName).orElse(null);
+        } catch (Exception e) {
+            log.warn("Workspace institution name unavailable for id {}: {}", id, e.getMessage());
+            return null;
+        }
     }
 
     private WorkspaceDashboardVO.MetricsInfo buildMetrics(Long orgId) {
@@ -116,7 +157,8 @@ public class WorkspaceService {
         return switch (roleGroup) {
             case GROUP_CLINICAL -> clinicalCards(userId);
             case GROUP_RESEARCH -> researchCards(orgId, pending);
-            default -> dataCards(metrics); // DATA；GOVERNANCE 专属指标 P1 经 Feign 补齐，暂复用
+            case GROUP_GOVERNANCE -> governanceCards(orgId);
+            default -> dataCards(metrics, orgId); // DATA
         };
     }
 
@@ -138,12 +180,22 @@ public class WorkspaceService {
                 card("datasets", "研究数据集", safe(datasetRepository::count), "个", "appstore", "/data/rdr/datasets", null));
     }
 
-    private List<MetricCard> dataCards(WorkspaceDashboardVO.MetricsInfo metrics) {
+    /** DATA 组：PRD FR1 = 模型总数/活跃部署/今日推理/待处理质控（待审批数保留在 metrics 字段） */
+    private List<MetricCard> dataCards(WorkspaceDashboardVO.MetricsInfo metrics, Long orgId) {
         return List.of(
                 card("model_count", "模型总数", metrics.getModelCount(), "个", "experiment", "/model/list", null),
                 card("active_deployments", "活跃部署", metrics.getActiveDeployments(), "个", "rocket", "/model/deployments", null),
                 card("daily_inferences", "今日推理", metrics.getDailyInferences(), "次", "thunderbolt", "/model/inference-logs", null),
-                card("pending_approvals", "待审批", metrics.getPendingApprovals(), "项", "audit", "/model/approvals", "warning"));
+                card("quality_pending", "待处理质控", safe(() -> metricsRepository.countPendingQuarantineByOrgId(orgId)), "条", "shield", "/data/cdr/quality-results", "warning"));
+    }
+
+    /** GOVERNANCE 组：PRD FR1 = 平台用户/今日审计事件/今日权限拒绝/活跃告警 */
+    private List<MetricCard> governanceCards(Long orgId) {
+        return List.of(
+                card("user_count", "平台用户", safe(() -> metricsRepository.countUsersByOrgId(orgId)), "人", "user", "/system/users", null),
+                card("audit_today", "今日审计事件", safe(() -> metricsRepository.countTodayAuditEventsByOrgId(orgId)), "条", "file-search", "/audit/operations", null),
+                card("perm_denied_today", "今日权限拒绝", safe(() -> metricsRepository.countTodayPermissionDeniedByOrgId(orgId)), "次", "alert", "/audit/system-events", "danger"),
+                card("active_alerts", "活跃告警", safe(() -> metricsRepository.countActiveAlertsByOrgId(orgId)), "条", "alert", "/alert/active", "warning"));
     }
 
     private MetricCard card(String key, String label, long value, String suffix, String icon, String route, String tone) {
@@ -246,8 +298,7 @@ public class WorkspaceService {
                     action("patient_search", "患者检索", "search", "/data/cdr/patients", "cdr:read"),
                     action("clinical_search", "临床检索", "profile", "/data/cdr/search", "cdr:read"),
                     action("disease_kb", "专病知识库", "book", "/data/cdr/disease-kb", "cdr:read"),
-                    // 随访工作台正式路由随 CRS 前端平移确定，暂指专病管理
-                    action("followup_workbench", "随访工作台", "medicine-box", "/data/cdr/disease", "disease:followup:work"));
+                    action("followup_workbench", "随访工作台", "medicine-box", "/followup/workbench", "disease:followup:work"));
             case GROUP_RESEARCH -> List.of(
                     action("cohort_manage", "专病队列", "database", "/data/cdr/disease", "cdr:read"),
                     action("clinical_search", "临床检索", "profile", "/data/cdr/search", "cdr:read"),
@@ -289,5 +340,32 @@ public class WorkspaceService {
                     .createdAt(createdAt)
                     .build();
         }).toList();
+    }
+
+    // ==================== 专病队列动态（FR6，仅 CLINICAL/RESEARCH 组） ====================
+
+    private List<WorkspaceDashboardVO.CohortDigestItem> buildCohortDigest(String roleGroup, Long orgId) {
+        if (!GROUP_CLINICAL.equals(roleGroup) && !GROUP_RESEARCH.equals(roleGroup)) {
+            return null;
+        }
+        try {
+            return cohortEventService.latest(orgId).stream()
+                    .map(this::toDigestItem)
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Cohort digest build failed, degrade to empty: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private WorkspaceDashboardVO.CohortDigestItem toDigestItem(DiseaseCohortEventEntity event) {
+        String time = event.getCreatedAt() == null ? ""
+                : event.getCreatedAt().format(DateTimeFormatter.ofPattern("MM-dd HH:mm"));
+        return WorkspaceDashboardVO.CohortDigestItem.builder()
+                .type(event.getEventType())
+                .title(event.getEventTitle())
+                .time(time)
+                .cohortId(event.getCohortId())
+                .build();
     }
 }

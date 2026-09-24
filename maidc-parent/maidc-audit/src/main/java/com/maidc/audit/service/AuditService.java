@@ -54,7 +54,8 @@ public class AuditService {
                         queryDTO.getUsername(),
                         queryDTO.getStartTime(),
                         queryDTO.getEndTime(),
-                        queryDTO.getStatus()
+                        queryDTO.getStatus(),
+                        queryDTO.getTraceId()
                 ),
                 PageRequest.of(queryDTO.getPage() - 1, queryDTO.getPageSize())
         );
@@ -82,7 +83,9 @@ public class AuditService {
                         queryDTO.getDataDomain(),
                         queryDTO.getPatientId(),
                         queryDTO.getStartTime(),
-                        queryDTO.getEndTime()
+                        queryDTO.getEndTime(),
+                        queryDTO.getTraceId(),
+                        queryDTO.getAccessType()
                 ),
                 PageRequest.of(queryDTO.getPage() - 1, queryDTO.getPageSize())
         );
@@ -100,7 +103,8 @@ public class AuditService {
                         queryDTO.getEventType(),
                         queryDTO.getEventLevel(),
                         queryDTO.getStartTime(),
-                        queryDTO.getEndTime()
+                        queryDTO.getEndTime(),
+                        queryDTO.getTraceId()
                 ),
                 PageRequest.of(queryDTO.getPage() - 1, queryDTO.getPageSize())
         );
@@ -117,13 +121,13 @@ public class AuditService {
 
         // Total operation count
         long totalOperations = auditLogRepository.count(
-                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, null)
+                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, null, null)
         );
         report.put("totalOperations", totalOperations);
 
         // Failed operation count (status = FAILURE)
         long failedOperations = auditLogRepository.count(
-                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, "FAILURE")
+                AuditLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, "FAILURE", null)
         );
         report.put("failedOperations", failedOperations);
 
@@ -135,19 +139,19 @@ public class AuditService {
 
         // Data access count
         long totalDataAccess = dataAccessLogRepository.count(
-                DataAccessLogSpecification.buildSearchSpec(null, null, null, startTime, endTime)
+                DataAccessLogSpecification.buildSearchSpec(null, null, null, startTime, endTime, null, null)
         );
         report.put("totalDataAccess", totalDataAccess);
 
         // System event count
         long totalEvents = systemEventRepository.count(
-                SystemEventSpecification.buildSearchSpec(null, null, startTime, endTime)
+                SystemEventSpecification.buildSearchSpec(null, null, startTime, endTime, null)
         );
         report.put("totalSystemEvents", totalEvents);
 
         // Critical event count (eventLevel = CRITICAL)
         long criticalEvents = systemEventRepository.count(
-                SystemEventSpecification.buildSearchSpec(null, "CRITICAL", startTime, endTime)
+                SystemEventSpecification.buildSearchSpec(null, "CRITICAL", startTime, endTime, null)
         );
         report.put("criticalEvents", criticalEvents);
 
@@ -166,7 +170,7 @@ public class AuditService {
                 AuditLogSpecification.buildSearchSpec(
                         queryDTO.getServiceName(), queryDTO.getOperation(),
                         queryDTO.getUsername(), queryDTO.getStartTime(),
-                        queryDTO.getEndTime(), queryDTO.getStatus()
+                        queryDTO.getEndTime(), queryDTO.getStatus(), queryDTO.getTraceId()
                 )
         );
 
@@ -189,7 +193,7 @@ public class AuditService {
                 DataAccessLogSpecification.buildSearchSpec(
                         queryDTO.getUserId(), queryDTO.getDataDomain(),
                         queryDTO.getPatientId(), queryDTO.getStartTime(),
-                        queryDTO.getEndTime()
+                        queryDTO.getEndTime(), queryDTO.getTraceId(), queryDTO.getAccessType()
                 )
         );
 
@@ -211,7 +215,7 @@ public class AuditService {
         List<SystemEventEntity> events = systemEventRepository.findAll(
                 SystemEventSpecification.buildSearchSpec(
                         queryDTO.getEventType(), queryDTO.getEventLevel(),
-                        queryDTO.getStartTime(), queryDTO.getEndTime()
+                        queryDTO.getStartTime(), queryDTO.getEndTime(), queryDTO.getTraceId()
                 )
         );
 

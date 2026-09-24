@@ -33,10 +33,10 @@ import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 
 /**
- * 专病知识库：知识空间 / 知识条目 / 中文检索 / 队列联动 / 问答会话数据层。
+ * 专病知识库：知识空间 / 知识条目 / 中文检索 / 队列联动 / AI 问答编排。
  * <p>数据落 cdr 域（与 c_disease_cohort 同域）；条目状态机 DRAFT→PUBLISHED→ARCHIVED。
- * <p>AI 能力（摘要/向量化/RAG 问答）本切片未接入：内容变更只标记 ai_status=PENDING，
- * 由后续 AI 切片（ai-worker 扩展 + DiseaseKnowledgeAiService）统一补算；/qa/ask 暂按降级语义返回。
+ * <p>AI 能力（摘要/向量化/RAG 问答）经 {@link DiseaseKnowledgeAiService} 直调 ai-worker，
+ * 失败仅降级（ai_status=FAILED / SSE error 帧），不阻塞内容管理。
  */
 @Slf4j
 @Service
@@ -51,6 +51,8 @@ public class DiseaseKnowledgeService {
     private final DiseaseKbQaSessionRepository qaSessionRepository;
     private final DiseaseKbQaMessageRepository qaMessageRepository;
     private final DiseaseCohortRepository cohortRepository;
+    private final DiseaseKnowledgeAiService aiService;
+    private final DiseaseCohortEventService cohortEventService;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final com.maidc.common.minio.service.MinioService minioService;
 
@@ -200,7 +202,9 @@ public class DiseaseKnowledgeService {
         entity.setStatus("DRAFT");
         entity.setAiStatus("PENDING");
         if (entity.getOrgId() == null) entity.setOrgId(0L);
-        return itemRepository.save(entity);
+        DiseaseKbItemEntity saved = itemRepository.save(entity);
+        aiService.summarizeBestEffort(saved.getId());
+        return itemRepository.findById(saved.getId()).orElse(saved);
     }
 
     @Transactional
@@ -229,7 +233,12 @@ public class DiseaseKnowledgeService {
             item.setAiSummary(null);
             item.setAiExtract(null);
         }
-        return itemRepository.save(item);
+        DiseaseKbItemEntity saved = itemRepository.save(item);
+        if (contentChanged) {
+            aiService.summarizeBestEffort(saved.getId());
+            return itemRepository.findById(saved.getId()).orElse(saved);
+        }
+        return saved;
     }
 
     @Transactional
@@ -237,26 +246,34 @@ public class DiseaseKnowledgeService {
         itemRepository.delete(getItem(id));
     }
 
-    /** 发布 / 下架；发布标记 ai_status=PENDING 待 AI 切片补算 */
+    /** 发布 / 下架；发布触发 AI 摘要与向量化（best-effort 降级） */
     @Transactional
     public DiseaseKbItemEntity publishItem(Long id, String action) {
         DiseaseKbItemEntity item = getItem(id);
         switch (action == null ? "" : action) {
-            case "PUBLISH" -> {
-                item.setStatus("PUBLISHED");
-                item.setAiStatus("PENDING");
-            }
+            case "PUBLISH" -> item.setStatus("PUBLISHED");
             case "ARCHIVE" -> item.setStatus("ARCHIVED");
             default -> throw new BusinessException(ErrorCode.BAD_REQUEST.getCode(), "action 仅支持 PUBLISH / ARCHIVE");
         }
-        return itemRepository.save(item);
+        itemRepository.save(item);
+        if ("PUBLISH".equals(action)) {
+            aiService.summarizeBestEffort(id);
+            // 队列动态事件（FR6）：经 space 关联队列（知识空间未绑定队列时 cohortId 为空）
+            Long cohortId = spaceRepository.findById(item.getSpaceId())
+                    .map(space -> space.getCohortId()).orElse(null);
+            cohortEventService.record(DiseaseCohortEventService.TYPE_KB_ITEM_PUBLISHED, cohortId, item.getOrgId(),
+                    "知识库《" + item.getTitle() + "》已发布");
+        }
+        return itemRepository.findById(id).orElse(item);
     }
 
     @Transactional
     public DiseaseKbItemEntity recompute(Long id) {
         DiseaseKbItemEntity item = getItem(id);
         item.setAiStatus("PENDING");
-        return itemRepository.save(item);
+        itemRepository.save(item);
+        aiService.summarizeBestEffort(id);
+        return itemRepository.findById(id).orElse(item);
     }
 
     private void validateItem(DiseaseKbItemEntity entity) {
@@ -379,7 +396,7 @@ public class DiseaseKnowledgeService {
         qaSessionRepository.delete(requireSession(sessionId));
     }
 
-    /** 提问：AI 切片未接入前按降级语义拒绝（会话/消息数据层已就绪，接入后改为 SSE 流式） */
+    /** 提问：校验会话 → 落用户消息（首问生成会话标题）→ 流式透传 ai-worker（引用与免责声明由前端渲染） */
     public SseEmitter ask(Long sessionId, String question) {
         DiseaseKbQaSessionEntity session = requireSession(sessionId);
         DiseaseKbSpaceEntity space = spaceRepository.findById(session.getSpaceId())
@@ -390,7 +407,16 @@ public class DiseaseKnowledgeService {
         if (question == null || question.isBlank()) {
             throw new BusinessException(ErrorCode.BAD_REQUEST.getCode(), "问题不能为空");
         }
-        throw new BusinessException(ErrorCode.KB_AI_UNAVAILABLE);
+        DiseaseKbQaMessageEntity userMsg = new DiseaseKbQaMessageEntity();
+        userMsg.setSessionId(sessionId);
+        userMsg.setRole("USER");
+        userMsg.setContent(question);
+        qaMessageRepository.save(userMsg);
+        if (session.getTitle() == null || session.getTitle().isBlank()) {
+            session.setTitle(question.length() > 50 ? question.substring(0, 50) : question);
+            qaSessionRepository.save(session);
+        }
+        return aiService.streamAnswer(space.getId(), sessionId, question);
     }
 
     private DiseaseKbQaSessionEntity requireSession(Long sessionId) {
