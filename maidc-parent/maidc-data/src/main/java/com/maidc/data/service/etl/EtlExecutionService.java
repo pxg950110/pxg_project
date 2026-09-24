@@ -3,12 +3,14 @@ package com.maidc.data.service.etl;
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import com.maidc.common.core.result.PageResult;
+import com.maidc.data.config.EtlProperties;
 import com.maidc.data.dto.etl.EtlExecutionQueryDTO;
 import com.maidc.data.entity.EtlExecutionEntity;
 import com.maidc.data.entity.EtlPipelineEntity;
 import com.maidc.data.entity.EtlStepEntity;
 import com.maidc.data.mapper.DataMapper;
 import com.maidc.data.repository.EtlExecutionRepository;
+import com.maidc.data.repository.EtlExecutionSpecification;
 import com.maidc.data.repository.EtlPipelineRepository;
 import com.maidc.data.repository.EtlStepRepository;
 import com.maidc.data.vo.EtlExecutionVO;
@@ -21,29 +23,31 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class EtlExecutionService {
 
+    private static final int MAX_STEP_RETRIES = 3;
+
     private final EtlPipelineRepository pipelineRepository;
     private final EtlStepRepository stepRepository;
     private final EtlExecutionRepository executionRepository;
     private final EtlConfigGenerator configGenerator;
+    private final EmbulkProcessRunner embulkRunner;
+    private final com.maidc.data.repository.DataSourceRepository dataSourceRepository;
+    private final EtlProperties etlProperties;
+    private final ExecutorService etlExecutor;
     private final DataMapper dataMapper;
-
-    private final Map<Long, Process> runningProcesses = new ConcurrentHashMap<>();
 
     /**
      * Trigger a new pipeline execution. Returns immediately; steps run in background.
@@ -71,14 +75,10 @@ public class EtlExecutionService {
 
         final Long executionId = execution.getId();
 
-        // Load steps
+        // Load steps (plain data for the background task)
         List<EtlStepEntity> steps = stepRepository.findByPipelineIdAndIsDeletedFalseOrderByStepOrder(pipelineId);
 
-        // Start async execution thread
-        Thread executorThread = new Thread(() -> executeSteps(executionId, pipelineId, steps),
-                "etl-exec-" + executionId);
-        executorThread.setDaemon(true);
-        executorThread.start();
+        etlExecutor.submit(() -> executeSteps(executionId, pipelineId, steps));
 
         log.info("ETL execution triggered: executionId={}, pipelineId={}, steps={}", executionId, pipelineId, steps.size());
         return enrichExecutionVO(execution);
@@ -90,20 +90,20 @@ public class EtlExecutionService {
     private void executeSteps(Long executionId, Long pipelineId, List<EtlStepEntity> steps) {
         try {
             for (EtlStepEntity step : steps) {
-                EtlExecutionEntity stepExecution = executeSingleStep(executionId, pipelineId, step);
+                EtlExecutionEntity stepExecution = executeSingleStep(pipelineId, step);
 
                 if ("FAILED".equals(stepExecution.getStatus())) {
                     String onError = step.getOnError() != null ? step.getOnError() : "ABORT";
                     switch (onError) {
                         case "ABORT" -> {
-                            markRemainingStepsSkipped(executionId, pipelineId, step.getStepOrder());
+                            markRemainingStepsSkipped(pipelineId, step.getStepOrder());
                             finalizePipelineExecution(executionId, pipelineId, "FAILED");
                             return;
                         }
                         case "RETRY" -> {
-                            boolean succeeded = retryStep(executionId, pipelineId, step, 3);
+                            boolean succeeded = retryStep(pipelineId, step, MAX_STEP_RETRIES);
                             if (!succeeded) {
-                                markRemainingStepsSkipped(executionId, pipelineId, step.getStepOrder());
+                                markRemainingStepsSkipped(pipelineId, step.getStepOrder());
                                 finalizePipelineExecution(executionId, pipelineId, "FAILED");
                                 return;
                             }
@@ -126,10 +126,10 @@ public class EtlExecutionService {
     /**
      * Execute a single step and return the execution record.
      */
-    private EtlExecutionEntity executeSingleStep(Long parentExecutionId, Long pipelineId, EtlStepEntity step) {
-        Long orgId = pipelineRepository.findById(pipelineId)
-                .map(EtlPipelineEntity::getOrgId)
+    private EtlExecutionEntity executeSingleStep(Long pipelineId, EtlStepEntity step) {
+        EtlPipelineEntity pipelineEntity = pipelineRepository.findById(pipelineId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        Long orgId = pipelineEntity.getOrgId();
 
         // Create step-level execution record
         EtlExecutionEntity stepExecution = new EtlExecutionEntity();
@@ -141,44 +141,29 @@ public class EtlExecutionService {
         stepExecution.setTriggerType("AUTO");
         stepExecution = executionRepository.save(stepExecution);
 
+        Long stepExecutionId = stepExecution.getId();
         try {
-            // Generate Embulk config
-            // Use connection params from DataSource (simplified: using defaults for now)
+            ConnectionParams source = resolveConnection(
+                    pipelineEntity.getSourceId() == null ? null
+                            : dataSourceRepository.findById(pipelineEntity.getSourceId()).orElse(null),
+                    etlProperties.getSourceHost(), etlProperties.getSourcePort(), etlProperties.getSourceDatabase(),
+                    etlProperties.getSourceUser(), etlProperties.getSourcePassword());
+            ConnectionParams target = new ConnectionParams(
+                    etlProperties.getTargetHost(), etlProperties.getTargetPort(), etlProperties.getTargetDatabase(),
+                    etlProperties.getTargetUser(), etlProperties.getTargetPassword());
+
             String config = configGenerator.generateEmbulkConfig(
                     step,
-                    "localhost", 5432, "source_db", "source_user", "source_pass",
-                    "localhost", 5432, "target_db", "target_user", "target_pass"
+                    source.host(), source.port(), source.database(), source.user(), source.password(),
+                    target.host(), target.port(), target.database(), target.user(), target.password()
             );
 
             stepExecution.setEngineConfig(config);
             stepExecution = executionRepository.save(stepExecution);
 
-            // Execute Embulk via ProcessBuilder
-            ProcessBuilder pb = new ProcessBuilder("embulk", "run", "-");
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            runningProcesses.put(stepExecution.getId(), process);
+            EmbulkProcessRunner.RunResult result = embulkRunner.run(stepExecutionId, config);
 
-            // Write config to stdin
-            try (var os = process.getOutputStream()) {
-                os.write(config.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-            }
-
-            // Capture output for logging
-            StringBuilder output = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-            }
-
-            int exitCode = process.waitFor();
-            runningProcesses.remove(stepExecution.getId());
-
-            if (exitCode == 0) {
+            if (result.success()) {
                 stepExecution.setStatus("SUCCESS");
                 // Update step lastSyncTime
                 step.setLastSyncTime(LocalDateTime.now());
@@ -186,30 +171,56 @@ public class EtlExecutionService {
                 log.info("Step {} executed successfully", step.getId());
             } else {
                 stepExecution.setStatus("FAILED");
-                stepExecution.setErrorMessage("Embulk exited with code " + exitCode + ": " +
-                        truncate(output.toString(), 4000));
-                log.error("Step {} failed with exit code {}", step.getId(), exitCode);
+                stepExecution.setErrorMessage("Embulk exited with code " + result.exitCode() + ": "
+                        + EmbulkProcessRunner.truncateOutput(result.output()));
+                log.error("Step {} failed with exit code {}", step.getId(), result.exitCode());
             }
 
-        } catch (Exception e) {
-            runningProcesses.remove(stepExecution.getId());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             stepExecution.setStatus("FAILED");
-            stepExecution.setErrorMessage(truncate(e.getMessage(), 4000));
+            stepExecution.setErrorMessage("Embulk execution interrupted");
+            log.error("Step {} execution interrupted", step.getId(), e);
+        } catch (Exception e) {
+            stepExecution.setStatus("FAILED");
+            stepExecution.setErrorMessage(EmbulkProcessRunner.truncate(e.getMessage(), 4000));
             log.error("Step {} execution error", step.getId(), e);
         }
 
         stepExecution.setEndTime(LocalDateTime.now());
-        stepExecution = executionRepository.save(stepExecution);
-        return stepExecution;
+        return executionRepository.save(stepExecution);
+    }
+
+    /**
+     * 数据源实体连接参数解析：实体字段非空优先，空缺字段逐项回落 EtlProperties 兜底值。
+     */
+    private ConnectionParams resolveConnection(com.maidc.data.entity.DataSourceEntity entity,
+                                               String fbHost, int fbPort, String fbDb,
+                                               String fbUser, String fbPass) {
+        if (entity == null) {
+            return new ConnectionParams(fbHost, fbPort, fbDb, fbUser, fbPass);
+        }
+        return new ConnectionParams(
+                nonBlank(entity.getHost()) ? entity.getHost() : fbHost,
+                entity.getPort() != null ? entity.getPort() : fbPort,
+                nonBlank(entity.getDatabaseName()) ? entity.getDatabaseName() : fbDb,
+                nonBlank(entity.getUsername()) ? entity.getUsername() : fbUser,
+                entity.getPassword() != null ? entity.getPassword() : fbPass);
+    }
+
+    private boolean nonBlank(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private record ConnectionParams(String host, int port, String database, String user, String password) {
     }
 
     /**
      * Retry a step up to maxRetries times.
      */
-    private boolean retryStep(Long executionId, Long pipelineId, EtlStepEntity step, int maxRetries) {
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+    private boolean retryStep(Long pipelineId, EtlStepEntity step, int maxRetries) {        for (int attempt = 1; attempt <= maxRetries; attempt++) {
             log.info("Retrying step {} (attempt {}/{})", step.getId(), attempt, maxRetries);
-            EtlExecutionEntity retryExecution = executeSingleStep(executionId, pipelineId, step);
+            EtlExecutionEntity retryExecution = executeSingleStep(pipelineId, step);
             if ("SUCCESS".equals(retryExecution.getStatus())) {
                 return true;
             }
@@ -221,7 +232,7 @@ public class EtlExecutionService {
     /**
      * Mark remaining steps (with higher stepOrder) as SKIPPED.
      */
-    private void markRemainingStepsSkipped(Long executionId, Long pipelineId, int afterStepOrder) {
+    private void markRemainingStepsSkipped(Long pipelineId, int afterStepOrder) {
         Long orgId = pipelineRepository.findById(pipelineId)
                 .map(EtlPipelineEntity::getOrgId)
                 .orElse(null);
@@ -268,31 +279,16 @@ public class EtlExecutionService {
      * List executions with filtering and pagination.
      */
     public PageResult<EtlExecutionVO> listExecutions(EtlExecutionQueryDTO query) {
-        Specification<EtlExecutionEntity> spec = (root, q, cb) -> {
-            var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
-
-            if (query.getPipelineId() != null) {
-                predicates.add(cb.equal(root.get("pipelineId"), query.getPipelineId()));
-            }
-            if (query.getStepId() != null) {
-                predicates.add(cb.equal(root.get("stepId"), query.getStepId()));
-            }
-            if (query.getStatus() != null && !query.getStatus().isBlank()) {
-                predicates.add(cb.equal(root.get("status"), query.getStatus()));
-            }
-            if (query.getTriggerType() != null && !query.getTriggerType().isBlank()) {
-                predicates.add(cb.equal(root.get("triggerType"), query.getTriggerType()));
-            }
-
-            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
-        };
+        Specification<EtlExecutionEntity> spec = EtlExecutionSpecification.buildSearchSpec(
+                query.getPipelineId(), query.getStepId(), query.getStatus(), query.getTriggerType());
 
         PageRequest pageRequest = PageRequest.of(
                 query.getPage() - 1, query.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<EtlExecutionEntity> page = executionRepository.findAll(spec, pageRequest);
-        Page<EtlExecutionVO> voPage = page.map(this::enrichExecutionVO);
+        ExecutionNames names = loadNames(page.getContent());
+        Page<EtlExecutionVO> voPage = page.map(entity -> toExecutionVO(entity, names));
         return PageResult.of(voPage);
     }
 
@@ -317,12 +313,8 @@ public class EtlExecutionService {
             throw new BusinessException(ErrorCode.TASK_NOT_RUNNING);
         }
 
-        // Kill process if running
-        Process process = runningProcesses.remove(id);
-        if (process != null && process.isAlive()) {
-            process.destroyForcibly();
-            log.info("Killed process for execution {}", id);
-        }
+        // Kill process if running (only effective when this instance spawned it)
+        embulkRunner.cancel(id);
 
         entity.setStatus("CANCELLED");
         entity.setEndTime(LocalDateTime.now());
@@ -366,8 +358,10 @@ public class EtlExecutionService {
         return "No logs available";
     }
 
+    // -------------------------------------------------------------- enrichment
+
     /**
-     * Enrich execution VO with pipelineName and stepName.
+     * 单条 enriched 查询：逐个补齐 pipelineName / stepName。
      */
     private EtlExecutionVO enrichExecutionVO(EtlExecutionEntity entity) {
         EtlExecutionVO vo = dataMapper.toEtlExecutionVO(entity);
@@ -385,8 +379,32 @@ public class EtlExecutionService {
         return vo;
     }
 
-    private String truncate(String str, int maxLen) {
-        if (str == null) return null;
-        return str.length() <= maxLen ? str : str.substring(0, maxLen) + "...(truncated)";
+    /**
+     * 分页列表的名称批量加载：整页只做两次 findAllById，避免逐行查库。
+     */
+    private ExecutionNames loadNames(List<EtlExecutionEntity> entities) {
+        List<Long> pipelineIds = entities.stream()
+                .map(EtlExecutionEntity::getPipelineId).filter(Objects::nonNull).distinct().toList();
+        List<Long> stepIds = entities.stream()
+                .map(EtlExecutionEntity::getStepId).filter(Objects::nonNull).distinct().toList();
+
+        Map<Long, String> pipelineNames = pipelineRepository.findAllById(pipelineIds).stream()
+                .collect(Collectors.toMap(EtlPipelineEntity::getId, EtlPipelineEntity::getPipelineName));
+        Map<Long, String> stepNames = stepRepository.findAllById(stepIds).stream()
+                .collect(Collectors.toMap(EtlStepEntity::getId, EtlStepEntity::getStepName));
+        return new ExecutionNames(pipelineNames, stepNames);
+    }
+
+    private EtlExecutionVO toExecutionVO(EtlExecutionEntity entity, ExecutionNames names) {
+        EtlExecutionVO vo = dataMapper.toEtlExecutionVO(entity);
+        vo.setPipelineName(names.pipelineName(entity.getPipelineId()));
+        vo.setStepName(names.stepName(entity.getStepId()));
+        return vo;
+    }
+
+    private record ExecutionNames(Map<Long, String> pipelineNames, Map<Long, String> stepNames) {
+        String pipelineName(Long id) { return id == null ? null : pipelineNames.get(id); }
+
+        String stepName(Long id) { return id == null ? null : stepNames.get(id); }
     }
 }
