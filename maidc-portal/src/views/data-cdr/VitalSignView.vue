@@ -1,77 +1,62 @@
 <template>
   <div class="vital-sign-view">
-    <a-spin :spinning="loading">
+    <div v-loading="loading" class="min-h-[200px]">
       <!-- Latest Values Summary -->
-      <a-row :gutter="16" class="vital-summary">
-        <a-col :xs="12" :sm="12" :md="6">
-          <MetricCard
-            title="体温"
-            :value="latestValues.temperature ?? '--'"
-            suffix="°C"
-            :icon="ThermometerIcon"
-          />
-        </a-col>
-        <a-col :xs="12" :sm="12" :md="6">
-          <MetricCard
-            title="心率"
-            :value="latestValues.heart_rate ?? '--'"
-            suffix="bpm"
-            :icon="HeartIcon"
-          />
-        </a-col>
-        <a-col :xs="12" :sm="12" :md="6">
-          <MetricCard
-            title="血压"
-            :value="latestValues.blood_pressure ?? '--'"
-            suffix="mmHg"
-            :icon="DashboardIcon"
-          />
-        </a-col>
-        <a-col :xs="12" :sm="12" :md="6">
-          <MetricCard
-            title="血氧饱和度"
-            :value="latestValues.spo2 ?? '--'"
-            suffix="%"
-            :icon="LungsIcon"
-          />
-        </a-col>
-      </a-row>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 vital-summary">
+        <MetricCard
+          title="体温"
+          :value="latestValues.temperature ?? '--'"
+          suffix="°C"
+          :icon="ThermometerIcon"
+        />
+        <MetricCard
+          title="心率"
+          :value="latestValues.heart_rate ?? '--'"
+          suffix="bpm"
+          :icon="HeartIcon"
+        />
+        <MetricCard
+          title="血压"
+          :value="latestValues.blood_pressure ?? '--'"
+          suffix="mmHg"
+          :icon="DashboardIcon"
+        />
+        <MetricCard
+          title="血氧饱和度"
+          :value="latestValues.spo2 ?? '--'"
+          suffix="%"
+          :icon="LungsIcon"
+        />
+      </div>
 
       <!-- Charts -->
-      <a-row :gutter="[16, 16]" class="vital-charts">
-        <a-col :xs="24" :lg="12">
-          <a-card title="体温趋势" :bordered="false" size="small" class="chart-card">
-            <MetricChart :option="temperatureChartOption" :height="chartHeight" />
-          </a-card>
-        </a-col>
-        <a-col :xs="24" :lg="12">
-          <a-card title="心率趋势" :bordered="false" size="small" class="chart-card">
-            <MetricChart :option="heartRateChartOption" :height="chartHeight" />
-          </a-card>
-        </a-col>
-        <a-col :xs="24" :lg="12">
-          <a-card title="血压趋势" :bordered="false" size="small" class="chart-card">
-            <MetricChart :option="bloodPressureChartOption" :height="chartHeight" />
-          </a-card>
-        </a-col>
-        <a-col :xs="24" :lg="12">
-          <a-card title="呼吸频率 & SpO2" :bordered="false" size="small" class="chart-card">
-            <MetricChart :option="respAndSpo2ChartOption" :height="chartHeight" />
-          </a-card>
-        </a-col>
-      </a-row>
-    </a-spin>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 vital-charts">
+        <el-card shadow="never" size="small" class="chart-card !rounded-lg">
+          <template #header>体温趋势</template>
+          <MetricChart :option="temperatureChartOption" :height="chartHeight" />
+        </el-card>
+        <el-card shadow="never" size="small" class="chart-card !rounded-lg">
+          <template #header>心率趋势</template>
+          <MetricChart :option="heartRateChartOption" :height="chartHeight" />
+        </el-card>
+        <el-card shadow="never" size="small" class="chart-card !rounded-lg">
+          <template #header>血压趋势</template>
+          <MetricChart :option="bloodPressureChartOption" :height="chartHeight" />
+        </el-card>
+        <el-card shadow="never" size="small" class="chart-card !rounded-lg">
+          <template #header>呼吸频率 & SpO2</template>
+          <MetricChart :option="respAndSpo2ChartOption" :height="chartHeight" />
+        </el-card>
+      </div>
 
-    <a-empty v-if="!loading && records.length === 0" description="暂无生命体征数据" />
+      <el-empty v-if="!loading && records.length === 0" description="暂无生命体征数据" :image-size="60" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, h } from 'vue'
-import {
-  HeartOutlined,
-  DashboardOutlined,
-} from '@ant-design/icons-vue'
+import { Odometer } from '@element-plus/icons-vue'
 import MetricCard from '@/components/MetricCard/index.vue'
 import MetricChart from '@/components/MetricChart/index.vue'
 import { getVitalSigns } from '@/api/data'
@@ -90,10 +75,10 @@ const records = ref<any[]>([])
 const chartHeight = '280px'
 
 // Custom icon components for MetricCard
-const ThermometerIcon = () => h('span', { style: 'font-size: 28px' }, '\uD83C\uDF21')
-const HeartIcon = HeartOutlined
-const DashboardIcon = DashboardOutlined
-const LungsIcon = () => h('span', { style: 'font-size: 28px' }, '\uD83E\uDEA4')
+const ThermometerIcon = () => h('span', { style: 'font-size: 28px' }, '🌡')
+const HeartIcon = () => h('span', { style: 'font-size: 28px' }, '❤️')
+const DashboardIcon = Odometer
+const LungsIcon = () => h('span', { style: 'font-size: 28px' }, '🪤')
 
 const latestValues = computed(() => {
   if (records.value.length === 0) {
@@ -138,23 +123,23 @@ const temperatureChartOption = computed(() => ({
     smooth: true,
     symbol: 'circle',
     symbolSize: 6,
-    lineStyle: { color: '#ff4d4f', width: 2 },
-    itemStyle: { color: '#ff4d4f' },
+    lineStyle: { color: '#ef4444', width: 2 },
+    itemStyle: { color: '#ef4444' },
     areaStyle: {
       color: {
         type: 'linear',
         x: 0, y: 0, x2: 0, y2: 1,
         colorStops: [
-          { offset: 0, color: 'rgba(255, 77, 79, 0.25)' },
-          { offset: 1, color: 'rgba(255, 77, 79, 0.02)' },
+          { offset: 0, color: 'rgba(239, 68, 68, 0.25)' },
+          { offset: 1, color: 'rgba(239, 68, 68, 0.02)' },
         ],
       },
     },
     markLine: {
       silent: true,
       data: [
-        { yAxis: 37.3, lineStyle: { color: '#faad14', type: 'dashed' }, label: { formatter: '低热 37.3' } },
-        { yAxis: 38.0, lineStyle: { color: '#ff4d4f', type: 'dashed' }, label: { formatter: '发热 38.0' } },
+        { yAxis: 37.3, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: '低热 37.3' } },
+        { yAxis: 38.0, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { formatter: '发热 38.0' } },
       ],
     },
   }],
@@ -185,15 +170,15 @@ const heartRateChartOption = computed(() => ({
     smooth: true,
     symbol: 'circle',
     symbolSize: 6,
-    lineStyle: { color: '#1677ff', width: 2 },
-    itemStyle: { color: '#1677ff' },
+    lineStyle: { color: '#0ea5e9', width: 2 },
+    itemStyle: { color: '#0ea5e9' },
     areaStyle: {
       color: {
         type: 'linear',
         x: 0, y: 0, x2: 0, y2: 1,
         colorStops: [
-          { offset: 0, color: 'rgba(22, 119, 255, 0.2)' },
-          { offset: 1, color: 'rgba(22, 119, 255, 0.02)' },
+          { offset: 0, color: 'rgba(14, 165, 233, 0.2)' },
+          { offset: 1, color: 'rgba(14, 165, 233, 0.02)' },
         ],
       },
     },
@@ -231,8 +216,8 @@ const bloodPressureChartOption = computed(() => ({
       smooth: true,
       symbol: 'circle',
       symbolSize: 6,
-      lineStyle: { color: '#ff4d4f', width: 2 },
-      itemStyle: { color: '#ff4d4f' },
+      lineStyle: { color: '#ef4444', width: 2 },
+      itemStyle: { color: '#ef4444' },
     },
     {
       name: '舒张压',
@@ -241,8 +226,8 @@ const bloodPressureChartOption = computed(() => ({
       smooth: true,
       symbol: 'circle',
       symbolSize: 6,
-      lineStyle: { color: '#1677ff', width: 2 },
-      itemStyle: { color: '#1677ff' },
+      lineStyle: { color: '#0ea5e9', width: 2 },
+      itemStyle: { color: '#0ea5e9' },
     },
   ],
 }))
@@ -287,8 +272,8 @@ const respAndSpo2ChartOption = computed(() => ({
       smooth: true,
       symbol: 'circle',
       symbolSize: 6,
-      lineStyle: { color: '#52c41a', width: 2 },
-      itemStyle: { color: '#52c41a' },
+      lineStyle: { color: '#10b981', width: 2 },
+      itemStyle: { color: '#10b981' },
     },
     {
       name: 'SpO2',
@@ -298,8 +283,8 @@ const respAndSpo2ChartOption = computed(() => ({
       smooth: true,
       symbol: 'circle',
       symbolSize: 6,
-      lineStyle: { color: '#722ed1', width: 2 },
-      itemStyle: { color: '#722ed1' },
+      lineStyle: { color: '#8b5cf6', width: 2 },
+      itemStyle: { color: '#8b5cf6' },
     },
   ],
 }))
@@ -321,22 +306,12 @@ onMounted(loadData)
 .vital-sign-view {
   padding-top: 8px;
 }
-.vital-summary {
-  margin-bottom: 16px;
-}
 .vital-summary :deep(.metric-card) {
   height: 100%;
 }
-.chart-card {
-  border-radius: 8px;
-}
-.chart-card :deep(.ant-card-head) {
-  min-height: 40px;
-  padding: 0 16px;
-}
-.chart-card :deep(.ant-card-head-title) {
+.chart-card :deep(.el-card__header) {
+  padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  padding: 10px 0;
 }
 </style>

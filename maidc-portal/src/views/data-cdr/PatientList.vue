@@ -2,37 +2,61 @@
   <PageContainer title="患者管理">
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table :columns="columns" :data-source="tableData" :loading="loading" :pagination="pagination" @change="handleTableChange" row-key="id">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'gender'">
-          {{ record.gender === 'M' ? '男' : record.gender === 'F' ? '女' : '未知' }}
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="患者ID" prop="id" width="80" />
+      <el-table-column label="姓名" prop="name" width="100" />
+      <el-table-column label="性别" width="60">
+        <template #default="{ row }">
+          {{ row.gender === 'M' ? '男' : row.gender === 'F' ? '女' : '未知' }}
         </template>
-        <template v-if="column.key === 'age'">
-          {{ calcAge(record.birthDate) }}
+      </el-table-column>
+      <el-table-column label="年龄" width="60">
+        <template #default="{ row }">
+          {{ calcAge(row.birthDate) }}
         </template>
-        <template v-if="column.key === 'idCardHash'">
-          {{ record.idCardHash ? '***（已脱敏）' : '-' }}
+      </el-table-column>
+      <el-table-column label="出生日期" prop="birthDate" width="110" />
+      <el-table-column label="身份证" width="120">
+        <template #default="{ row }">
+          {{ row.idCardHash ? '***（已脱敏）' : '-' }}
         </template>
-        <template v-if="column.key === 'phoneHash'">
-          {{ record.phoneHash ? '***（已脱敏）' : '-' }}
+      </el-table-column>
+      <el-table-column label="联系电话" width="120">
+        <template #default="{ row }">
+          {{ row.phoneHash ? '***（已脱敏）' : '-' }}
         </template>
-        <template v-if="column.key === 'action'">
-          <a @click="router.push(`/data/cdr/patients/${record.id}`)">详情</a>
+      </el-table-column>
+      <el-table-column label="住址" prop="address" show-overflow-tooltip />
+      <el-table-column label="操作" width="80">
+        <template #default="{ row }">
+          <el-link type="primary" :underline="false" @click="router.push(`/data/cdr/patients/${row.id}`)">详情</el-link>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import { useTable } from '@/hooks/useTable'
 import { getPatients } from '@/api/data'
 
 const router = useRouter()
+const route = useRoute()
 
 const searchFields = [
   { name: 'keyword', label: '关键词', type: 'input', placeholder: '姓名搜索' },
@@ -49,21 +73,19 @@ function calcAge(birthDate: string | null) {
   return age
 }
 
-const columns = [
-  { title: '患者ID', dataIndex: 'id', key: 'id', width: 80 },
-  { title: '姓名', dataIndex: 'name', key: 'name', width: 100 },
-  { title: '性别', dataIndex: 'gender', key: 'gender', width: 60 },
-  { title: '年龄', key: 'age', width: 60 },
-  { title: '出生日期', dataIndex: 'birthDate', key: 'birthDate', width: 110 },
-  { title: '身份证', key: 'idCardHash', width: 120 },
-  { title: '联系电话', key: 'phoneHash', width: 120 },
-  { title: '住址', dataIndex: 'address', key: 'address', ellipsis: true },
-  { title: '操作', key: 'action', width: 80 },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange, setSearchParams } = useTable<any>(
+const { tableData, loading, pagination, fetchData, setSearchParams } = useTable<any>(
   (params) => getPatients(params)
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 function handleSearch(values: Record<string, any>) {
   formState.value = { ...values }
@@ -76,5 +98,13 @@ function handleReset() {
   fetchData()
 }
 
-onMounted(() => fetchData())
+onMounted(() => {
+  // 工作台快捷检索（FR5）跳转透传：/data/cdr/patients?keyword=xxx
+  const kw = typeof route.query.keyword === 'string' ? route.query.keyword.trim() : ''
+  if (kw) {
+    formState.value = { keyword: kw }
+    setSearchParams({ keyword: kw })
+  }
+  fetchData()
+})
 </script>

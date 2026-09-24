@@ -1,94 +1,111 @@
 <template>
   <PageContainer title="数据同步任务">
     <template #extra>
-      <a-badge :dot="hasRunningTasks" :offset="[6, 0]">
-        <a-button @click="fetchData()">
-          <template #icon><ReloadOutlined /></template>
+      <span class="relative inline-flex">
+        <span
+          v-if="hasRunningTasks"
+          class="refresh-dot"
+        />
+        <el-button @click="fetchData()">
+          <el-icon class="mr-1"><Refresh /></el-icon>
           刷新
-        </a-button>
-      </a-badge>
+        </el-button>
+      </span>
     </template>
 
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-alert
+    <el-alert
       v-if="hasRunningTasks"
       type="info"
       show-icon
-      style="margin-bottom: 16px"
-      message="存在正在运行的同步任务，数据每30秒自动刷新"
+      :closable="false"
+      class="mb-4"
+      title="存在正在运行的同步任务，数据每30秒自动刷新"
     />
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <StatusBadge :status="record.status" type="sync" />
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="任务名称" prop="task_name" width="200" show-overflow-tooltip />
+      <el-table-column label="数据源" prop="source_name" width="150" />
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <StatusBadge :status="row.status" type="sync" />
         </template>
-        <template v-if="column.key === 'progress'">
-          <a-progress
-            :percent="record.progress || 0"
-            :status="progressStatusMap[record.status] || 'active'"
-            :stroke-color="record.status === 'FAILED' ? '#ff4d4f' : '#1677ff'"
-            size="small"
+      </el-table-column>
+      <el-table-column label="进度" width="200">
+        <template #default="{ row }">
+          <el-progress
+            :percentage="row.progress || 0"
+            :stroke-width="6"
+            :status="progressStatusMap[row.status]"
+            :color="row.status === 'FAILED' ? '#ef4444' : '#0ea5e9'"
           />
         </template>
-        <template v-if="column.key === 'startTime'">
-          {{ record.start_time ? formatDateTime(record.start_time) : '-' }}
+      </el-table-column>
+      <el-table-column label="开始时间" width="170">
+        <template #default="{ row }">
+          {{ row.start_time ? formatDateTime(row.start_time) : '-' }}
         </template>
-        <template v-if="column.key === 'endTime'">
-          {{ record.end_time ? formatDateTime(record.end_time) : '-' }}
+      </el-table-column>
+      <el-table-column label="结束时间" width="170">
+        <template #default="{ row }">
+          {{ row.end_time ? formatDateTime(row.end_time) : '-' }}
         </template>
-        <template v-if="column.key === 'recordsProcessed'">
-          <span>{{ record.records_processed?.toLocaleString() || 0 }}</span>
-          <span v-if="record.records_total" style="color: rgba(0,0,0,0.45)">
-            / {{ record.records_total.toLocaleString() }}
+      </el-table-column>
+      <el-table-column label="处理记录数" width="160">
+        <template #default="{ row }">
+          <span>{{ row.records_processed?.toLocaleString() || 0 }}</span>
+          <span v-if="row.records_total" class="records-total">
+            / {{ row.records_total.toLocaleString() }}
           </span>
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" size="small" @click="handleViewLogs(record)">查看日志</a-button>
-            <a-button
-              v-if="record.status === 'FAILED'"
-              type="link"
-              size="small"
-              @click="handleRetry(record)"
-            >
-              重试
-            </a-button>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="160" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" size="small" @click="handleViewLogs(row)">查看日志</el-button>
+          <el-button
+            v-if="row.status === 'FAILED'"
+            link
+            type="primary"
+            size="small"
+            @click="handleRetry(row)"
+          >
+            重试
+          </el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- 日志弹窗 -->
-    <a-modal
-      v-model:open="logModalVisible"
+    <el-dialog
+      v-model="logModalVisible"
       title="同步日志"
-      :footer="null"
-      :width="720"
-      destroy-on-close
+      width="720px"
+      :destroy-on-close="true"
     >
-      <div class="log-content">
-        <a-spin :spinning="logLoading">
-          <pre v-if="logContent" class="log-text">{{ logContent }}</pre>
-          <a-empty v-else description="暂无日志" />
-        </a-spin>
+      <div class="log-content" v-loading="logLoading">
+        <pre v-if="logContent" class="log-text">{{ logContent }}</pre>
+        <el-empty v-else description="暂无日志" :image-size="60" />
       </div>
-    </a-modal>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { message } from 'ant-design-vue'
-import { ReloadOutlined } from '@ant-design/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
@@ -122,32 +139,32 @@ function handleReset() {
 }
 
 // ===== 表格 =====
-const progressStatusMap: Record<string, string> = {
-  RUNNING: 'active',
+const progressStatusMap: Record<string, 'success' | 'exception' | undefined> = {
+  RUNNING: undefined,
   COMPLETED: 'success',
   FAILED: 'exception',
-  PENDING: 'normal',
-  CANCELLED: 'normal',
+  PENDING: undefined,
+  CANCELLED: undefined,
 }
 
-const columns = [
-  { title: '任务名称', dataIndex: 'task_name', key: 'task_name', width: 200, ellipsis: true },
-  { title: '数据源', dataIndex: 'source_name', key: 'source_name', width: 150 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '进度', key: 'progress', width: 200 },
-  { title: '开始时间', key: 'startTime', width: 170 },
-  { title: '结束时间', key: 'endTime', width: 170 },
-  { title: '处理记录数', key: 'recordsProcessed', width: 160 },
-  { title: '操作', key: 'action', width: 160, fixed: 'right' as const },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getSyncTasks({
     page: params.page,
     page_size: params.pageSize,
     ...currentSearchParams,
   }),
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 const hasRunningTasks = computed(() =>
   (tableData.value || []).some((item: any) => item.status === 'RUNNING'),
@@ -196,7 +213,7 @@ async function handleViewLogs(record: any) {
 async function handleRetry(record: any) {
   try {
     await retrySyncTask(record.id)
-    message.success('重试任务已启动')
+    ElMessage.success('重试任务已启动')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -214,9 +231,23 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.refresh-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  z-index: 1;
+}
+.records-total {
+  color: #94a3b8;
+}
 .log-content {
   max-height: 500px;
   overflow: auto;
+  min-height: 120px;
 }
 .log-text {
   margin: 0;

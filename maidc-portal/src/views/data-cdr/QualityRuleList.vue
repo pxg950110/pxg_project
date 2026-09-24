@@ -1,171 +1,179 @@
 <template>
   <PageContainer title="数据质量规则">
     <template #extra>
-      <a-button type="primary" @click="handleCreate">
-        <template #icon><PlusOutlined /></template>
+      <el-button type="primary" @click="handleCreate">
+        <el-icon class="mr-1"><Plus /></el-icon>
         新建规则
-      </a-button>
+      </el-button>
     </template>
 
     <SearchForm :fields="searchFields" @search="handleSearch" @reset="handleReset" />
 
-    <a-table
-      :columns="columns"
-      :data-source="tableData"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'ruleType'">
-          <a-tag :color="ruleTypeColorMap[record.rule_type] || 'default'">
-            {{ ruleTypeMap[record.rule_type] || record.rule_type }}
-          </a-tag>
+    <el-table :data="tableData" v-loading="loading" row-key="id" size="default">
+      <el-table-column label="规则名称" prop="name" width="200" show-overflow-tooltip />
+      <el-table-column label="规则类型" width="100">
+        <template #default="{ row }">
+          <el-tag
+            :type="ruleTypeTagMap[row.rule_type] || 'info'"
+            size="small"
+            :style="ruleTypeStyleMap[row.rule_type]"
+          >
+            {{ ruleTypeMap[row.rule_type] || row.rule_type }}
+          </el-tag>
         </template>
-        <template v-if="column.key === 'threshold'">
-          {{ record.threshold }}%
+      </el-table-column>
+      <el-table-column label="目标表" prop="target_table" width="140" />
+      <el-table-column label="目标字段" prop="target_field" width="120" />
+      <el-table-column label="阈值" width="80">
+        <template #default="{ row }">
+          {{ row.threshold }}%
         </template>
-        <template v-if="column.key === 'status'">
-          <a-switch
-            :checked="record.status === 'ENABLED'"
-            checked-children="启用"
-            un-checked-children="禁用"
-            @change="(checked: boolean) => handleToggle(record, checked)"
+      </el-table-column>
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <el-switch
+            :model-value="row.status === 'ENABLED'"
+            inline-prompt
+            active-text="启用"
+            inactive-text="禁用"
+            @change="(v) => handleToggle(row, Boolean(v))"
           />
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
-            <a-popconfirm title="确定删除此规则？" @confirm="handleDelete(record)">
-              <a-button type="link" danger size="small">删除</a-button>
-            </a-popconfirm>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="140" fixed="right">
+        <template #default="{ row }">
+          <div class="flex items-center gap-2">
+            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-popconfirm title="确定删除此规则？" @confirm="handleDelete(row)">
+              <template #reference>
+                <el-button link type="danger" size="small">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </div>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      class="mt-4 justify-end"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="pagination.total"
+      :current-page="pagination.current"
+      :page-size="pagination.pageSize"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <!-- 新建/编辑规则弹窗 -->
-    <a-modal
-      v-model:open="modalVisible"
+    <el-dialog
+      v-model="modalVisible"
       :title="isEdit ? '编辑规则' : '新建规则'"
-      :confirm-loading="submitLoading"
-      :width="700"
-      @ok="handleSubmit"
-      @cancel="handleModalCancel"
-      destroy-on-close
+      width="700px"
+      :destroy-on-close="true"
     >
-      <a-form
+      <el-form
         ref="formRef"
         :model="formState"
         :rules="formRules"
-        :label-col="{ span: 5 }"
-        :wrapper-col="{ span: 18 }"
+        label-width="100px"
       >
-        <a-form-item label="规则名称" name="name">
-          <a-input v-model:value="formState.name" placeholder="请输入规则名称" />
-        </a-form-item>
+        <el-form-item label="规则名称" prop="name">
+          <el-input v-model="formState.name" placeholder="请输入规则名称" />
+        </el-form-item>
 
-        <a-form-item label="规则类型" name="rule_type">
-          <a-select v-model:value="formState.rule_type" placeholder="请选择规则类型" @change="handleRuleTypeChange">
-            <a-select-option v-for="item in ruleTypeOptions" :key="item.value" :value="item.value">
+        <el-form-item label="规则类型" prop="rule_type">
+          <el-select v-model="formState.rule_type" placeholder="请选择规则类型" style="width: 100%" @change="handleRuleTypeChange">
+            <el-option v-for="item in ruleTypeOptions" :key="item.value" :value="item.value" :label="item.label">
               <div>
                 <div>{{ item.label }}</div>
-                <div style="font-size: 12px; color: rgba(0,0,0,0.45)">{{ item.description }}</div>
+                <div style="font-size: 12px; color: #94a3b8">{{ item.description }}</div>
               </div>
-            </a-select-option>
-          </a-select>
-        </a-form-item>
+            </el-option>
+          </el-select>
+        </el-form-item>
 
-        <a-form-item label="目标表" name="target_table">
-          <a-select
-            v-model:value="formState.target_table"
-            placeholder="请选择目标表"
-            show-search
-            :options="tableOptions"
-            :filter-option="filterOption"
-          />
-        </a-form-item>
+        <el-form-item label="目标表" prop="target_table">
+          <el-select v-model="formState.target_table" placeholder="请选择目标表" filterable style="width: 100%">
+            <el-option v-for="opt in tableOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
+          </el-select>
+        </el-form-item>
 
-        <a-form-item label="目标字段" name="target_field">
-          <a-select
-            v-model:value="formState.target_field"
-            placeholder="请选择目标字段"
-            show-search
-            :options="fieldOptions"
-            :filter-option="filterOption"
-          />
-        </a-form-item>
+        <el-form-item label="目标字段" prop="target_field">
+          <el-select v-model="formState.target_field" placeholder="请选择目标字段" filterable style="width: 100%">
+            <el-option v-for="opt in fieldOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
+          </el-select>
+        </el-form-item>
 
         <!-- 完整性规则配置 -->
         <template v-if="formState.rule_type === 'completeness'">
-          <a-form-item label="空值检查" name="check_null">
-            <a-switch v-model:checked="formState.check_null" checked-children="检查空值" />
-          </a-form-item>
-          <a-form-item label="空字符串检查" name="check_empty">
-            <a-switch v-model:checked="formState.check_empty" checked-children="检查空字符串" />
-          </a-form-item>
+          <el-form-item label="空值检查" prop="check_null">
+            <el-switch v-model="formState.check_null" active-text="检查空值" />
+          </el-form-item>
+          <el-form-item label="空字符串检查" prop="check_empty">
+            <el-switch v-model="formState.check_empty" active-text="检查空字符串" />
+          </el-form-item>
         </template>
 
         <!-- 准确性规则配置 -->
         <template v-if="formState.rule_type === 'accuracy'">
-          <a-form-item label="校验表达式" name="expression">
-            <a-textarea
-              v-model:value="formState.expression"
+          <el-form-item label="校验表达式" prop="expression">
+            <el-input
+              v-model="formState.expression"
+              type="textarea"
               placeholder="如: value > 0 AND value < 200 (支持的变量: value, record)"
               :rows="2"
             />
-          </a-form-item>
+          </el-form-item>
         </template>
 
         <!-- 一致性规则配置 -->
         <template v-if="formState.rule_type === 'consistency'">
-          <a-form-item label="参照表" name="reference_table">
-            <a-select
-              v-model:value="formState.reference_table"
-              placeholder="选择参照表"
-              show-search
-              :options="tableOptions"
-              :filter-option="filterOption"
-            />
-          </a-form-item>
-          <a-form-item label="参照字段" name="reference_field">
-            <a-input v-model:value="formState.reference_field" placeholder="参照表中用于比对的字段" />
-          </a-form-item>
+          <el-form-item label="参照表" prop="reference_table">
+            <el-select v-model="formState.reference_table" placeholder="选择参照表" filterable style="width: 100%">
+              <el-option v-for="opt in tableOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="参照字段" prop="reference_field">
+            <el-input v-model="formState.reference_field" placeholder="参照表中用于比对的字段" />
+          </el-form-item>
         </template>
 
         <!-- 及时性规则配置 -->
         <template v-if="formState.rule_type === 'timeliness'">
-          <a-form-item label="时间阈值(小时)" name="time_threshold">
-            <a-input-number v-model:value="formState.time_threshold" :min="1" placeholder="数据最大延迟时间" style="width: 100%" />
-          </a-form-item>
+          <el-form-item label="时间阈值(小时)" prop="time_threshold">
+            <el-input-number v-model="formState.time_threshold" :min="1" placeholder="数据最大延迟时间" style="width: 100%" />
+          </el-form-item>
         </template>
 
-        <a-form-item label="阈值(%)" name="threshold">
-          <a-slider v-model:value="formState.threshold" :min="0" :max="100" :step="1" :marks="{ 0: '0%', 70: '70%', 90: '90%', 100: '100%' }" />
-        </a-form-item>
+        <el-form-item label="阈值(%)" prop="threshold">
+          <el-slider v-model="formState.threshold" :min="0" :max="100" :step="1" :marks="{ 0: '0%', 70: '70%', 90: '90%', 100: '100%' }" />
+        </el-form-item>
 
-        <a-form-item label="优先级" name="priority">
-          <a-select v-model:value="formState.priority" placeholder="请选择优先级">
-            <a-select-option value="HIGH"><a-tag color="red">高</a-tag></a-select-option>
-            <a-select-option value="MEDIUM"><a-tag color="orange">中</a-tag></a-select-option>
-            <a-select-option value="LOW"><a-tag color="blue">低</a-tag></a-select-option>
-          </a-select>
-        </a-form-item>
+        <el-form-item label="优先级" prop="priority">
+          <el-select v-model="formState.priority" placeholder="请选择优先级" style="width: 100%">
+            <el-option value="HIGH" label="高"><el-tag type="danger">高</el-tag></el-option>
+            <el-option value="MEDIUM" label="中"><el-tag type="warning">中</el-tag></el-option>
+            <el-option value="LOW" label="低"><el-tag type="primary">低</el-tag></el-option>
+          </el-select>
+        </el-form-item>
 
-        <a-form-item label="描述" name="description">
-          <a-textarea v-model:value="formState.description" :rows="2" placeholder="规则描述（选填）" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="formState.description" type="textarea" :rows="2" placeholder="规则描述（选填）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleModalCancel">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
-import type { FormInstance, Rule } from 'ant-design-vue/es/form'
+import { ElMessage, type FormInstance, type FormItemRule } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import { useTable } from '@/hooks/useTable'
@@ -188,11 +196,14 @@ const ruleTypeMap: Record<string, string> = {
   timeliness: '及时性',
 }
 
-const ruleTypeColorMap: Record<string, string> = {
-  completeness: 'blue',
-  accuracy: 'green',
-  consistency: 'purple',
-  timeliness: 'orange',
+const ruleTypeTagMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  completeness: 'primary',
+  accuracy: 'success',
+  timeliness: 'warning',
+}
+
+const ruleTypeStyleMap: Record<string, { color: string; background: string; borderColor: string }> = {
+  consistency: { color: '#8b5cf6', background: '#f5f3ff', borderColor: '#ddd6fe' },
 }
 
 const ruleTypeOptions = [
@@ -235,10 +246,6 @@ async function loadFieldOptions(tableName: string) {
 
 onMounted(() => { loadTableOptions(); fetchData() })
 
-function filterOption(input: string, option: any) {
-  return option.label?.toLowerCase().includes(input.toLowerCase())
-}
-
 // ===== 搜索 =====
 const searchFields = [
   { name: 'keyword', label: '关键词', type: 'input' as const, placeholder: '规则名称' },
@@ -262,23 +269,24 @@ function handleReset() {
 }
 
 // ===== 表格 =====
-const columns = [
-  { title: '规则名称', dataIndex: 'name', key: 'name', width: 200, ellipsis: true },
-  { title: '规则类型', key: 'ruleType', width: 100 },
-  { title: '目标表', dataIndex: 'target_table', width: 140 },
-  { title: '目标字段', dataIndex: 'target_field', width: 120 },
-  { title: '阈值', key: 'threshold', width: 80 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '操作', key: 'action', width: 140, fixed: 'right' as const },
-]
-
-const { tableData, loading, pagination, fetchData, handleTableChange } = useTable<any>(
+const { tableData, loading, pagination, fetchData } = useTable<any>(
   (params) => getQualityRules({
     page: params.page,
     page_size: params.pageSize,
     ...currentSearchParams,
   }),
 )
+
+function handlePageChange(page: number) {
+  pagination.current = page
+  fetchData({ page })
+}
+
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
+  pagination.current = 1
+  fetchData({ page: 1, pageSize: size })
+}
 
 // ===== 弹窗 =====
 const modalVisible = ref(false)
@@ -306,7 +314,7 @@ const formState = reactive({
   time_threshold: 24 as number,
 })
 
-const formRules: Record<string, Rule[]> = {
+const formRules: Record<string, FormItemRule[]> = {
   name: [{ required: true, message: '请输入规则名称' }],
   rule_type: [{ required: true, message: '请选择规则类型' }],
   target_table: [{ required: true, message: '请选择目标表' }],
@@ -356,7 +364,7 @@ function handleEdit(record: any) {
 }
 
 async function handleSubmit() {
-  await formRef.value?.validateFields()
+  await formRef.value?.validate()
   submitLoading.value = true
   try {
     const data: Record<string, any> = {
@@ -382,10 +390,10 @@ async function handleSubmit() {
 
     if (isEdit.value) {
       await updateQualityRule(editingId.value!, data)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createQualityRule(data)
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     handleModalCancel()
     fetchData()
@@ -404,7 +412,7 @@ function handleModalCancel() {
 async function handleToggle(record: any, checked: boolean) {
   try {
     await toggleQualityRule(record.id, checked)
-    message.success(checked ? '已启用' : '已禁用')
+    ElMessage.success(checked ? '已启用' : '已禁用')
     fetchData()
   } catch {
     // error handled by request interceptor
@@ -413,7 +421,7 @@ async function handleToggle(record: any, checked: boolean) {
 
 async function handleDelete(record: any) {
   await deleteQualityRule(record.id)
-  message.success('删除成功')
+  ElMessage.success('删除成功')
   fetchData()
 }
 

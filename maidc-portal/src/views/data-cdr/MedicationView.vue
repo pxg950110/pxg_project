@@ -2,54 +2,55 @@
   <div class="medication-view">
     <!-- Status Filter -->
     <div class="medication-filter">
-      <a-space>
+      <div class="flex items-center gap-2">
         <span class="filter-label">用药状态：</span>
-        <a-radio-group v-model:value="filterStatus" button-style="solid" size="small" @change="handleFilterChange">
-          <a-radio-button value="">全部</a-radio-button>
-          <a-radio-button value="ACTIVE">使用中</a-radio-button>
-          <a-radio-button value="COMPLETED">已完成</a-radio-button>
-          <a-radio-button value="DISCONTINUED">已停用</a-radio-button>
-        </a-radio-group>
-      </a-space>
+        <el-radio-group v-model="filterStatus" size="small" @change="handleFilterChange">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="ACTIVE">使用中</el-radio-button>
+          <el-radio-button value="COMPLETED">已完成</el-radio-button>
+          <el-radio-button value="DISCONTINUED">已停用</el-radio-button>
+        </el-radio-group>
+      </div>
     </div>
 
     <!-- Medication Table -->
-    <a-table
-      :columns="columns"
-      :data-source="filteredMedications"
-      :loading="loading"
-      :pagination="false"
-      row-key="id"
-      size="small"
-      class="medication-table"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'medication_name'">
-          <span class="med-name">{{ record.medication_name }}</span>
-          <div v-if="record.generic_name" class="med-generic">{{ record.generic_name }}</div>
+    <el-table :data="filteredMedications" v-loading="loading" row-key="id" size="small" class="medication-table">
+      <el-table-column label="药品名称" width="180">
+        <template #default="{ row }">
+          <span class="med-name">{{ row.medication_name }}</span>
+          <div v-if="row.generic_name" class="med-generic">{{ row.generic_name }}</div>
         </template>
-        <template v-if="column.key === 'dosage'">
-          <span>{{ record.dosage }}</span>
-          <div class="med-freq">{{ record.frequency }}</div>
+      </el-table-column>
+      <el-table-column label="剂量 / 频次" width="150">
+        <template #default="{ row }">
+          <span>{{ row.dosage }}</span>
+          <div class="med-freq">{{ row.frequency }}</div>
         </template>
-        <template v-if="column.key === 'route'">
-          <a-tag size="small">{{ record.route }}</a-tag>
+      </el-table-column>
+      <el-table-column label="给药途径" width="100">
+        <template #default="{ row }">
+          <el-tag size="small" type="info">{{ row.route }}</el-tag>
         </template>
-        <template v-if="column.key === 'start_date'">
-          {{ formatDate(record.start_date) }}
-          <template v-if="record.end_date">
+      </el-table-column>
+      <el-table-column label="用药时间" width="170">
+        <template #default="{ row }">
+          {{ formatDate(row.start_date) }}
+          <template v-if="row.end_date">
             <br />
             <span class="date-range-sep">至</span>
-            {{ formatDate(record.end_date) }}
+            {{ formatDate(row.end_date) }}
           </template>
         </template>
-        <template v-if="column.key === 'status'">
-          <StatusBadge :status="record.status" type="medication" />
+      </el-table-column>
+      <el-table-column label="处方医生" prop="prescribing_doctor" width="100" />
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <StatusBadge :status="row.status" type="medication" />
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
 
-    <a-empty v-if="!loading && filteredMedications.length === 0" description="暂无用药记录" />
+    <el-empty v-if="!loading && filteredMedications.length === 0" description="暂无用药记录" :image-size="60" />
   </div>
 </template>
 
@@ -71,15 +72,6 @@ const props = defineProps<Props>()
 const loading = ref(false)
 const medications = ref<any[]>([])
 const filterStatus = ref('')
-
-const columns = [
-  { title: '药品名称', dataIndex: 'medication_name', key: 'medication_name', width: 180 },
-  { title: '剂量 / 频次', dataIndex: 'dosage', key: 'dosage', width: 150 },
-  { title: '给药途径', dataIndex: 'route', key: 'route', width: 100 },
-  { title: '用药时间', dataIndex: 'start_date', key: 'start_date', width: 170 },
-  { title: '处方医生', dataIndex: 'prescribing_doctor', key: 'prescribing_doctor', width: 100 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-]
 
 const filteredMedications = computed(() => {
   if (!filterStatus.value) return medications.value
@@ -110,12 +102,12 @@ onMounted(loadData)
 .medication-filter {
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: #fafafa;
+  background: #f8fafc;
   border-radius: 6px;
 }
 .filter-label {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   font-weight: 500;
 }
 .medication-table {
@@ -123,19 +115,19 @@ onMounted(loadData)
 }
 .med-name {
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
+  color: #0f172a;
 }
 .med-generic {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-top: 2px;
 }
 .med-freq {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   margin-top: 2px;
 }
 .date-range-sep {
-  color: rgba(0, 0, 0, 0.25);
+  color: #cbd5e1;
 }
 </style>

@@ -2,38 +2,41 @@
   <div class="clinical-note-view">
     <!-- Search -->
     <div class="note-search">
-      <a-input-search
-        v-model:value="searchKeyword"
-        placeholder="搜索临床笔记关键词..."
-        enter-button="搜索"
-        allow-clear
-        style="max-width: 400px"
-        @search="handleSearch"
-        @press-enter="handleSearch"
-      />
+      <div class="flex items-center gap-2" style="max-width: 480px">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索临床笔记关键词..."
+          clearable
+          :prefix-icon="Search"
+          @keyup.enter="handleSearch"
+        />
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+      </div>
     </div>
 
-    <a-spin :spinning="loading">
+    <div v-loading="loading" class="min-h-[200px]">
       <!-- Notes Collapse -->
-      <a-collapse
+      <el-collapse
         v-if="filteredNotes.length > 0"
-        v-model:activeKey="activeKeys"
-        :bordered="false"
+        v-model="activeKeys"
         class="note-collapse"
-        expand-icon-position="start"
       >
-        <a-collapse-panel
+        <el-collapse-item
           v-for="note in filteredNotes"
           :key="note.id"
-          :header="undefined"
+          :name="note.id"
           class="note-panel"
         >
-          <template #header>
+          <template #title>
             <div class="note-header">
               <div class="note-header-left">
-                <a-tag :color="noteTypeColorMap[note.note_type] || 'default'" size="small">
+                <el-tag
+                  :type="noteTypeTagMap[note.note_type] || 'info'"
+                  size="small"
+                  :style="noteTypeStyleMap[note.note_type]"
+                >
                   {{ noteTypeLabelMap[note.note_type] || note.note_type }}
-                </a-tag>
+                </el-tag>
                 <span class="note-title">{{ note.title }}</span>
               </div>
               <div class="note-header-right">
@@ -46,32 +49,30 @@
           <div class="note-body">
             <div class="note-content" v-html="formatNoteContent(note.content)" />
             <div v-if="note.attachments && note.attachments.length > 0" class="note-attachments">
-              <a-divider orientation="left" :style="{ margin: '12px 0 8px', fontSize: '13px', color: 'rgba(0,0,0,0.45)' }">
-                附件
-              </a-divider>
-              <a-space wrap>
-                <a-tag
+              <el-divider content-position="left" class="attachments-divider">附件</el-divider>
+              <div class="flex flex-wrap gap-2">
+                <el-tag
                   v-for="(file, idx) in note.attachments"
                   :key="idx"
-                  color="default"
+                  type="info"
                   class="attachment-tag"
                 >
-                  <PaperClipOutlined /> {{ file.name }}
-                </a-tag>
-              </a-space>
+                  <el-icon class="mr-1"><Paperclip /></el-icon>{{ file.name }}
+                </el-tag>
+              </div>
             </div>
           </div>
-        </a-collapse-panel>
-      </a-collapse>
+        </el-collapse-item>
+      </el-collapse>
 
-      <a-empty v-else description="暂无临床笔记" />
-    </a-spin>
+      <el-empty v-else description="暂无临床笔记" :image-size="60" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { PaperClipOutlined } from '@ant-design/icons-vue'
+import { Search, Paperclip } from '@element-plus/icons-vue'
 import { getClinicalNotes } from '@/api/data'
 import { formatDateTime } from '@/utils/date'
 
@@ -89,27 +90,32 @@ const notes = ref<any[]>([])
 const searchKeyword = ref('')
 const activeKeys = ref<string[]>([])
 
-const noteTypeColorMap: Record<string, string> = {
-  ADMISSION: 'blue',
-  INITIAL_PROGRESS: 'green',
-  DAILY_PROGRESS: 'green',
-  DISCHARGE: 'purple',
-  OPERATION: 'red',
-  CONSULTATION: 'orange',
-  SHIFT_HANDOVER: 'cyan',
-  RESCUE: 'magenta',
-  NURSING: 'cyan',
-  RADIOLOGY: 'geekblue',
-  PATHOLOGY: 'volcano',
-  ADMISSION_ASSESSMENT: 'gold',
-  OTHER: 'default',
-  admission: 'blue',
-  progress: 'green',
-  discharge: 'purple',
-  operative: 'red',
-  consultation: 'orange',
-  nursing: 'cyan',
-  radiology: 'geekblue',
+type TagType = 'primary' | 'success' | 'warning' | 'danger' | 'info'
+
+const noteTypeTagMap: Record<string, TagType> = {
+  ADMISSION: 'primary',
+  INITIAL_PROGRESS: 'success',
+  DAILY_PROGRESS: 'success',
+  OPERATION: 'danger',
+  CONSULTATION: 'warning',
+  OTHER: 'info',
+  admission: 'primary',
+  progress: 'success',
+  operative: 'danger',
+  consultation: 'warning',
+}
+
+const noteTypeStyleMap: Record<string, { color: string; background: string; borderColor: string }> = {
+  DISCHARGE: { color: '#8b5cf6', background: '#f5f3ff', borderColor: '#ddd6fe' },
+  SHIFT_HANDOVER: { color: '#06b6d4', background: '#ecfeff', borderColor: '#a5f3fc' },
+  RESCUE: { color: '#ec4899', background: '#fdf2f8', borderColor: '#fbcfe8' },
+  NURSING: { color: '#06b6d4', background: '#ecfeff', borderColor: '#a5f3fc' },
+  RADIOLOGY: { color: '#4f46e5', background: '#eef2ff', borderColor: '#c7d2fe' },
+  PATHOLOGY: { color: '#f97316', background: '#fff7ed', borderColor: '#fed7aa' },
+  ADMISSION_ASSESSMENT: { color: '#f59e0b', background: '#fffbeb', borderColor: '#fde68a' },
+  discharge: { color: '#8b5cf6', background: '#f5f3ff', borderColor: '#ddd6fe' },
+  nursing: { color: '#06b6d4', background: '#ecfeff', borderColor: '#a5f3fc' },
+  radiology: { color: '#4f46e5', background: '#eef2ff', borderColor: '#c7d2fe' },
 }
 
 const noteTypeLabelMap: Record<string, string> = {
@@ -136,15 +142,15 @@ const noteTypeLabelMap: Record<string, string> = {
 }
 
 const signStatusLabelMap: Record<string, { color: string; text: string }> = {
-  UNSIGNED: { color: 'default', text: '未签' },
-  SIGNED: { color: 'green', text: '已签' },
-  COUNTERSIGNED: { color: 'blue', text: '双签' },
+  UNSIGNED: { color: '#94a3b8', text: '未签' },
+  SIGNED: { color: '#10b981', text: '已签' },
+  COUNTERSIGNED: { color: '#0ea5e9', text: '双签' },
 }
 
 const urgencyLabelMap: Record<string, { color: string; text: string }> = {
-  NORMAL: { color: 'default', text: '' },
-  URGENT: { color: 'orange', text: '紧急' },
-  CRITICAL: { color: 'red', text: '危重' },
+  NORMAL: { color: '#94a3b8', text: '' },
+  URGENT: { color: '#f59e0b', text: '紧急' },
+  CRITICAL: { color: '#ef4444', text: '危重' },
 }
 
 const filteredNotes = computed(() => {
@@ -195,19 +201,26 @@ onMounted(() => loadData())
 }
 .note-collapse {
   background: transparent;
+  border-top: none;
 }
 .note-panel {
   margin-bottom: 8px;
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f1f5f9;
   border-radius: 8px !important;
   overflow: hidden;
 }
-.note-panel :deep(.ant-collapse-header) {
+.note-panel :deep(.el-collapse-item__header) {
   padding: 12px 16px !important;
-  align-items: center !important;
+  height: auto;
+  min-height: 48px;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
 }
-.note-panel :deep(.ant-collapse-content-box) {
+.note-panel :deep(.el-collapse-item__wrap) {
+  border-bottom: none;
+}
+.note-panel :deep(.el-collapse-item__content) {
   padding: 0 16px 16px !important;
 }
 .note-header {
@@ -216,6 +229,7 @@ onMounted(() => loadData())
   justify-content: space-between;
   width: 100%;
   gap: 12px;
+  padding-right: 8px;
 }
 .note-header-left {
   display: flex;
@@ -227,7 +241,7 @@ onMounted(() => loadData())
 .note-title {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
+  color: #0f172a;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -240,33 +254,39 @@ onMounted(() => loadData())
 }
 .note-author {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
 }
 .note-date {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 .note-body {
   padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
 }
 .note-content {
   font-size: 14px;
   line-height: 1.8;
-  color: rgba(0, 0, 0, 0.65);
+  color: #64748b;
   white-space: pre-line;
   padding: 8px 12px;
-  background: #fafafa;
+  background: #f8fafc;
   border-radius: 6px;
 }
 .note-attachments {
   margin-top: 4px;
 }
+.attachments-divider {
+  margin: 12px 0 8px;
+}
+.attachments-divider :deep(.el-divider__text) {
+  font-size: 13px;
+  color: #94a3b8;
+}
 .attachment-tag {
   cursor: pointer;
 }
 .attachment-tag:hover {
-  color: #1677ff;
-  border-color: #1677ff;
+  color: #0ea5e9;
+  border-color: #0ea5e9;
 }
 </style>

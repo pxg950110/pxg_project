@@ -6,70 +6,70 @@
     :breadcrumb="breadcrumbs"
   >
     <template #extra>
-      <a-button @click="router.back()">
-        <LeftOutlined /> 返回
-      </a-button>
+      <el-button @click="router.back()">
+        <el-icon class="mr-1"><ArrowLeft /></el-icon> 返回
+      </el-button>
     </template>
 
     <template v-if="encounter">
       <!-- Encounter Header -->
-      <a-card :bordered="false" class="encounter-header-card">
-        <a-descriptions :column="{ xs: 1, sm: 2, md: 3, lg: 4 }" bordered size="small">
-          <a-descriptions-item label="就诊ID">
+      <el-card shadow="never" class="encounter-header-card !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <el-descriptions :column="4" border size="small">
+          <el-descriptions-item label="就诊ID">
             {{ encounter.encounter_id }}
-          </a-descriptions-item>
-          <a-descriptions-item label="患者姓名">
+          </el-descriptions-item>
+          <el-descriptions-item label="患者姓名">
             <router-link
               :to="`/data/cdr/patients/${patientId}`"
               class="patient-link"
             >
               {{ encounter.patient_name }}
             </router-link>
-          </a-descriptions-item>
-          <a-descriptions-item label="就诊类型">
-            <a-tag :color="encounterTypeColor">{{ encounter.encounter_type }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="科室">
+          </el-descriptions-item>
+          <el-descriptions-item label="就诊类型">
+            <el-tag :type="encounterTypeType">{{ encounter.encounter_type }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="科室">
             {{ encounter.department }}
-          </a-descriptions-item>
-          <a-descriptions-item label="主治医师">
+          </el-descriptions-item>
+          <el-descriptions-item label="主治医师">
             {{ encounter.attending_doctor }}
-          </a-descriptions-item>
-          <a-descriptions-item label="入院时间">
+          </el-descriptions-item>
+          <el-descriptions-item label="入院时间">
             {{ formatDateTime(encounter.admission_time) }}
-          </a-descriptions-item>
-          <a-descriptions-item label="出院时间">
+          </el-descriptions-item>
+          <el-descriptions-item label="出院时间">
             {{ encounter.discharge_time ? formatDateTime(encounter.discharge_time) : '--' }}
-          </a-descriptions-item>
-          <a-descriptions-item label="状态">
+          </el-descriptions-item>
+          <el-descriptions-item label="状态">
             <StatusBadge :status="encounter.status" type="encounter" />
-          </a-descriptions-item>
-        </a-descriptions>
-      </a-card>
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-card>
 
       <!-- Sub-tabs -->
-      <a-card :bordered="false" style="margin-top: 16px">
-        <a-tabs v-model:activeKey="activeTab">
-          <a-tab-pane key="diagnosis" tab="诊断">
+      <el-card shadow="never" class="mt-4 !rounded-xl !border-slate-200/80 shadow-clinical-sm">
+        <el-tabs v-model="activeTab">
+          <el-tab-pane label="诊断" name="diagnosis">
             <DiagnosisView :patient-id="patientId" :encounter-id="encounterId" />
-          </a-tab-pane>
-          <a-tab-pane key="labs" tab="检验结果">
+          </el-tab-pane>
+          <el-tab-pane label="检验结果" name="labs">
             <LabResultView :patient-id="patientId" :encounter-id="encounterId" />
-          </a-tab-pane>
-          <a-tab-pane key="imaging" tab="影像检查">
+          </el-tab-pane>
+          <el-tab-pane label="影像检查" name="imaging">
             <ImagingView :patient-id="patientId" :encounter-id="encounterId" />
-          </a-tab-pane>
-          <a-tab-pane key="medications" tab="用药记录">
+          </el-tab-pane>
+          <el-tab-pane label="用药记录" name="medications">
             <MedicationView :patient-id="patientId" :encounter-id="encounterId" />
-          </a-tab-pane>
-          <a-tab-pane key="vitals" tab="生命体征">
+          </el-tab-pane>
+          <el-tab-pane label="生命体征" name="vitals">
             <VitalSignView :patient-id="patientId" :encounter-id="encounterId" />
-          </a-tab-pane>
-          <a-tab-pane key="notes" tab="临床笔记">
+          </el-tab-pane>
+          <el-tab-pane label="临床笔记" name="notes">
             <ClinicalNoteView :patient-id="patientId" :encounter-id="encounterId" />
-          </a-tab-pane>
-        </a-tabs>
-      </a-card>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
     </template>
   </PageContainer>
 </template>
@@ -77,7 +77,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LeftOutlined } from '@ant-design/icons-vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatusBadge from '@/components/StatusBadge/index.vue'
 import { getEncounterDetail } from '@/api/data'
@@ -107,14 +107,14 @@ const breadcrumbs = computed(() => [
   { title: '就诊详情' },
 ])
 
-const encounterTypeColor = computed(() => {
-  const typeMap: Record<string, string> = {
-    '门诊': 'blue',
-    '住院': 'green',
-    '急诊': 'red',
-    '体检': 'purple',
+const encounterTypeType = computed<'primary' | 'success' | 'danger' | 'warning' | 'info'>(() => {
+  const typeMap: Record<string, 'primary' | 'success' | 'danger' | 'warning' | 'info'> = {
+    '门诊': 'primary',
+    '住院': 'success',
+    '急诊': 'danger',
+    '体检': 'warning',
   }
-  return typeMap[encounter.value?.encounter_type] || 'default'
+  return typeMap[encounter.value?.encounter_type] || 'info'
 })
 
 async function loadEncounter() {
@@ -131,16 +131,13 @@ onMounted(loadEncounter)
 </script>
 
 <style scoped>
-.encounter-header-card {
-  border-radius: 8px;
-}
-.encounter-header-card :deep(.ant-descriptions-item-label) {
-  background-color: #fafafa;
+.encounter-header-card :deep(.el-descriptions__label) {
+  background-color: #f8fafc;
   font-weight: 500;
   width: 120px;
 }
 .patient-link {
-  color: #1677ff;
+  color: #0ea5e9;
   font-weight: 500;
 }
 .patient-link:hover {
