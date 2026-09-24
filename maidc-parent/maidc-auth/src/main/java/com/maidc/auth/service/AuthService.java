@@ -5,6 +5,7 @@ import com.maidc.auth.dto.RefreshTokenDTO;
 import com.maidc.auth.entity.*;
 import com.maidc.auth.repository.*;
 import com.maidc.auth.vo.LoginVO;
+import com.maidc.auth.vo.RefreshVO;
 import com.maidc.common.core.enums.ErrorCode;
 import com.maidc.common.core.exception.BusinessException;
 import com.maidc.common.security.context.PermissionContext;
@@ -107,7 +108,7 @@ public class AuthService {
                 .build();
     }
 
-    public LoginVO refreshToken(RefreshTokenDTO dto) {
+    public RefreshVO refreshToken(RefreshTokenDTO dto) {
         if (!jwtUtils.validateToken(dto.getRefreshToken())) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
@@ -129,9 +130,8 @@ public class AuthService {
 
         String accessToken = jwtUtils.generateAccessToken(userId, username, roleCodes, user.getOrgId());
 
-        return LoginVO.builder()
+        return RefreshVO.builder()
                 .accessToken(accessToken)
-                .tokenType("Bearer")
                 .expiresIn(accessExpiration / 1000)
                 .build();
     }

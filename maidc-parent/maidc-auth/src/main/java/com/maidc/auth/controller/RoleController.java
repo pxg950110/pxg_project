@@ -60,4 +60,36 @@ public class RoleController {
     public R<List<PermissionTreeVO>> getPermissionTree() {
         return R.ok(roleService.getPermissionTree());
     }
+
+    // ==================== 权限 CRUD（前端 system.ts 契约） ====================
+
+    @OperLog(module = "permission", operation = "create")
+    @PostMapping("/permissions")
+    @PreAuthorize("hasPermission('system:role')")
+    public R<PermissionTreeVO> createPermission(@RequestBody Map<String, Object> body) {
+        String name = (String) body.get("name");
+        String code = (String) body.get("code");
+        String type = (String) body.get("type");
+        Long parentId = body.get("parent_id") != null ? ((Number) body.get("parent_id")).longValue() : null;
+        return R.ok(roleService.createPermission(name, code, type, parentId));
+    }
+
+    @OperLog(module = "permission", operation = "update")
+    @PutMapping("/permissions/{id}")
+    @PreAuthorize("hasPermission('system:role')")
+    public R<PermissionTreeVO> updatePermission(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        String name = (String) body.get("name");
+        String code = (String) body.get("code");
+        String type = (String) body.get("type");
+        Long parentId = body.get("parent_id") != null ? ((Number) body.get("parent_id")).longValue() : null;
+        return R.ok(roleService.updatePermission(id, name, code, type, parentId));
+    }
+
+    @OperLog(module = "permission", operation = "delete")
+    @DeleteMapping("/permissions/{id}")
+    @PreAuthorize("hasPermission('system:role')")
+    public R<Void> deletePermission(@PathVariable Long id) {
+        roleService.deletePermission(id);
+        return R.ok();
+    }
 }
